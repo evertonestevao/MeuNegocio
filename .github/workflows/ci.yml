@@ -1,0 +1,55 @@
+# CI (plano §12): lint + typecheck + testes unitários + build em cada PR e
+# push na main/master, mais testes de RLS contra um Supabase local efêmero.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes unitários
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholders só para o build passar na validação de env do client;
+          # nenhum deploy é feito a partir do CI.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_BACKEND_PROVIDER: supabase
+
+  rls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Subir Supabase local (aplica migrations)
+        run: supabase start
+
+      - name: Testes de RLS
+        run: bash scripts/test-rls.sh
