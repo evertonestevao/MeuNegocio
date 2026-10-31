@@ -25,3 +25,20 @@ export function describePlanFeature(feature: PlanFeatureDefinition, value: unkno
   if (feature.type === "flag") return `${feature.label}: ${value === true ? "sim" : "não"}`;
   return `${feature.label}: ${typeof value === "number" ? value : "ilimitado"}`;
 }
+
+const OFFER_LIMITS: Record<string, { limited: (value: number) => string; unlimited: string }> = {
+  max_members: { limited: (value) => `Até ${value} ${value === 1 ? "membro incluso" : "membros inclusos"}`, unlimited: "Membros ilimitados" },
+  max_clients: { limited: (value) => `Até ${value} ${value === 1 ? "cliente" : "clientes"}`, unlimited: "Clientes ilimitados" },
+  max_quotes_month: { limited: (value) => `Até ${value} ${value === 1 ? "orçamento" : "orçamentos"} por mês`, unlimited: "Orçamentos ilimitados" },
+};
+
+/** O que um plano inclui, em texto de oferta. Recurso que o plano não tem não aparece. */
+export function planOfferLines(features: Record<string, unknown>): string[] {
+  return PLAN_FEATURES.flatMap((feature) => {
+    const value = features[feature.key];
+    if (feature.type === "flag") return value === true ? [feature.label] : [];
+    const offer = OFFER_LIMITS[feature.key];
+    if (!offer) return [];
+    return [typeof value === "number" ? offer.limited(value) : offer.unlimited];
+  });
+}

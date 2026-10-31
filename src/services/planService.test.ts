@@ -44,6 +44,12 @@ function makeRepo(plan: Plan | null = makePlan()) {
 }
 
 describe("planService", () => {
+  it("a oferta pública traz só planos ativos", async () => {
+    const repo = makeRepo();
+    repo.list.mockResolvedValue([makePlan(), makePlan({ id: "p2", is_active: false })]);
+    expect((await createPlanService(repo).listActive()).map((plan) => plan.id)).toEqual(["p1"]);
+  });
+
   it("cria plano novo com quem alterou", async () => {
     const repo = makeRepo(null);
     await createPlanService(repo).create("plus", INPUT, "admin-1");

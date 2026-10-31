@@ -1,102 +1,73 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Building2,
-  CreditCard,
-  Flag,
-  Layers,
-  Mail,
-  MonitorSmartphone,
-  ScrollText,
-  ShieldCheck,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brand } from "@/config/brand";
+import { planOfferLines } from "@/config/planFeatures";
+import { benefits, faq, hero, journey, pains } from "@/features/marketing/content";
+import { formatCents } from "@/lib/money";
+import { getPublicPlans } from "@/server/plans";
+import type { Plan } from "@/types/database";
 
-const features = [
-  {
-    icon: Building2,
-    title: "Multi-tenant de verdade",
-    description:
-      "Usuário em N empresas, empresa ativa em contexto, papéis owner/admin/member e soft delete em toda tabela de negócio.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "RLS testada, não só escrita",
-    description:
-      "Policies de Row Level Security em todas as tabelas, com testes SQL versionados que provam o isolamento entre empresas.",
-  },
-  {
-    icon: CreditCard,
-    title: "Billing atrás de interface",
-    description:
-      "PaymentGateway único (Stripe incluído via REST) com webhooks normalizados. Trocar de provedor não toca a lógica de negócio.",
-  },
-  {
-    icon: Mail,
-    title: "Convites e email transacional",
-    description:
-      "Convite por email com expiração e revogação, rate limit no envio e EmailProvider trocável (Resend incluído).",
-  },
-  {
-    icon: ScrollText,
-    title: "Auditoria pronta",
-    description:
-      "audit_logs por empresa, imutável para o client, com sanitização automática de dados sensíveis antes de gravar.",
-  },
-  {
-    icon: Flag,
-    title: "Feature flags por plano",
-    description:
-      "canAccessFeature como ponto único de checagem de limite, com overrides por empresa e por usuário via settings.",
-  },
-  {
-    icon: MonitorSmartphone,
-    title: "UI responsiva de verdade",
-    description:
-      "Sidebar única: rail colapsável no desktop, drawer no mobile. Tabelas viram cards em telas pequenas. Dark/light por tokens.",
-  },
-  {
-    icon: Layers,
-    title: "Arquitetura em camadas",
-    description:
-      "componentes → hooks → services → repositories/adapters. Nenhum componente fala com Supabase; backend é trocável.",
-  },
-];
+// Preço e oferta mudam pelo painel, sem deploy: a página não pode ficar presa ao build.
+export const dynamic = "force-dynamic";
 
-const steps = [
-  {
-    title: "Clone e instale",
-    code: "git clone <repo> && npm install",
-    description: "Requisitos: Node 22+, Docker (para o Supabase local).",
-  },
-  {
-    title: "Suba o banco local",
-    code: "npx supabase start",
-    description:
-      "Migrations com RLS aplicam automaticamente. Copie as chaves geradas para .env.local.",
-  },
-  {
-    title: "Rode o app",
-    code: "npm run dev",
-    description: "Crie sua conta, sua primeira empresa e explore o dashboard.",
-  },
-  {
-    title: "Deixe com a sua cara",
-    code: "src/config/brand.ts + globals.css",
-    description:
-      "Nome, tagline e cor primária em um lugar só. Depois crie seus módulos em src/features.",
-  },
-];
+export const metadata: Metadata = {
+  title: { absolute: `${brand.name} — ${brand.tagline}` },
+  description: hero.description,
+};
 
-export default function LandingPage() {
+function PlanCard({ plan, featured }: { plan: Plan; featured: boolean }) {
+  return (
+    <Card className={featured ? "border-primary" : undefined}>
+      <CardHeader>
+        <CardTitle>{plan.name}</CardTitle>
+        <p className="text-3xl font-semibold tracking-tight tabular-nums">
+          {plan.price_cents === 0 ? "Grátis" : formatCents(plan.price_cents, plan.currency)}
+          {plan.price_cents === 0 ? null : <span className="text-sm font-normal text-muted-foreground"> /mês</span>}
+        </p>
+        {plan.extra_seat_price_cents > 0 ? (
+          <p className="text-sm text-muted-foreground">Membro extra: {formatCents(plan.extra_seat_price_cents, plan.currency)} /mês</p>
+        ) : null}
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col gap-5">
+        <ul className="flex flex-col gap-2 text-sm">
+          {planOfferLines(plan.features).map((line) => (
+            <li key={line} className="flex items-start gap-2">
+              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {line}
+            </li>
+          ))}
+        </ul>
+        <Button className="mt-auto" variant={featured ? "default" : "outline"} nativeButton={false} render={<Link href="/signup" />}>
+          {plan.price_cents === 0 ? "Começar grátis" : `Começar com ${plan.name}`}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default async function LandingPage() {
+  const plans = await getPublicPlans();
+  const paid = plans.filter((plan) => plan.price_cents > 0);
+  const featuredId = paid[0]?.id;
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
           <span className="font-semibold tracking-tight">{brand.name}</span>
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
+            <a href="#como-funciona" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
+              Como funciona
+            </a>
+            <a href="#planos" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
+              Planos
+            </a>
+            <a href="#duvidas" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
+              Dúvidas
+            </a>
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/login" />}>
               Entrar
             </Button>
@@ -107,100 +78,141 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="mx-auto flex w-full max-w-6xl flex-col items-center gap-6 px-4 py-20 text-center lg:py-28">
-          <Badge variant="secondary">Starter kit SaaS multi-tenant</Badge>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight lg:text-5xl">
-            Lance seu próximo SaaS sem reescrever a fundação
-          </h1>
-          <p className="max-w-2xl text-balance text-muted-foreground lg:text-lg">
-            {brand.name} é um template de produção com autenticação, multiempresa, RLS testada,
-            billing desacoplado e UI responsiva. Troque nome, cores e entidades de domínio — o
-            resto já está pronto.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" nativeButton={false} render={<Link href="/signup" />}>
-              Começar agora
-            </Button>
-            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/login" />}>
-              Ver o dashboard
-            </Button>
-          </div>
-        </section>
+      <main id="conteudo" className="flex-1">
+        <section className="bg-sidebar text-sidebar-foreground">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:py-24">
+            <div className="flex min-w-0 flex-col items-start gap-6">
+              <h1 className="text-4xl font-semibold tracking-tight text-balance lg:text-5xl">{hero.title}</h1>
+              <p className="max-w-xl text-pretty text-sidebar-foreground/80 lg:text-lg">{hero.description}</p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  size="lg"
+                  className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                  nativeButton={false}
+                  render={<a href="#planos" />}
+                >
+                  Ver planos
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground dark:bg-transparent"
+                  nativeButton={false}
+                  render={<a href="#como-funciona" />}
+                >
+                  Como funciona
+                </Button>
+              </div>
+            </div>
 
-        {/* Como usar */}
-        <section className="border-t bg-muted/40">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16">
-            <h2 className="text-2xl font-semibold tracking-tight">Como usar o template</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Do clone ao seu produto em quatro passos.
-            </p>
-            <ol className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {steps.map((step, index) => (
-                <li key={step.title}>
-                  <Card className="h-full">
-                    <CardHeader>
-                      <CardDescription>Passo {index + 1}</CardDescription>
-                      <CardTitle className="text-base">{step.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                      <code className="block overflow-x-auto rounded bg-muted px-2 py-1.5 text-xs">
-                        {step.code}
-                      </code>
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
-                    </CardContent>
-                  </Card>
+            {/* O caminho de um serviço: é o produto em uma coluna, sem números de exemplo. */}
+            <ol className="flex min-w-0 flex-col" aria-label="O caminho de um serviço">
+              {journey.map((step, index) => (
+                <li key={step.title} className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
+                      {index + 1}
+                    </span>
+                    {index < journey.length - 1 ? <span className="w-px flex-1 bg-sidebar-border" aria-hidden /> : null}
+                  </div>
+                  <div className="min-w-0 pb-5">
+                    <p className="font-medium">{step.title}</p>
+                    <p className="text-sm text-sidebar-foreground/75">{step.description}</p>
+                  </div>
                 </li>
               ))}
             </ol>
           </div>
         </section>
 
-        {/* Features */}
         <section className="mx-auto w-full max-w-6xl px-4 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight">O que já vem pronto</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tudo que um SaaS precisa antes da primeira feature de domínio.
-          </p>
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature) => (
-              <Card key={feature.title}>
-                <CardHeader>
-                  <feature.icon className="size-5 text-primary" aria-hidden />
-                  <CardTitle className="text-base">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+          <h2 className="text-2xl font-semibold tracking-tight">Se a sua empresa roda no WhatsApp e no caderno</h2>
+          <div className="mt-8 grid gap-8 md:grid-cols-3">
+            {pains.map((pain) => (
+              <div key={pain.title} className="flex flex-col gap-2 border-t-2 border-sidebar-primary pt-4">
+                <h3 className="font-medium">{pain.title}</h3>
+                <p className="text-sm text-muted-foreground">{pain.description}</p>
+              </div>
             ))}
           </div>
         </section>
 
-        {/* Arquitetura */}
-        <section className="border-t bg-muted/40">
+        <section id="como-funciona" className="scroll-mt-14 border-t bg-muted/40">
           <div className="mx-auto w-full max-w-6xl px-4 py-16">
-            <h2 className="text-2xl font-semibold tracking-tight">Fluxo único de dados</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Nenhum componente React chama o Supabase diretamente. A troca de backend (ou de
-              gateway de pagamento) acontece nos adapters, sem reescrever telas.
+            <h2 className="text-2xl font-semibold tracking-tight">O que o {brand.name} faz</h2>
+            <div className="mt-8 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((benefit) => (
+                <div key={benefit.title} className="flex flex-col gap-2">
+                  <benefit.icon className="size-5" aria-hidden />
+                  <h3 className="font-medium">{benefit.title}</h3>
+                  <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="planos" className="mx-auto w-full max-w-6xl scroll-mt-14 px-4 py-16">
+          <h2 className="text-2xl font-semibold tracking-tight">Planos</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Pagamento por PIX, boleto ou cartão. Técnico com login conta como membro; pessoa da equipe sem login, não.</p>
+          {plans.length === 0 ? (
+            <p className="mt-8 text-sm text-muted-foreground">
+              Não foi possível mostrar os planos agora. Fale com {brand.legal.supportEmail}.
             </p>
-            <div className="mt-6 overflow-x-auto">
-              <code className="block w-max rounded-lg border bg-background px-4 py-3 text-sm">
-                componentes → hooks → services → repositories/adapters → Supabase | API | Gateway
-              </code>
+          ) : (
+            <div className="mt-8 grid items-stretch gap-4 md:grid-cols-3">
+              {plans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} featured={plan.id === featuredId} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section id="duvidas" className="scroll-mt-14 border-t bg-muted/40">
+          <div className="mx-auto w-full max-w-3xl px-4 py-16">
+            <h2 className="text-2xl font-semibold tracking-tight">Dúvidas frequentes</h2>
+            <div className="mt-6 flex flex-col divide-y">
+              {faq.map((item) => (
+                <details key={item.question} className="group py-4">
+                  <summary className="cursor-pointer font-medium">{item.question}</summary>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.answer}
+                    {item.question.startsWith("Como funciona o pagamento") ? (
+                      <>
+                        {" "}
+                        <Link href="/refund" className="underline underline-offset-4">
+                          Ler a política de reembolso
+                        </Link>
+                        .
+                      </>
+                    ) : null}
+                  </p>
+                </details>
+              ))}
             </div>
           </div>
         </section>
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row">
-          <span>
-            {brand.name} — {brand.tagline}
-          </span>
-          <span>Feito com Next.js, Supabase e Tailwind</span>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground">
+          <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Documentos legais">
+            <Link href="/terms" className="hover:text-foreground">
+              Termos de Uso
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacidade
+            </Link>
+            <Link href="/refund" className="hover:text-foreground">
+              Reembolso
+            </Link>
+          </nav>
+          <p>
+            {brand.legal.companyName} · CNPJ {brand.legal.cnpj} · {brand.legal.address}
+          </p>
+          <p>
+            Suporte: {brand.legal.supportEmail} · Encarregado de dados: {brand.legal.dpoEmail}
+          </p>
         </div>
       </footer>
     </div>

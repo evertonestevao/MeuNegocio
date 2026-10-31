@@ -50,6 +50,8 @@ export function createPlanService(repo: PlanRepository) {
 
   return {
     list: () => repo.list(),
+    /** Só o que está à venda: plano desativado some da oferta. */
+    listActive: async () => (await repo.list()).filter((plan) => plan.is_active),
     listAudit: (limit = 30) => repo.listAudit(limit),
 
     async create(code: string, input: PlanInput, actorId: string): Promise<Plan> {
