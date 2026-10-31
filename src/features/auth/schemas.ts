@@ -5,7 +5,7 @@ import { z } from "zod";
  * server (fonte de verdade — toda server action valida de novo).
  */
 
-export const emailSchema = z.email("Email inválido");
+export const emailSchema = z.email("E-mail inválido");
 
 export const passwordSchema = z
   .string()

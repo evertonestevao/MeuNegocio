@@ -4,6 +4,7 @@ import { startTransition, useActionState, useRef } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PLAN_FEATURES } from "@/config/planFeatures";
@@ -60,20 +61,18 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
         <Field id={`${idPrefix}-name`} label="Nome">
           <Input id={`${idPrefix}-name`} name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
-        <Field id={`${idPrefix}-price`} label="Preço por mês (R$)">
-          <Input
+        <Field id={`${idPrefix}-price`} label="Preço por mês">
+          <MaskedInput mask="money"
             id={`${idPrefix}-price`}
             name="price"
-            inputMode="decimal"
             defaultValue={plan ? centsToMoneyInput(plan.price_cents) : ""}
             required
           />
         </Field>
-        <Field id={`${idPrefix}-extra`} label="Membro extra (R$)" hint="Use 0 se o plano não vende membro extra.">
-          <Input
+        <Field id={`${idPrefix}-extra`} label="Membro extra" hint="Use 0 se o plano não vende membro extra.">
+          <MaskedInput mask="money"
             id={`${idPrefix}-extra`}
             name="extraSeatPrice"
-            inputMode="decimal"
             defaultValue={plan ? centsToMoneyInput(plan.extra_seat_price_cents) : "0"}
             required
           />
@@ -83,7 +82,7 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
       <Field
         id={`${idPrefix}-custom-text`}
         label="Texto livre"
-        hint="Aparece na oferta do plano, na página inicial e em Billing. Escreva o que quiser; as quebras de linha são mantidas."
+        hint="Aparece na oferta do plano, na página inicial e em Assinatura. Escreva o que quiser; as quebras de linha são mantidas."
       >
         <textarea
           id={`${idPrefix}-custom-text`}

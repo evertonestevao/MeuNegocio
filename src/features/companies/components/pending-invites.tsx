@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useTenant } from "@/providers/tenant-provider";
 import { revokeInviteAction } from "@/server/actions/tenant";
 import type { CompanyInvite } from "@/types/database";
+import { roleLabel } from "@/config/roles";
 
 export function PendingInvites({ invites }: { invites: CompanyInvite[] }) {
   const { active } = useTenant();
@@ -43,7 +44,7 @@ export function PendingInvites({ invites }: { invites: CompanyInvite[] }) {
               </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Badge variant="secondary">{invite.role === "admin" ? "Admin" : invite.role === "technician" ? "Técnico" : "Member"}</Badge>
+              <Badge variant="secondary">{roleLabel(invite.role)}</Badge>
               <Button
                 variant="ghost"
                 size="icon-sm"

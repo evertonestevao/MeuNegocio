@@ -57,7 +57,7 @@ function requireManage({ role }: ActorContext): void {
 
 function requireDelete({ role }: ActorContext): void {
   if (!permissionService.canDeleteRecords(role)) {
-    throw new AppError("forbidden", "Só owner e admin podem excluir");
+    throw new AppError("forbidden", "Só o proprietário e o administrador podem excluir");
   }
 }
 

@@ -37,7 +37,7 @@ export function createEmployeeService(repo: EmployeeRepository) {
 
   function requireManage({ role }: ActorContext): void {
     if (!permissionService.canManageTeam(role)) {
-      throw new AppError("forbidden", "Só owner e admin editam a equipe");
+      throw new AppError("forbidden", "Só o proprietário e o administrador editam a equipe");
     }
   }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
 import { Button } from "@/components/ui/button";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATALOG_UNITS, parseCatalogForm } from "@/features/catalog/schemas";
@@ -78,19 +79,17 @@ function CatalogFields({ item, kind }: { item?: CatalogItem; kind: CatalogKind }
           </select>
         </Field>
         <Field id={`${prefix}-price`} label={hourly ? "Preço por hora" : "Preço de venda"}>
-          <Input
+          <MaskedInput mask="money"
             id={`${prefix}-price`}
             name="price"
-            inputMode="decimal"
             value={price}
             onChange={(event) => setPrice(event.target.value)}
           />
         </Field>
         <Field id={`${prefix}-cost`} label={hourly ? "Custo por hora" : "Custo"}>
-          <Input
+          <MaskedInput mask="money"
             id={`${prefix}-cost`}
             name="cost"
-            inputMode="decimal"
             value={cost}
             onChange={(event) => setCost(event.target.value)}
           />

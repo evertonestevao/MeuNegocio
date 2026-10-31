@@ -9,7 +9,7 @@ test("texto livre do plano sai do painel para a oferta, sem prazo de auditoria",
 
   try {
     const email = uniqueEmail("planos");
-    await signupAndOnboard(page, { email, password: PASSWORD, name: "Admin Planos", company: "Empresa Planos E2E" });
+    await signupAndOnboard(page, { email, password: PASSWORD, name: "Dono Planos", company: "Empresa Planos E2E" });
     await makeSuperAdmin(email);
 
     await page.goto("/admin/planos");

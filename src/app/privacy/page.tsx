@@ -13,11 +13,11 @@ const sections: LegalSection[] = [
   },
   {
     title: "2. Dados da conta e da empresa",
-    body: "Cadastro: nome completo, email, foto de perfil opcional e senha (armazenada apenas como hash).\nEmpresa: nome, CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
+    body: "Cadastro: nome completo, email, foto de perfil opcional e senha (armazenada de forma protegida).\nEmpresa: nome, CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
   },
   {
     title: "3. Dados cadastrados pelas empresas",
-    body: "Clientes: nome, documento, observações, contatos (nome, função, telefone e email) e locais de atendimento com endereço.\nEquipe: nome, função e horas trabalhadas. Owner e admin também podem registrar telefone, tipo de contrato, valores por hora, nome legal, documento e chave PIX, que ficam restritos a esses dois papéis.\nOrçamentos e agenda: itens, valores, observações, visitas e seus horários.",
+    body: "Clientes: nome, documento, observações, contatos (nome, função, telefone e e-mail) e locais de atendimento com endereço.\nEquipe: nome, função e horas trabalhadas. O proprietário e o administrador também podem registrar telefone, tipo de contrato, valores por hora, nome legal, documento e chave PIX, que ficam restritos a esses dois papéis.\nOrçamentos e agenda: itens, valores, observações, visitas e seus horários.",
   },
   {
     title: "4. Fotos e assinaturas coletadas em campo",
@@ -29,7 +29,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "6. Finalidades e bases legais (LGPD, art. 7º)",
-    body: "Execução de contrato: criar e manter sua conta, a empresa e os recursos contratados.\nCumprimento de obrigação legal: registros fiscais e de acesso (Marco Civil da Internet, art. 15).\nLegítimo interesse: segurança, prevenção a fraude e auditoria.\nConsentimento: comunicações por email, revogável a qualquer momento.\nPara os dados cadastrados pelas empresas, cabe a cada empresa definir a base legal e informar os titulares.",
+    body: "Execução de contrato: criar e manter sua conta, a empresa e os recursos contratados.\nCumprimento de obrigação legal: registros fiscais e de acesso (Marco Civil da Internet, art. 15).\nLegítimo interesse: segurança, prevenção a fraude e auditoria.\nConsentimento: comunicações por e-mail, revogável a qualquer momento.\nPara os dados cadastrados pelas empresas, cabe a cada empresa definir a base legal e informar os titulares.",
   },
   {
     title: "7. Compartilhamento e suboperadores",
@@ -37,7 +37,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "8. Quem acessa dentro da empresa",
-    body: "Os dados de uma empresa não são visíveis para outras empresas. Dentro dela, o acesso depende do papel: o técnico, por exemplo, vê as próprias visitas e ordens de serviço. Dados de pagamento da equipe e custos ficam restritos a owner e admin.",
+    body: "Os dados de uma empresa não são visíveis para outras empresas. Dentro dela, o acesso depende do papel: o técnico, por exemplo, vê as próprias visitas e ordens de serviço. Dados de pagamento da equipe e custos ficam restritos ao proprietário e ao administrador.",
   },
   {
     title: "9. Cookies",

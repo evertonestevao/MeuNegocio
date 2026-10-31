@@ -124,11 +124,11 @@ test("ações destrutivas pedem confirmação, e cancelar não muda nada", async
 test("plano grátis não aparece para liberar; falha usa texto claro; rótulo acompanha o tipo", async ({ page }) => {
   await page.goto("/admin/revendedores/regras");
   await expect(page.getByRole("button", { name: "Liberar Free" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Esconder Pro" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Esconder Profissional" })).toBeVisible();
 
   await expect(page.getByLabel("Valor (%)")).toBeVisible();
   await page.getByLabel("Tipo").selectOption("fixed");
-  await expect(page.getByLabel("Valor (R$ por pagamento)")).toBeVisible();
+  await expect(page.getByLabel("Valor por pagamento")).toBeVisible();
 
   const external = `pay-${stamp()}`;
   await admin.rpc("record_commission_failure", {
@@ -157,7 +157,7 @@ test("vendedor suspenso vê a explicação; vendedor vê totais", async ({ page,
   const context = await browser.newContext({ baseURL: page.url().split("/dashboard")[0] });
   const sellerPage = await context.newPage();
   await sellerPage.goto("/login");
-  await sellerPage.getByLabel("Email").fill(email);
+  await sellerPage.getByLabel("E-mail").fill(email);
   await sellerPage.getByLabel("Senha").fill(PASSWORD);
   await sellerPage.getByRole("button", { name: "Entrar" }).click();
   await expect(sellerPage).toHaveURL(/\/vendedor$/);

@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseServerClient } from "@/server/supabase-server";
@@ -82,7 +83,7 @@ export default async function CommissionsPage({
               </select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="filter-status">Status</Label>
+              <Label htmlFor="filter-status">Situação</Label>
               <select id="filter-status" name="status" defaultValue={filters.status ?? ""} className={SELECT_CLASS}>
                 <option value="">Todos</option>
                 <option value="pending">Pendente</option>
@@ -194,9 +195,8 @@ export default async function CommissionsPage({
                     className="mt-2 flex flex-wrap items-center gap-2"
                   >
                     <input type="hidden" name="id" value={commission.id} />
-                    <Input
+                    <MaskedInput mask="money"
                       name="amount"
-                      inputMode="decimal"
                       aria-label={`Valor da comissão de ${commission.client_name}`}
                       defaultValue={(commission.amount_cents / 100).toFixed(2).replace(".", ",")}
                       className="w-24"

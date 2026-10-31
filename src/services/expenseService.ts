@@ -4,7 +4,7 @@ import type { ActorContext } from "@/server/actor";
 import type { Expense, ExpenseCategory, ExpenseTemplate } from "@/types/finance";
 import { permissionService } from "./permissionService";
 
-/** Gastos, recorrências e categorias. Só owner e admin. */
+/** Gastos, recorrências e categorias. Só o proprietário e o administrador. */
 
 export interface ExpenseRepository {
   list(companyId: string, from: string, to: string): Promise<Expense[]>;
@@ -47,7 +47,7 @@ export function totalsByCategory(expenses: Pick<Expense, "category_id" | "catego
 export function createExpenseService(repo: ExpenseRepository) {
   function requireAccess({ role }: ActorContext): void {
     if (!permissionService.canManageFinance(role)) {
-      throw new AppError("forbidden", "Só owner e admin acessam gastos");
+      throw new AppError("forbidden", "Só o proprietário e o administrador acessam gastos");
     }
   }
 

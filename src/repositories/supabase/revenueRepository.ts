@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
 import type { RevenueListItem } from "@/types/finance";
 
-/** Receitas nascem ao fechar um orçamento. A RLS restringe a leitura a owner e admin. */
+/** Receitas nascem ao fechar um orçamento. A RLS restringe a leitura ao proprietário e ao administrador. */
 export function createSupabaseRevenueRepository(client: SupabaseClient) {
   return {
     async list(companyId: string, from: string, to: string): Promise<RevenueListItem[]> {

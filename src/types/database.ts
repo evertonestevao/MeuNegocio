@@ -168,7 +168,7 @@ export interface CatalogItem {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
-  /** Só preenchido para owner e admin; a tabela de custos é restrita a eles. */
+  /** Só preenchido parao proprietário e ao administrador; a tabela de custos é restrita a eles. */
   cost_cents: number | null;
 }
 
@@ -241,7 +241,7 @@ export interface Employee {
   user_id: string | null;
 }
 
-/** Só owner e admin leem. */
+/** Só o proprietário e o administrador leem. */
 export interface EmployeePaymentDetails {
   employee_id: string;
   phone: string | null;

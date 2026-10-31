@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SELECT_CLASS } from "./action-form";
@@ -32,15 +33,26 @@ export function CommissionFields({
         </select>
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor={`${idPrefix}-value`}>{isPercent ? "Valor (%)" : "Valor (R$ por pagamento)"}</Label>
-        <Input
-          id={`${idPrefix}-value`}
-          name="value"
-          inputMode="decimal"
-          placeholder={isPercent ? "30" : "20,00"}
-          defaultValue={defaults?.value}
-          required
-        />
+        <Label htmlFor={`${idPrefix}-value`}>{isPercent ? "Valor (%)" : "Valor por pagamento"}</Label>
+        {isPercent ? (
+          <Input
+            id={`${idPrefix}-value`}
+            name="value"
+            inputMode="decimal"
+            placeholder="30"
+            defaultValue={defaults?.value}
+            required
+          />
+        ) : (
+          <MaskedInput
+            id={`${idPrefix}-value`}
+            name="value"
+            mask="money"
+            placeholder="20,00"
+            defaultValue={defaults?.value}
+            required
+          />
+        )}
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor={`${idPrefix}-duration`}>Duração em meses</Label>

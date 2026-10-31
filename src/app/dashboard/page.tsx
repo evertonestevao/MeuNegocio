@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays, Send, Scale, Wallet } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
+import { ROLE_LABEL } from "@/config/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +18,6 @@ import { getActiveTenant } from "@/server/tenant";
 import type { QuoteListItem } from "@/types/database";
 
 export const metadata: Metadata = { title: "Início" };
-
-const ROLE_LABEL = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" } as const;
 
 function daysSince(timestamp: string | null, today: string): number | null {
   if (!timestamp) return null;

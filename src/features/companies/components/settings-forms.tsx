@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -75,6 +75,8 @@ export function AvatarForm({
   userName: string;
 }) {
   const [state, formAction, pending] = useActionState(updateAvatarAction, undefined);
+  const avatarInput = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [clientError, setClientError] = useState<string>();
   const initials = userName
     .split(/\s+/)
@@ -116,14 +118,27 @@ export function AvatarForm({
         </Avatar>
         <div className="flex flex-col gap-2">
           <Label htmlFor="avatar">Foto de perfil (JPG, PNG ou WebP, até 2MB)</Label>
-          <Input
+          {/* O campo nativo mostra o texto no idioma do navegador; este fica sempre em português. */}
+          <input
+            ref={avatarInput}
             id="avatar"
             name="avatar"
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => validateOnClient(e.target.files?.[0])}
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setFileName(file?.name ?? null);
+              validateOnClient(file);
+            }}
             required
           />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => avatarInput.current?.click()}>
+              Escolher foto
+            </Button>
+            <span className="min-w-0 truncate text-sm text-muted-foreground">{fileName ?? "Nenhuma foto escolhida"}</span>
+          </div>
         </div>
       </div>
       <Button type="submit" disabled={pending || Boolean(clientError)} className="w-fit">

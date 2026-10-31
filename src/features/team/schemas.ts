@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseMoneyToCents } from "@/lib/money";
+import { formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
 
 /** Validação da equipe: roda no navegador e de novo no servidor. */
 
@@ -22,7 +23,9 @@ export const employeeSchema = z.object({
   jobTitle: optionalText(120),
   active: z.boolean(),
   userId: z.union([z.uuid(), z.literal("")]).transform((value) => value || null),
-  phone: optionalText(30),
+  phone: optionalText(30)
+    .refine((value) => value === null || isValidPhone(value), "Informe o telefone com DDD.")
+    .transform((value) => (value ? formatPhone(value) : null)),
   contractType: z.enum(["clt", "pj", "freelancer"], { error: "Escolha o contrato." }),
   hourlyCostCents: money,
   hourlyPayCents: money,
@@ -34,7 +37,7 @@ export const employeeSchema = z.object({
       const digits = value.replace(/\D/g, "");
       return value === "" || digits.length === 11 || digits.length === 14;
     }, "Informe um CPF com 11 dígitos ou um CNPJ com 14.")
-    .transform((value) => value || null),
+    .transform((value) => (value ? formatDocument(value) : null)),
   pixKey: optionalText(140),
 });
 

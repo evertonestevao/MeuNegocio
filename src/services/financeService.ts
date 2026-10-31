@@ -130,7 +130,7 @@ export function createFinanceService(readers: FinanceReaders) {
   return {
     async getOverview(actor: ActorContext, month: string): Promise<FinanceOverview> {
       if (!permissionService.canManageFinance(actor.role)) {
-        throw new AppError("forbidden", "Só owner e admin acessam o financeiro");
+        throw new AppError("forbidden", "Só o proprietário e o administrador acessam o financeiro");
       }
       const from = addMonths(month, -5);
       const to = addDays(addMonths(month, 1), -1);

@@ -180,9 +180,9 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 
 | Plano | Preço/mês | Membros inclusos | Membro extra | Clientes | Orçamentos/mês | Link de aprovação, OS e horas |
 |---|---|---|---|---|---|:-:|
-| Free | R$ 0 | 2 | — | 30 | 20 | — |
-| Pro | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | ✅ |
-| Enterprise | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | ✅ |
+| Gratuito | R$ 0 | 2 | — | 30 | 20 | — |
+| Profissional | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | ✅ |
+| Empresarial | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | ✅ |
 
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 
@@ -202,7 +202,7 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Ver plano e uso de seats** (`/dashboard/billing`) | Owner | — |
+| **Ver plano e uso de vagas** (`/dashboard/billing`, menu Assinatura) | Owner | — |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
 | **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois a empresa passa para o Free. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
 | **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e a empresa passa para o Free. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
@@ -264,8 +264,10 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Minhas visitas | Técnico |
   | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
   | Horas, Gastos, Financeiro, Membros, Auditoria | Owner, admin |
-  | Billing | Owner |
+  | Assinatura | Owner |
 
+- **Idioma:** tudo o que aparece na tela está em português, inclusive papéis (Proprietário, Administrador, Membro e Técnico), situação da assinatura, ações da auditoria e mensagens de erro. Os códigos em inglês ficam só no banco e no código. Um teste E2E percorre as telas procurando inglês.
+- **Máscaras:** CNPJ, CPF, telefone e valores têm máscara ao digitar (`src/components/masked-input.tsx`), e o servidor recusa CNPJ ou telefone incompletos. Valores mostram R$, agrupam milhares e fecham com centavos ao sair do campo: `1500` vira `1.500,00`, nunca `15,00`. Documentos e telefones também aparecem formatados nas listas, no link de aprovação e nos PDFs.
 - **Tema** claro e escuro, com cor primária em `src/app/globals.css`. O menu lateral é escuro nos dois temas.
 - **Nome do produto:** provisório e editável só em `src/config/brand.ts`. Um teste falha se o nome aparecer fixo em outro arquivo de `src/`.
 - **Acessibilidade:** link "Pular para o conteúdo" (primeiro Tab), rótulos em pt-BR para leitores

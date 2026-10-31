@@ -2,6 +2,7 @@ import { formatCents } from "@/lib/money";
 import { formatDate, formatQuantity, formatTimestamp } from "@/lib/dates";
 import type { QuoteDocument } from "@/types/quotes";
 import { formatQuoteNumber } from "./status";
+import { formatDocument, formatPhone } from "@/lib/masks";
 
 function itemDetail(item: QuoteDocument["items"][number]): string {
   if (item.pricingMode === "hourly") {
@@ -29,9 +30,9 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
 
   pdf.setFont("helvetica", "normal").setFontSize(9).setTextColor(90);
   const companyLines = [
-    quote.company.cnpj ? `CNPJ ${quote.company.cnpj}` : null,
+    quote.company.cnpj ? `CNPJ ${formatDocument(quote.company.cnpj)}` : null,
     quote.company.address,
-    [quote.company.phone, quote.company.email].filter(Boolean).join(" · ") || null,
+    [quote.company.phone ? formatPhone(quote.company.phone) : null, quote.company.email].filter(Boolean).join(" · ") || null,
   ].filter((line): line is string => Boolean(line));
   const dateLines = [
     `Emitido em ${formatTimestamp(quote.createdAt)}`,
@@ -48,7 +49,7 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
   y += 5;
   pdf.setFont("helvetica", "normal");
   const clientLines = [
-    quote.client ? [quote.client.name, quote.client.document].filter(Boolean).join(" · ") : null,
+    quote.client ? [quote.client.name, quote.client.document ? formatDocument(quote.client.document) : null].filter(Boolean).join(" · ") : null,
     quote.location ? `${quote.location.name} — ${quote.location.address}` : null,
   ].filter((line): line is string => Boolean(line));
   for (const line of clientLines) {

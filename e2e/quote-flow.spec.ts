@@ -23,7 +23,7 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await picker.selectOption(await picker.locator("option", { hasText: "Mão de obra E2E" }).getAttribute("value") ?? "");
   await page.getByLabel("Horas").fill("10");
   await page.getByLabel("Pessoas").fill("2");
-  await page.getByLabel("Desconto (R$)").fill("100,00");
+  await page.getByLabel("Desconto").fill("100,00");
 
   // 10 h × 2 pessoas × R$ 95 − R$ 100.
   await expect(page.getByText("R$ 1.800,00").first()).toBeVisible();

@@ -38,8 +38,8 @@ import {
 } from "@/server/actions/tenant";
 import { permissionService } from "@/services/permissionService";
 import type { MemberWithProfile } from "@/types/tenant";
+import { ROLE_LABEL } from "@/config/roles";
 
-const roleLabel = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" } as const;
 const ASSIGNABLE_ROLES = ["admin", "member", "technician"] as const;
 
 /**
@@ -68,7 +68,7 @@ export function MembersList({ members }: { members: MemberWithProfile[] }) {
                 </TableCell>
                 <TableCell>
                   <Badge variant={member.role === "owner" ? "default" : "secondary"}>
-                    {roleLabel[member.role]}
+                    {ROLE_LABEL[member.role]}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -91,7 +91,7 @@ export function MembersList({ members }: { members: MemberWithProfile[] }) {
               <MemberIdentity member={member} />
               <div className="ml-auto flex items-center gap-2">
                 <Badge variant={member.role === "owner" ? "default" : "secondary"}>
-                  {roleLabel[member.role]}
+                  {ROLE_LABEL[member.role]}
                 </Badge>
                 <MemberActions member={member} />
               </div>
@@ -174,12 +174,12 @@ function MemberActions({ member }: { member: MemberWithProfile }) {
                   onClick={() =>
                     run(
                       () => changeMemberRoleAction(active.id, member.id, nextRole),
-                      `Papel alterado para ${roleLabel[nextRole]}`,
+                      `Papel alterado para ${ROLE_LABEL[nextRole]}`,
                     )
                   }
                 >
                   <ShieldCheck className="size-4" />
-                  Tornar {roleLabel[nextRole]}
+                  Tornar {ROLE_LABEL[nextRole]}
                 </DropdownMenuItem>
               ))
             : null}

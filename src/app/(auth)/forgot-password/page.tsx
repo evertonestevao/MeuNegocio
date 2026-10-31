@@ -13,12 +13,12 @@ export default function ForgotPasswordPage() {
     <Card>
       <CardHeader>
         <CardTitle>Recuperar senha</CardTitle>
-        <CardDescription>Enviaremos um link de redefinição para seu email</CardDescription>
+        <CardDescription>Enviaremos um link de redefinição para seu e-mail</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <AuthForm action={forgotPasswordAction} submitLabel="Enviar link">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
         </AuthForm>

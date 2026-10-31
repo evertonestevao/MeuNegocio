@@ -25,6 +25,7 @@ import { compressPhoto } from "../image";
 import { downloadWorkOrderPdf, type WorkOrderPdfInput } from "../pdf";
 import { completeWorkOrderSchema, photoCaptionSchema } from "../schemas";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
+import { formatPhone } from "@/lib/masks";
 
 const TEXTAREA_CLASS =
   "border-input min-h-24 w-full rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
@@ -53,7 +54,7 @@ function VisitSummary({ sheet }: { sheet: VisitSheet }) {
             </span>
             {sheet.contact.phone ? (
               <a href={phoneHref(sheet.contact.phone)} className="w-fit pl-6 underline">
-                {sheet.contact.phone}
+                {formatPhone(sheet.contact.phone)}
               </a>
             ) : null}
           </div>

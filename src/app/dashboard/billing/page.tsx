@@ -17,7 +17,15 @@ import { createBillingService, hasPlanAccess } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
-export const metadata: Metadata = { title: "Billing" };
+const SUBSCRIPTION_STATUS_LABEL = {
+  trialing: "em teste",
+  active: "ativa",
+  past_due: "em atraso",
+  canceled: "cancelada",
+  incomplete: "incompleta",
+} as const;
+
+export const metadata: Metadata = { title: "Assinatura" };
 
 function formatPrice(plan: Plan): string {
   if (plan.price_cents === 0) return "Grátis";
@@ -70,41 +78,40 @@ export default async function BillingPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Billing</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Assinatura</h2>
         <p className="text-sm text-muted-foreground">
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
-          {subscription ? ` · status ${subscription.status}` : " · sem assinatura (plano free)"}
+          {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}
         </p>
         {canceledWithAccess ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Assinatura cancelada. Acesso ao plano até{" "}
             {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}. Depois disso, a
-            empresa passa para o plano Free.
+            empresa passa para o plano gratuito.
           </p>
         ) : null}
       </div>
 
       {isFakeGateway ? (
         <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-          Gateway <strong>fake</strong> ativo (dev): assinar um plano simula o webhook do provedor.
-          Configure PAYMENT_GATEWAY (asaas ou stripe) e as chaves do provedor para usar checkout
-          real.
+          Modo de teste ativo: assinar um plano apenas simula o pagamento. Para cobrar de verdade, configure o
+          provedor de pagamento.
         </p>
       ) : null}
 
-      {/* Billing por seat: exceder o plano cobra a mais, se ele vender membro extra. */}
+      {/* Exceder o plano cobra a mais, se ele vender membro extra. */}
       <Card>
         <CardHeader>
-          <CardTitle>Seats</CardTitle>
+          <CardTitle>Vagas de membros</CardTitle>
           <CardDescription>
-            Membros ativos e convites pendentes ocupam seat. Se o plano vende membro extra, o que
-            passar do incluso é cobrado por assento. Se não vende, novos convites são recusados.
+            Membros ativos e convites pendentes ocupam vaga. Se o plano vende membro extra, o que
+            passar do incluso é cobrado por pessoa. Se não vende, novos convites são recusados.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-sm">
           {seats.included === null ? (
             <p>
-              <span className="font-medium text-foreground">{seats.used}</span> seats em uso ·
+              <span className="font-medium text-foreground">{seats.used}</span> vagas em uso ·
               plano sem limite de membros
             </p>
           ) : (
@@ -119,7 +126,7 @@ export default async function BillingPage() {
                 })}
                 /mês
               </span>{" "}
-              em seats extras ({seats.used} em uso no total)
+              em vagas extras ({seats.used} em uso no total)
             </p>
           )}
         </CardContent>

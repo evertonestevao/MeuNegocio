@@ -56,7 +56,7 @@ test("recorrência gera um lançamento por mês, sem duplicar", async ({ page })
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Descrição").fill("Aluguel do galpão");
   await dialog.getByLabel("Categoria").selectOption({ label: "Aluguel" });
-  await dialog.getByLabel("Valor (R$)").fill("2.800,00");
+  await dialog.getByLabel("Valor").fill("2.800,00");
   await dialog.getByRole("button", { name: "Salvar recorrência" }).click();
   await expect(dialog).toBeHidden();
 

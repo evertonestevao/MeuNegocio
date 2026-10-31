@@ -164,13 +164,13 @@ export function createSupabaseTenantRepository(client: SupabaseClient): TenantRe
       if (!error) return;
       // errcodes levantados pela RPC (ver migration de ownership).
       if (error.code === "42501") {
-        throw new AppError("forbidden", "Só o owner pode transferir a empresa", error);
+        throw new AppError("forbidden", "Só o proprietário pode transferir a empresa", error);
       }
       if (error.code === "P0002") {
         throw new AppError("not_found", "Membro não encontrado", error);
       }
       if (error.code === "22023") {
-        throw new AppError("validation_error", "Você já é o owner", error);
+        throw new AppError("validation_error", "Você já é o proprietário", error);
       }
       throw new AppError("internal_error", "Falha ao transferir a empresa", error);
     },

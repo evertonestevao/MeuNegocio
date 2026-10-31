@@ -28,7 +28,7 @@ export function TermsCheckboxes() {
       </label>
       <label className="flex items-start gap-2 text-muted-foreground">
         <input type="checkbox" name="email_consent" className="mt-0.5 size-4 accent-primary" />
-        <span>Aceito receber comunicações por email (opcional — pode revogar depois)</span>
+        <span>Aceito receber comunicações por e-mail (opcional — pode revogar depois)</span>
       </label>
     </div>
   );

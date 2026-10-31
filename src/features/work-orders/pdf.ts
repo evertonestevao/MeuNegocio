@@ -1,6 +1,7 @@
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import type { VisitSheet } from "@/types/workOrders";
 import { VISIT_KIND_DOCUMENT_LABEL } from "./schemas";
+import { formatDocument, formatPhone } from "@/lib/masks";
 
 export interface WorkOrderPdfInput {
   sheet: VisitSheet;
@@ -62,9 +63,9 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
   y += 6;
   pdf.setFont("helvetica", "normal").setFontSize(9).setTextColor(90);
   const companyLines = [
-    company.cnpj ? `CNPJ ${company.cnpj}` : null,
+    company.cnpj ? `CNPJ ${formatDocument(company.cnpj)}` : null,
     company.address,
-    [company.phone, company.email].filter(Boolean).join(" · ") || null,
+    [company.phone ? formatPhone(company.phone) : null, company.email].filter(Boolean).join(" · ") || null,
   ].filter((line): line is string => Boolean(line));
   pdf.text(companyLines, margin, y);
   y += companyLines.length * 4.2 + 4;

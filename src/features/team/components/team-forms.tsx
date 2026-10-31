@@ -3,6 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
 import { Button } from "@/components/ui/button";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CONTRACT_LABEL, parseEmployeeForm } from "@/features/team/schemas";
@@ -42,7 +43,7 @@ function EmployeeFields({ employee, users }: { employee?: EmployeeListItem; user
           <Input id={`${prefix}-job`} name="jobTitle" defaultValue={employee?.job_title ?? ""} />
         </Field>
         <Field id={`${prefix}-phone`} label="Telefone">
-          <Input id={`${prefix}-phone`} name="phone" type="tel" defaultValue={details?.phone ?? ""} />
+          <MaskedInput mask="phone" id={`${prefix}-phone`} name="phone" defaultValue={details?.phone ?? ""} />
         </Field>
         <Field id={`${prefix}-contract`} label="Contrato">
           <select id={`${prefix}-contract`} name="contractType" defaultValue={details?.contract_type ?? "clt"} className={SELECT_CLASS}>
@@ -53,24 +54,24 @@ function EmployeeFields({ employee, users }: { employee?: EmployeeListItem; user
             ))}
           </select>
         </Field>
-        <Field id={`${prefix}-cost`} label="Custo por hora (R$)" hint="Para CLT: salário e encargos divididos pelas horas do mês.">
-          <Input id={`${prefix}-cost`} name="hourlyCost" inputMode="decimal" defaultValue={details ? centsToMoneyInput(details.hourly_cost_cents) : ""} />
+        <Field id={`${prefix}-cost`} label="Custo por hora" hint="Para CLT: salário e encargos divididos pelas horas do mês.">
+          <MaskedInput mask="money" id={`${prefix}-cost`} name="hourlyCost" defaultValue={details ? centsToMoneyInput(details.hourly_cost_cents) : ""} />
         </Field>
-        <Field id={`${prefix}-pay`} label="Valor pago por hora (R$)" hint="Para prestadores PJ e autônomos.">
-          <Input id={`${prefix}-pay`} name="hourlyPay" inputMode="decimal" defaultValue={details ? centsToMoneyInput(details.hourly_pay_cents) : ""} />
+        <Field id={`${prefix}-pay`} label="Valor pago por hora" hint="Para prestadores PJ e autônomos.">
+          <MaskedInput mask="money" id={`${prefix}-pay`} name="hourlyPay" defaultValue={details ? centsToMoneyInput(details.hourly_pay_cents) : ""} />
         </Field>
         <Field id={`${prefix}-legal`} label="Razão social">
           <Input id={`${prefix}-legal`} name="legalName" defaultValue={details?.legal_name ?? ""} />
         </Field>
         <Field id={`${prefix}-tax`} label="CPF ou CNPJ">
-          <Input id={`${prefix}-tax`} name="taxId" inputMode="numeric" defaultValue={details?.tax_id ?? ""} />
+          <MaskedInput mask="cpfCnpj" id={`${prefix}-tax`} name="taxId" defaultValue={details?.tax_id ?? ""} />
         </Field>
         <Field id={`${prefix}-pix`} label="Pix">
           <Input id={`${prefix}-pix`} name="pixKey" defaultValue={details?.pix_key ?? ""} />
         </Field>
         <Field id={`${prefix}-user`} label="Usuário vinculado" hint="Opcional. É o que dá ao técnico acesso às próprias visitas.">
           <select id={`${prefix}-user`} name="userId" defaultValue={employee?.user_id ?? ""} className={SELECT_CLASS}>
-            <option value="">Sem login</option>
+            <option value="">Sem acesso</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}

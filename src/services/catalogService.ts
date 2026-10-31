@@ -26,7 +26,7 @@ export function createCatalogService(repo: CatalogRepository) {
 
   function requireEdit({ role }: ActorContext): void {
     if (!permissionService.canManageCatalog(role)) {
-      throw new AppError("forbidden", "Só owner e admin editam o catálogo");
+      throw new AppError("forbidden", "Só o proprietário e o administrador editam o catálogo");
     }
   }
 
@@ -56,7 +56,7 @@ export function createCatalogService(repo: CatalogRepository) {
     async remove(actor: ActorContext, itemId: string) {
       requireEdit(actor);
       if (!permissionService.canDeleteRecords(actor.role)) {
-        throw new AppError("forbidden", "Só owner e admin podem excluir");
+        throw new AppError("forbidden", "Só o proprietário e o administrador podem excluir");
       }
       await requireItem(actor, itemId);
       await repo.softDelete(actor.companyId, itemId);

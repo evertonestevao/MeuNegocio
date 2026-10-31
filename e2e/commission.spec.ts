@@ -89,8 +89,8 @@ test("link, contratação, pagamento e lançamento, com repetição, estorno e m
   });
 
   await page.goto("/dashboard/billing");
-  await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
-  await expect(page.getByText("status active")).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   // Vínculo criado na contratação e o primeiro pagamento já gerou lançamento.
   const { data: client } = await admin
@@ -187,8 +187,8 @@ test("pagamento sem vínculo e plano não liberado não geram lançamento", asyn
     company: "Empresa Plano Fechado E2E",
   });
   await page.goto("/dashboard/billing");
-  await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
-  await expect(page.getByText("status active")).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   const { data: clients } = await admin.from("reseller_clients").select("id").eq("reseller_id", reseller.id);
   expect(clients).toHaveLength(0);

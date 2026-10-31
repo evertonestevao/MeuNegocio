@@ -22,7 +22,7 @@ test("signup, logout e login levam ao dashboard", async ({ page }) => {
   await expect(page).toHaveURL(/\/login/);
 
   // login → dashboard
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
@@ -31,7 +31,7 @@ test("signup, logout e login levam ao dashboard", async ({ page }) => {
 
 test("login com senha errada mostra erro e não navega", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(uniqueEmail("inexistente"));
+  await page.getByLabel("E-mail").fill(uniqueEmail("inexistente"));
   await page.getByLabel("Senha").fill("senha-errada-123");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Email ou senha incorretos")).toBeVisible();

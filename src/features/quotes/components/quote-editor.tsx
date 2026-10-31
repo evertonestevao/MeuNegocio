@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATALOG_UNITS } from "@/features/catalog/schemas";
@@ -220,9 +221,8 @@ export function QuoteEditor({
                         )}
                         <div className="flex min-w-0 flex-col gap-1.5">
                           <Label htmlFor={`${id}-price`}>{hourly ? "Valor por hora" : "Valor unitário"}</Label>
-                          <Input
+                          <MaskedInput mask="money"
                             id={`${id}-price`}
-                            inputMode="decimal"
                             disabled={readOnly}
                             value={line.unitPrice}
                             onChange={(event) => editor.updateLine(line.key, { unitPrice: event.target.value })}
@@ -270,10 +270,9 @@ export function QuoteEditor({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex max-w-40 flex-col gap-1.5">
-              <Label htmlFor="quote-discount">Desconto (R$)</Label>
-              <Input
+              <Label htmlFor="quote-discount">Desconto</Label>
+              <MaskedInput mask="money"
                 id="quote-discount"
-                inputMode="decimal"
                 disabled={readOnly}
                 value={editor.discount}
                 onChange={(event) => editor.setDiscount(event.target.value)}

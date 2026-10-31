@@ -28,7 +28,7 @@ export default async function SignUpPage({
             <Input id="fullName" name="fullName" autoComplete="name" required />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
           <div className="flex flex-col gap-2">

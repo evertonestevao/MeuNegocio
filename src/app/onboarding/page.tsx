@@ -31,7 +31,7 @@ export default async function OnboardingPage() {
         <CardHeader>
           <CardTitle>Crie sua empresa</CardTitle>
           <CardDescription>
-            Todo dado do {brand.name} pertence a uma empresa. Você será o owner desta.
+            Todo dado do {brand.name} pertence a uma empresa. Você será o proprietário desta.
           </CardDescription>
         </CardHeader>
         <CardContent>

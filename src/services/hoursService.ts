@@ -6,7 +6,7 @@ import type { HoursMonth, HoursPersonSummary } from "@/types/finance";
 import { permissionService } from "./permissionService";
 
 /**
- * Horas de campo: gestão e pagamento de prestadores, não ponto eletrônico. Só owner e admin, e
+ * Horas de campo: gestão e pagamento de prestadores, não ponto eletrônico. Só o proprietário e o administrador, e
  * só em plano com o recurso. As regras de fechamento ficam nas funções do banco.
  */
 
@@ -56,7 +56,7 @@ export function summarizeHours(month: HoursMonth): HoursPersonSummary[] {
 export function createHoursService({ repo, canUseHours }: HoursServiceDeps) {
   async function requireAccess(actor: ActorContext): Promise<void> {
     if (!permissionService.canManageFinance(actor.role)) {
-      throw new AppError("forbidden", "Só owner e admin acessam horas");
+      throw new AppError("forbidden", "Só o proprietário e o administrador acessam horas");
     }
     if (!(await canUseHours(actor.companyId))) {
       throw new AppError("forbidden", "As horas não estão incluídas no plano da empresa.");

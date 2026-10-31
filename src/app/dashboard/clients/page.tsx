@@ -12,6 +12,7 @@ import { NewClientButton } from "@/features/clients/components/client-forms";
 import { getClientService } from "@/server/clients";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { formatDocument } from "@/lib/masks";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -33,7 +34,7 @@ export default async function ClientsPage({
   const search = q?.trim() ?? "";
   const summary = (client: (typeof clients.items)[number]) =>
     [
-      client.document,
+      client.document ? formatDocument(client.document) : null,
       `${client.location_count} ${client.location_count === 1 ? "local" : "locais"}`,
     ]
       .filter(Boolean)
@@ -82,7 +83,7 @@ export default async function ClientsPage({
                         {client.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{client.document ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{client.document ? formatDocument(client.document) : "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {[client.primary_contact_name, client.primary_contact_phone].filter(Boolean).join(" · ") || "—"}
                     </TableCell>

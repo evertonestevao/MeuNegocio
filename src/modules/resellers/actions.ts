@@ -49,7 +49,7 @@ async function asSuperAdmin(run: (context: AdminContext) => Promise<ActionState>
     const { data: userData } = await client.auth.getUser();
     const { data: isSuperAdmin, error } = await client.rpc("is_super_admin");
     if (!userData.user || error || isSuperAdmin !== true) {
-      throw new AppError("forbidden", "Apenas o super admin pode fazer isto");
+      throw new AppError("forbidden", "Apenas o superadministrador pode fazer isto");
     }
     const result = await run({ client, repo: createResellerAdminRepository(client), userId: userData.user.id });
     revalidatePath(ADMIN_PATH, "layout");

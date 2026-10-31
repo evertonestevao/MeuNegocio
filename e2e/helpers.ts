@@ -12,7 +12,7 @@ export async function signupAndOnboard(
 ) {
   await page.goto("/signup");
   await page.getByLabel("Nome completo").fill(name);
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(password);
   await page.getByRole("button", { name: "Criar conta" }).click();
 

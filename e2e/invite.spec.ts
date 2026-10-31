@@ -14,7 +14,7 @@ test("owner convida membro e vê o convite pendente", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard\/members/);
 
   const invitedEmail = uniqueEmail("convidado");
-  await page.getByLabel("Email").fill(invitedEmail);
+  await page.getByLabel("E-mail").fill(invitedEmail);
   await page.getByLabel("Papel").selectOption("member");
   await page.getByRole("button", { name: "Enviar convite" }).click();
 
@@ -38,12 +38,12 @@ test("plano Free recusa o convite quando as vagas acabam", async ({ page }) => {
 
   // Owner + este convite ocupam as 2 vagas do Free.
   const firstEmail = uniqueEmail("primeiro");
-  await page.getByLabel("Email").fill(firstEmail);
+  await page.getByLabel("E-mail").fill(firstEmail);
   await page.getByRole("button", { name: "Enviar convite" }).click();
   await expect(page.getByText("Convite enviado")).toBeVisible();
 
   const blockedEmail = uniqueEmail("sem-vaga");
-  await page.getByLabel("Email").fill(blockedEmail);
+  await page.getByLabel("E-mail").fill(blockedEmail);
   await page.getByRole("button", { name: "Enviar convite" }).click();
   await expect(page.getByText(/não tem mais vagas de membro/)).toBeVisible();
   await expect(page.getByText(blockedEmail)).toBeHidden();
@@ -51,7 +51,7 @@ test("plano Free recusa o convite quando as vagas acabam", async ({ page }) => {
   // Revogar devolve a vaga.
   await page.getByRole("button", { name: `Revogar convite de ${firstEmail}` }).click();
   await expect(page.getByText("Convite revogado")).toBeVisible();
-  await page.getByLabel("Email").fill(blockedEmail);
+  await page.getByLabel("E-mail").fill(blockedEmail);
   await page.getByRole("button", { name: "Enviar convite" }).click();
   await expect(page.getByText("Convite enviado")).toBeVisible();
 });

@@ -66,7 +66,7 @@ export function createAuthService({ repo, rateLimiter, appUrl }: AuthServiceDeps
     if (!parsed.success) {
       throw new AppError(
         "validation_error",
-        parsed.error.issues[0]?.message ?? "Email inválido",
+        parsed.error.issues[0]?.message ?? "E-mail inválido",
       );
     }
     await rateLimiter.consume(`password-reset:${parsed.data.email.toLowerCase()}`);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
 
 /** Validação de clientes, contatos e locais: roda no navegador e de novo no servidor. */
 
@@ -25,7 +26,9 @@ export const clientSchema = z.object({
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Informe o nome do contato.").max(160, "Use até 160 caracteres."),
   role: optionalText(120),
-  phone: optionalText(30),
+  phone: optionalText(30)
+    .refine((value) => value === null || isValidPhone(value), "Informe o telefone com DDD.")
+    .transform((value) => (value ? formatPhone(value) : null)),
   email: z
     .string()
     .trim()
@@ -75,10 +78,4 @@ export function parseLocationForm(formData: FormData): LocationInput {
   });
 }
 
-/** CPF ou CNPJ com pontuação; outro formato volta como veio. */
-export function formatDocument(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  if (digits.length === 14) return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
-  return value;
-}
+export { formatDocument };

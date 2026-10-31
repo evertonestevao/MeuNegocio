@@ -220,7 +220,7 @@ export default async function ResellerDetailPage({ params }: { params: Promise<{
           {history.map(({ entry, changes }) => (
             <li key={entry.id} className="rounded-lg border p-3">
               <p className="font-medium">
-                {clientName.get(entry.record_id ?? "") ?? "Cliente"} · {entry.changed_by ? "Super admin" : "Sistema"} ·{" "}
+                {clientName.get(entry.record_id ?? "") ?? "Cliente"} · {entry.changed_by ? "Superadministrador" : "Sistema"} ·{" "}
                 <span className="font-normal text-muted-foreground">{formatDateTime(entry.changed_at)}</span>
               </p>
               <ul className="text-muted-foreground">

@@ -55,7 +55,7 @@ describe("ações do painel: só o super admin", () => {
   it.each(exported)("%s recusa quem não é super admin", async (_name, action) => {
     rpc.mockResolvedValue({ data: false, error: null });
     const result = await action(undefined, validForm());
-    expect(result.error).toMatch(/super admin/);
+    expect(result.error).toMatch(/superadministrador/);
     expect(from).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith("is_super_admin");
@@ -64,7 +64,7 @@ describe("ações do painel: só o super admin", () => {
   it.each(exported)("%s recusa quando a checagem do papel falha", async (_name, action) => {
     rpc.mockResolvedValue({ data: null, error: { message: "fora do ar" } });
     const result = await action(undefined, validForm());
-    expect(result.error).toMatch(/super admin/);
+    expect(result.error).toMatch(/superadministrador/);
     expect(from).not.toHaveBeenCalled();
   });
 
@@ -72,7 +72,7 @@ describe("ações do painel: só o super admin", () => {
     getUser.mockResolvedValue({ data: { user: null } });
     rpc.mockResolvedValue({ data: true, error: null });
     const result = await action(undefined, validForm());
-    expect(result.error).toMatch(/super admin/);
+    expect(result.error).toMatch(/superadministrador/);
     expect(from).not.toHaveBeenCalled();
   });
 });

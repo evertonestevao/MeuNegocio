@@ -21,6 +21,7 @@ import { getQuoteService } from "@/server/quotes";
 import { getVisitService } from "@/server/schedule";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { formatDocument, formatPhone } from "@/lib/masks";
 
 export const metadata: Metadata = { title: "Cliente" };
 
@@ -54,7 +55,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-xl font-semibold tracking-tight break-words">{client.name}</h2>
-            {client.document ? <p className="text-sm text-muted-foreground">{client.document}</p> : null}
+            {client.document ? <p className="text-sm text-muted-foreground">{formatDocument(client.document)}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <EditClientButton client={client} />
@@ -92,7 +93,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                       {contact.role ? <span className="text-muted-foreground">{contact.role}</span> : null}
                       {contact.phone ? (
                         <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="w-fit hover:underline">
-                          {contact.phone}
+                          {formatPhone(contact.phone)}
                         </a>
                       ) : null}
                       {contact.email ? (

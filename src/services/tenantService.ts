@@ -173,7 +173,7 @@ export function createTenantService(repo: TenantRepository) {
   async function leaveCompany(companyId: string): Promise<void> {
     const role = await requireMembership(companyId);
     if (role === "owner") {
-      throw new AppError("forbidden", "O owner não pode sair da própria empresa");
+      throw new AppError("forbidden", "O proprietário não pode sair da própria empresa");
     }
     await repo.leaveCompany(companyId);
   }
@@ -185,7 +185,7 @@ export function createTenantService(repo: TenantRepository) {
   ): Promise<{ targetUserId: string }> {
     const role = await requireMembership(companyId);
     if (role !== "owner") {
-      throw new AppError("forbidden", "Só o owner pode transferir a empresa");
+      throw new AppError("forbidden", "Só o proprietário pode transferir a empresa");
     }
     // getMember filtra por companyId: membro de outro tenant resulta em not_found.
     const target = await repo.getMember(newOwnerMemberId, companyId);
@@ -193,7 +193,7 @@ export function createTenantService(repo: TenantRepository) {
       throw new AppError("not_found", "Membro não encontrado");
     }
     if (target.role === "owner") {
-      throw new AppError("validation_error", "Este membro já é o owner");
+      throw new AppError("validation_error", "Este membro já é o proprietário");
     }
     await repo.transferOwnership(companyId, newOwnerMemberId);
     return { targetUserId: target.user_id };

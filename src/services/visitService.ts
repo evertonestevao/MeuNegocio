@@ -77,7 +77,7 @@ export function createVisitService(repo: VisitRepository) {
 
     async remove(actor: ActorContext, visitId: string): Promise<void> {
       if (!permissionService.canDeleteRecords(actor.role)) {
-        throw new AppError("forbidden", "Só owner e admin podem excluir");
+        throw new AppError("forbidden", "Só o proprietário e o administrador podem excluir");
       }
       await repo.softDelete(actor.companyId, visitId);
     },

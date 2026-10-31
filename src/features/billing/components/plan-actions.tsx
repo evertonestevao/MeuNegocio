@@ -47,7 +47,7 @@ export function SubscribeButton({
         </Alert>
       ) : null}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Processando..." : isFakeGateway ? "Ativar (dev)" : "Assinar"}
+        {pending ? "Processando..." : isFakeGateway ? "Ativar (teste)" : "Assinar"}
       </Button>
     </form>
   );

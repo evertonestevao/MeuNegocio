@@ -64,7 +64,7 @@ async function createClientFor(resellerId: string, name: string) {
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
 }
@@ -182,7 +182,7 @@ test("módulo desligado bloqueia só o Meu link; suspensão tira o acesso", asyn
   await login(page, seller.email);
   await expect(page).toHaveURL(/\/vendedor$/);
   await expect(page.getByRole("button", { name: "Copiar link geral" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copiar link do plano Pro" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copiar link do plano Profissional" })).toBeVisible();
 
   await setModuleEnabled(false);
   await page.reload();
@@ -224,7 +224,7 @@ test("exclusão bloqueada com comissão pendente; exportação traz a revenda; d
     .eq("external_payment_id", paymentId);
   await page.reload();
   await page.getByRole("button", { name: "Excluir minha conta" }).click();
-  await page.getByLabel("Digite seu email para confirmar").fill(seller.email);
+  await page.getByLabel("Digite seu e-mail para confirmar").fill(seller.email);
   await page.getByRole("button", { name: "Excluir definitivamente" }).click();
   await expect(page).toHaveURL(/\/$/);
 

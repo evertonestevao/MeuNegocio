@@ -16,22 +16,22 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
   });
 
   await page.goto("/dashboard/billing");
-  await expect(page.getByText("sem assinatura (plano free)")).toBeVisible();
+  await expect(page.getByText("Plano atual:")).toBeVisible();
 
-  await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
-  await expect(page.getByText("status active")).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   await page.getByRole("button", { name: "Cancelar assinatura" }).click();
-  await expect(page.getByText("status canceled")).toBeVisible();
+  await expect(page.getByText("· assinatura cancelada")).toBeVisible();
   // O período já pago continua valendo: o plano não cai para o Free na hora.
   await expect(page.getByText(/Acesso ao plano até/)).toBeVisible();
-  await expect(page.getByText("Plano atual:")).not.toContainText("Free");
+  await expect(page.getByText("Plano atual:")).not.toContainText("Gratuito");
 
-  await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
-  await expect(page.getByText("status active")).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   await page.getByRole("button", { name: "Cancelar assinatura" }).click();
-  await expect(page.getByText("status canceled")).toBeVisible();
+  await expect(page.getByText("· assinatura cancelada")).toBeVisible();
 
   const exported = await page.request.get("/api/account/export");
   expect(exported.status()).toBe(200);
@@ -39,12 +39,12 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
 
   await page.goto("/dashboard/settings");
   await page.getByRole("button", { name: "Excluir minha conta" }).click();
-  await page.getByLabel("Digite seu email para confirmar").fill(email);
+  await page.getByLabel("Digite seu e-mail para confirmar").fill(email);
   await page.getByRole("button", { name: "Excluir definitivamente" }).click();
   await expect(page).toHaveURL(/\/$/);
 
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Email ou senha incorretos")).toBeVisible();

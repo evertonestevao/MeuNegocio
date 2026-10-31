@@ -9,6 +9,7 @@ import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { canUsePublicApproval, getPublicQuoteRepository } from "@/server/quotes";
 import { createRateLimiter } from "@/server/rateLimit";
+import { formatPhone } from "@/lib/masks";
 
 export const metadata: Metadata = {
   title: "Orçamento",
@@ -40,7 +41,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold break-words">{document.company.name}</h1>
         <p className="text-sm text-muted-foreground">
-          {[document.company.phone, document.company.email].filter(Boolean).join(" · ")}
+          {[document.company.phone ? formatPhone(document.company.phone) : null, document.company.email].filter(Boolean).join(" · ")}
         </p>
       </header>
 

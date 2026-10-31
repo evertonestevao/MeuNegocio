@@ -39,7 +39,7 @@ function row(values: Array<string | number | null>): string {
 
 export function buildCommissionsCsv(commissions: AdminCommission[]): string {
   const lines = [
-    row(["Vendedor", "Cliente", "Plano", "Data", "Valor-base", "Comissão", "Status", "Pago em"]),
+    row(["Vendedor", "Cliente", "Plano", "Data", "Valor-base", "Comissão", "Situação", "Pago em"]),
     ...commissions.map((commission) =>
       row([
         commission.reseller_name,

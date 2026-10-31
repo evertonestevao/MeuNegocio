@@ -26,7 +26,7 @@ test("member convidado não recebe os poderes do owner", async ({ browser }) => 
   });
 
   await owner.goto("/dashboard/members");
-  await owner.getByLabel("Email").fill(memberEmail);
+  await owner.getByLabel("E-mail").fill(memberEmail);
   await owner.getByLabel("Papel").selectOption("member");
   await owner.getByRole("button", { name: "Enviar convite" }).click();
   await expect(owner.getByText("Convite enviado")).toBeVisible();
@@ -40,9 +40,9 @@ test("member convidado não recebe os poderes do owner", async ({ browser }) => 
   await expect(member.getByRole("button", { name: /Empresa Papéis E2E/ })).toBeVisible();
   await member.goto("/dashboard");
   await expect(member.getByRole("heading", { name: "Empresa Papéis E2E" })).toBeVisible();
-  await expect(member.getByText("Member", { exact: true })).toBeVisible();
+  await expect(member.getByText("Membro", { exact: true })).toBeVisible();
   await expect(member.getByRole("link", { name: "Membros", exact: true })).toBeHidden();
-  await expect(member.getByRole("link", { name: "Billing", exact: true })).toBeHidden();
+  await expect(member.getByRole("link", { name: "Assinatura", exact: true })).toBeHidden();
 
   await member.goto("/dashboard/catalog");
   await expect(member.getByRole("button", { name: "Novo produto" })).toBeHidden();

@@ -48,7 +48,7 @@ export const navItems: NavItem[] = [
   { title: "Gastos", href: "/dashboard/expenses", icon: Wallet, roles: ["owner", "admin"] },
   { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
-  { title: "Billing", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
+  { title: "Assinatura", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
   { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },
   {
     title: "Configurações",
@@ -64,5 +64,5 @@ export function titleForPath(pathname: string, items: ShellNavItem[] = navItems)
   const match = [...items]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
-  return match?.title ?? items[0]?.title ?? "Dashboard";
+  return match?.title ?? items[0]?.title ?? "Início";
 }

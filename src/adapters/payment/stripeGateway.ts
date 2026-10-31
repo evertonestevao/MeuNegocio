@@ -102,7 +102,7 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
       if (!externalPriceId) {
         throw new AppError(
           "payment_error",
-          "Preço do seat extra não configurado no gateway",
+          "Preço do membro extra não configurado no gateway",
           "PAYMENT_PRICE_EXTRA_SEAT ausente",
         );
       }

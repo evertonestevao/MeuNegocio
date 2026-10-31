@@ -21,6 +21,7 @@ import { getActiveTenant } from "@/server/tenant";
 import { createInviteService } from "@/services/inviteService";
 import { createUserService } from "@/services/userService";
 import { permissionService } from "@/services/permissionService";
+import { roleLabel } from "@/config/roles";
 
 export const metadata: Metadata = { title: "Configurações" };
 
@@ -71,7 +72,7 @@ export default async function SettingsPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{invite.company_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    papel: {invite.role === "admin" ? "Admin" : invite.role === "technician" ? "Técnico" : "Member"} · expira em{" "}
+                    papel: {roleLabel(invite.role)} · expira em{" "}
                     {new Date(invite.expires_at).toLocaleDateString("pt-BR")}
                   </p>
                 </div>

@@ -55,7 +55,7 @@ test("técnico conclui a ordem de serviço e as horas chegam ao escritório", as
   });
 
   await owner.goto("/dashboard/members");
-  await owner.getByLabel("Email").fill(technicianEmail);
+  await owner.getByLabel("E-mail").fill(technicianEmail);
   await owner.getByLabel("Papel").selectOption("technician");
   await owner.getByRole("button", { name: "Enviar convite" }).click();
   await expect(owner.getByText("Convite enviado")).toBeVisible();

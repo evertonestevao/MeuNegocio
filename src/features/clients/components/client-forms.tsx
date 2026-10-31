@@ -2,6 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parseClientForm, parseContactForm, parseLocationForm } from "@/features/clients/schemas";
@@ -37,7 +38,7 @@ function ClientFields({ client }: { client?: Client }) {
         <Input id="client-name" name="name" defaultValue={client?.name ?? ""} autoFocus />
       </Field>
       <Field id="client-document" label="CNPJ ou CPF">
-        <Input id="client-document" name="document" defaultValue={client?.document ?? ""} inputMode="numeric" />
+        <MaskedInput mask="cpfCnpj" id="client-document" name="document" defaultValue={client?.document ?? ""} />
       </Field>
       <Field id="client-notes" label="Observações" hint="Regras de acesso, prazos de pagamento, preferências do cliente.">
         <textarea id="client-notes" name="notes" defaultValue={client?.notes ?? ""} className={TEXTAREA_CLASS} />
@@ -132,7 +133,7 @@ export function ContactFormButton({ clientId, contact }: { clientId: string; con
         <Input id={`${prefix}-role`} name="role" defaultValue={contact?.role ?? ""} />
       </Field>
       <Field id={`${prefix}-phone`} label="Telefone">
-        <Input id={`${prefix}-phone`} name="phone" type="tel" defaultValue={contact?.phone ?? ""} />
+        <MaskedInput mask="phone" id={`${prefix}-phone`} name="phone" defaultValue={contact?.phone ?? ""} />
       </Field>
       <Field id={`${prefix}-email`} label="E-mail">
         <Input id={`${prefix}-email`} name="email" type="email" defaultValue={contact?.email ?? ""} />

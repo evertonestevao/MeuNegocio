@@ -4,7 +4,7 @@ import { PASSWORD, uniqueEmail } from "./helpers";
 test("onboarding recusa dado inválido sem perder o digitado e grava os dados da empresa", async ({ page }) => {
   await page.goto("/signup");
   await page.getByLabel("Nome completo").fill("Owner Onboarding");
-  await page.getByLabel("Email").fill(uniqueEmail("onboarding"));
+  await page.getByLabel("E-mail").fill(uniqueEmail("onboarding"));
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page).toHaveURL(/\/onboarding/);

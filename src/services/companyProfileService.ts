@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
+import { formatDocument, formatPhone, isValidCnpjLength, isValidPhone } from "@/lib/masks";
 import type { ActorContext } from "@/server/actor";
 import type { CompanyProfile } from "@/types/database";
 import { permissionService } from "./permissionService";
@@ -18,8 +19,12 @@ const optionalText = (max: number) =>
   z.string().trim().max(max, `Use até ${max} caracteres.`).transform((value) => value || null);
 
 export const companyProfileSchema = z.object({
-  cnpj: optionalText(20),
-  phone: optionalText(30),
+  cnpj: optionalText(20)
+    .refine((value) => value === null || isValidCnpjLength(value), "Informe o CNPJ com 14 dígitos.")
+    .transform((value) => (value ? formatDocument(value) : null)),
+  phone: optionalText(30)
+    .refine((value) => value === null || isValidPhone(value), "Informe o telefone com DDD.")
+    .transform((value) => (value ? formatPhone(value) : null)),
   email: z
     .string()
     .trim()
@@ -57,7 +62,7 @@ export function createCompanyProfileService(repo: CompanyProfileRepository) {
 
     async save(actor: ActorContext, input: CompanyProfileInput): Promise<void> {
       if (!permissionService.canEditCompany(actor.role)) {
-        throw new AppError("forbidden", "Só owner e admin editam os dados da empresa");
+        throw new AppError("forbidden", "Só o proprietário e o administrador editam os dados da empresa");
       }
       await repo.upsert(actor.companyId, input);
     },

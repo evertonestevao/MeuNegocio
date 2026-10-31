@@ -5,7 +5,7 @@ import { PASSWORD, uniqueEmail } from "./helpers";
 test("onboarding exige aceite dos termos; sem marcar, não avança", async ({ page }) => {
   await page.goto("/signup");
   await page.getByLabel("Nome completo").fill("Sem Termos E2E");
-  await page.getByLabel("Email").fill(uniqueEmail("terms"));
+  await page.getByLabel("E-mail").fill(uniqueEmail("terms"));
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta" }).click();
 

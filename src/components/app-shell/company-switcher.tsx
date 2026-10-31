@@ -82,7 +82,7 @@ export function CompanySwitcher() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Nova empresa</DialogTitle>
-            <DialogDescription>Você será o owner da nova empresa.</DialogDescription>
+            <DialogDescription>Você será o proprietário da nova empresa.</DialogDescription>
           </DialogHeader>
           <CreateCompanyForm />
         </DialogContent>

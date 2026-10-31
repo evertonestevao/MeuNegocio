@@ -23,7 +23,7 @@ export async function getWorkOrderService(): Promise<WorkOrderService> {
       remove: (path) => storage.remove(path),
       createSignedUrl: (path) => storage.createSignedUrl(path, SIGNED_URL_SECONDS),
     },
-    // service_role só para ler o plano: assinaturas são restritas a owner e admin pela RLS.
+    // service_role só para ler o plano: assinaturas são restritas ao proprietário e ao administrador pela RLS.
     canUseWorkOrders: (companyId) =>
       createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient())).canAccessFeature(companyId, "work_orders"),
     newId: randomUUID,

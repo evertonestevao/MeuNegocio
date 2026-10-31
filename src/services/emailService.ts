@@ -1,6 +1,7 @@
 import type { EmailProvider } from "@/adapters/email/EmailProvider";
 import type { CompanyInvite } from "@/types/database";
 import type { InviteNotifier } from "./inviteService";
+import { roleLabel } from "@/config/roles";
 
 /**
  * Emails transacionais da aplicação. Monta o conteúdo aqui (regra de
@@ -23,12 +24,12 @@ export function createEmailService({ provider, appUrl }: EmailServiceDeps) {
       await provider.send({
         to: invite.email,
         subject: "Você foi convidado para uma empresa",
-        text: `Você recebeu um convite (papel: ${invite.role}). Aceite em: ${acceptUrl}`,
+        text: `Você recebeu um convite (papel: ${roleLabel(invite.role)}). Aceite em: ${acceptUrl}`,
         html: [
           "<p>Você recebeu um convite para entrar em uma empresa.</p>",
-          `<p>Papel: <strong>${invite.role}</strong></p>`,
+          `<p>Papel: <strong>${roleLabel(invite.role)}</strong></p>`,
           `<p><a href="${acceptUrl}">Aceitar convite</a></p>`,
-          "<p>O convite expira em 7 dias. Se você não esperava este email, ignore-o.</p>",
+          "<p>O convite expira em 7 dias. Se você não esperava este e-mail, ignore-o.</p>",
         ].join("\n"),
       });
     },

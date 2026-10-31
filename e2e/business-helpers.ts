@@ -10,8 +10,8 @@ export async function setupProCompany(page: Page, company: string) {
     company,
   });
   await page.goto("/dashboard/billing");
-  await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
-  await expect(page.getByText("status active")).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("assinatura ativa")).toBeVisible();
 }
 
 export async function createClient(page: Page, name: string, locationName: string) {
@@ -35,7 +35,7 @@ export async function createEmployee(page: Page, name: string, contract: "clt" |
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nome").fill(name);
   await dialog.getByLabel("Contrato").selectOption(contract);
-  if (hourlyPay) await dialog.getByLabel("Valor pago por hora (R$)").fill(hourlyPay);
+  if (hourlyPay) await dialog.getByLabel("Valor pago por hora").fill(hourlyPay);
   await dialog.getByRole("button", { name: "Salvar" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText(name)).toBeVisible();

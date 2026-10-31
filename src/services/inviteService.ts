@@ -105,7 +105,7 @@ export function createInviteService({ repo, rateLimiter, seats, notifier, audit 
   async function accept(token: string): Promise<CompanyMember> {
     const parsedToken = z.uuid().safeParse(token);
     if (!parsedToken.success) {
-      throw new AppError("validation_error", "Token de convite inválido");
+      throw new AppError("validation_error", "Convite inválido");
     }
     return repo.acceptInvite(parsedToken.data);
   }

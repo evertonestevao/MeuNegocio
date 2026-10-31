@@ -15,7 +15,7 @@ import { createQuoteService, type PublicQuoteRepository, type QuoteService } fro
 import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
 
-// service_role só para ler o plano: assinaturas são restritas a owner e admin pela RLS, e o
+// service_role só para ler o plano: assinaturas são restritas ao proprietário e ao administrador pela RLS, e o
 // member precisa respeitar os mesmos limites da empresa.
 function planBilling() {
   return createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient()));

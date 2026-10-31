@@ -105,7 +105,7 @@ function DeleteAccountButton({ companiesToClose }: { companiesToClose: string[] 
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="delete-confirmation">Digite seu email para confirmar</Label>
+            <Label htmlFor="delete-confirmation">Digite seu e-mail para confirmar</Label>
             <Input
               id="delete-confirmation"
               type="email"

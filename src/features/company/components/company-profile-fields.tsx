@@ -1,3 +1,4 @@
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COMPANY_TIMEZONES } from "@/services/companyProfileService";
@@ -18,11 +19,11 @@ export function CompanyProfileFields({ profile }: { profile: Omit<CompanyProfile
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="profile-cnpj">CNPJ</Label>
-        <Input id="profile-cnpj" name="cnpj" defaultValue={profile.cnpj ?? ""} />
+        <MaskedInput mask="cnpj" id="profile-cnpj" name="cnpj" defaultValue={profile.cnpj ?? ""} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="profile-phone">Telefone</Label>
-        <Input id="profile-phone" name="phone" type="tel" defaultValue={profile.phone ?? ""} />
+        <MaskedInput mask="phone" id="profile-phone" name="phone" defaultValue={profile.phone ?? ""} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="profile-email">E-mail</Label>

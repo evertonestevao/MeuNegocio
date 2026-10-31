@@ -91,7 +91,7 @@ export async function forgotPasswordAction(
     return toActionError(err);
   }
   // Mesma resposta com email existente ou não: sem enumeração de contas.
-  return { success: "Se o email existir, você receberá um link de recuperação." };
+  return { success: "Se o e-mail existir, você receberá um link de recuperação." };
 }
 
 export async function resetPasswordAction(

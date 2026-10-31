@@ -3,6 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
 import { Button } from "@/components/ui/button";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm } from "@/features/expenses/schemas";
@@ -82,8 +83,8 @@ function ExpenseFields({ expense, options, defaultDate }: { expense?: Expense; o
         <Field id={`${prefix}-employee`} label="Funcionário">
           <EmployeeSelect id={`${prefix}-employee`} value={expense?.employee_id} options={options} />
         </Field>
-        <Field id={`${prefix}-amount`} label="Valor (R$)">
-          <Input id={`${prefix}-amount`} name="amount" inputMode="decimal" defaultValue={expense ? centsToMoneyInput(expense.amount_cents) : ""} />
+        <Field id={`${prefix}-amount`} label="Valor">
+          <MaskedInput mask="money" id={`${prefix}-amount`} name="amount" defaultValue={expense ? centsToMoneyInput(expense.amount_cents) : ""} />
         </Field>
         <Field id={`${prefix}-date`} label="Data">
           <Input id={`${prefix}-date`} name="expenseDate" type="date" defaultValue={expense?.expense_date ?? defaultDate} />
@@ -167,8 +168,8 @@ function TemplateFields({ template, options, defaultStart }: { template?: Expens
         <Field id={`${prefix}-employee`} label="Funcionário" hint="Com funcionário, gera folha.">
           <EmployeeSelect id={`${prefix}-employee`} value={template?.employee_id} options={options} />
         </Field>
-        <Field id={`${prefix}-amount`} label="Valor (R$)">
-          <Input id={`${prefix}-amount`} name="amount" inputMode="decimal" defaultValue={template ? centsToMoneyInput(template.amount_cents) : ""} />
+        <Field id={`${prefix}-amount`} label="Valor">
+          <MaskedInput mask="money" id={`${prefix}-amount`} name="amount" defaultValue={template ? centsToMoneyInput(template.amount_cents) : ""} />
         </Field>
         <Field id={`${prefix}-day`} label="Dia do mês" hint="De 1 a 28, para existir em todo mês.">
           <Input id={`${prefix}-day`} name="dayOfMonth" inputMode="numeric" defaultValue={template?.day_of_month ?? 5} />

@@ -7,6 +7,7 @@ import { DialogForm } from "@/components/dialog-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/dates";
@@ -201,7 +202,7 @@ export function QuoteActions({
             <input type="hidden" name="quoteId" value={quote.id} />
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="close-amount">Valor (R$)</Label>
-              <Input id="close-amount" name="amount" inputMode="decimal" defaultValue={centsToMoneyInput(quote.total_cents)} />
+              <MaskedInput mask="money" id="close-amount" name="amount" defaultValue={centsToMoneyInput(quote.total_cents)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="close-date">Data de competência</Label>

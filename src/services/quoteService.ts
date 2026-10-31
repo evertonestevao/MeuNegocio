@@ -44,7 +44,7 @@ interface QuoteServiceDeps {
   getMonthStart(companyId: string): Promise<string>;
 }
 
-/** Custo, lucro e margem estimados. Só owner e admin recebem. */
+/** Custo, lucro e margem estimados. Só o proprietário e o administrador recebem. */
 export function estimateQuoteProfit(
   totalCentsValue: number,
   items: QuoteItem[],
@@ -75,7 +75,7 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
 
   function requireClose({ role }: ActorContext): void {
     if (!permissionService.canCloseQuotes(role)) {
-      throw new AppError("forbidden", "Só owner e admin fecham orçamentos");
+      throw new AppError("forbidden", "Só o proprietário e o administrador fecham orçamentos");
     }
   }
 
@@ -149,7 +149,7 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
 
     async remove(actor: ActorContext, quoteId: string) {
       if (!permissionService.canDeleteRecords(actor.role)) {
-        throw new AppError("forbidden", "Só owner e admin podem excluir");
+        throw new AppError("forbidden", "Só o proprietário e o administrador podem excluir");
       }
       await repo.softDelete(actor.companyId, quoteId);
     },

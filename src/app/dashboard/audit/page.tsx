@@ -18,6 +18,7 @@ import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
 import { createAuditService } from "@/services/auditService";
 import { permissionService } from "@/services/permissionService";
+import { auditActionLabel, auditEntityLabel } from "@/features/audit/labels";
 
 export const metadata: Metadata = { title: "Auditoria" };
 
@@ -55,7 +56,7 @@ export default async function AuditPage({
         <EmptyState
           icon={ScrollText}
           title="Nenhum evento ainda"
-          description="Ações como convites, mudanças de papel e billing aparecem aqui."
+          description="Ações como convites, mudanças de papel e assinatura aparecem aqui."
         />
       ) : (
         <>
@@ -65,7 +66,7 @@ export default async function AuditPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>Ação</TableHead>
-                  <TableHead>Entidade</TableHead>
+                  <TableHead>Registro</TableHead>
                   <TableHead>Quando</TableHead>
                 </TableRow>
               </TableHeader>
@@ -73,10 +74,10 @@ export default async function AuditPage({
                 {entries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>
-                      <Badge variant="secondary">{entry.action}</Badge>
+                      <Badge variant="secondary">{auditActionLabel(entry.action)}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {entry.entity_type ?? "—"}
+                      {auditEntityLabel(entry.entity_type)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(entry.created_at)}
@@ -93,9 +94,9 @@ export default async function AuditPage({
               <Card key={entry.id}>
                 <CardContent className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <Badge variant="secondary">{entry.action}</Badge>
+                    <Badge variant="secondary">{auditActionLabel(entry.action)}</Badge>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {entry.entity_type ?? "—"}
+                      {auditEntityLabel(entry.entity_type)}
                     </p>
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">

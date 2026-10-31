@@ -43,7 +43,7 @@ describe("emailService.sendInviteEmail", () => {
     // barra final da appUrl não pode duplicar no link
     expect(sent[0].html).toContain(`https://app.example.com/invites/accept?token=${TOKEN}`);
     expect(sent[0].text).toContain(`token=${TOKEN}`);
-    expect(sent[0].html).toContain("admin");
+    expect(sent[0].html).toContain("Administrador");
   });
 
   it("propaga falha do provider como AppError", async () => {

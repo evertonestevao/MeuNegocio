@@ -12,6 +12,7 @@ import { getCompanyProfileService } from "@/server/quotes";
 import { getEmployeeService } from "@/server/schedule";
 import { getActiveTenant, getTenantService } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { formatPhone } from "@/lib/masks";
 
 export const metadata: Metadata = { title: "Equipe" };
 
@@ -59,7 +60,7 @@ export default async function TeamPage() {
                 const details = employee.details;
                 const facts = [
                   employee.job_title,
-                  details?.phone,
+                  details?.phone ? formatPhone(details.phone) : null,
                   details?.hourly_pay_cents ? `${formatCents(details.hourly_pay_cents)}/h pago` : null,
                   details?.legal_name,
                 ].filter(Boolean);
@@ -70,7 +71,7 @@ export default async function TeamPage() {
                         {employee.name}
                         {details ? <Badge variant="secondary">{CONTRACT_LABEL[details.contract_type]}</Badge> : null}
                         {employee.active ? null : <Badge variant="outline">Inativo</Badge>}
-                        {employee.user_id ? <Badge variant="outline">Com login</Badge> : null}
+                        {employee.user_id ? <Badge variant="outline">Com acesso</Badge> : null}
                       </span>
                       {facts.length > 0 ? <span className="text-muted-foreground">{facts.join(" · ")}</span> : null}
                       <span className="text-muted-foreground">

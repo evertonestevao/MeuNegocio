@@ -113,7 +113,7 @@ export function createAccountService({
     const confirmation =
       typeof input.confirmation === "string" ? input.confirmation.trim().toLowerCase() : "";
     if (!confirmation || confirmation !== user.email.toLowerCase()) {
-      throw new AppError("validation_error", "Digite seu email para confirmar a exclusão");
+      throw new AppError("validation_error", "Digite seu e-mail para confirmar a exclusão");
     }
 
     const plan = await buildDeletionPlan(user.id);
