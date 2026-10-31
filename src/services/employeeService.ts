@@ -24,7 +24,7 @@ export interface EmployeeRepository {
   insert(companyId: string, input: EmployeeInput): Promise<Employee>;
   update(companyId: string, employeeId: string, input: EmployeeInput): Promise<void>;
   softDelete(companyId: string, employeeId: string): Promise<void>;
-  /** Quem aparece em visita não é excluído, só desativado. */
+  /** Quem aparece em visita, gasto ou hora não é excluído, só desativado. */
   hasHistory(companyId: string, employeeId: string): Promise<boolean>;
 }
 
@@ -88,7 +88,7 @@ export function createEmployeeService(repo: EmployeeRepository) {
       requireManage(actor);
       await requireEmployee(actor, employeeId);
       if (await repo.hasHistory(actor.companyId, employeeId)) {
-        throw new AppError("conflict", "Esta pessoa aparece em visitas e não pode ser excluída. Desative o cadastro.");
+        throw new AppError("conflict", "Esta pessoa aparece em visitas, gastos ou horas. Desative em vez de excluir.");
       }
       await repo.softDelete(actor.companyId, employeeId);
     },

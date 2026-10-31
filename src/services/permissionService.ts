@@ -33,7 +33,8 @@ export type Capability =
   | "quotes.close" // fechar orçamento e desfazer o fechamento
   | "team.view" // ver nome, função e situação da equipe
   | "team.manage" // cadastrar equipe, com contrato e pagamento
-  | "schedule.manage"; // ver e alterar toda a agenda
+  | "schedule.manage" // ver e alterar toda a agenda
+  | "finance.manage"; // horas, gastos e financeiro
 
 export interface RoleDefinition {
   /** Hierarquia: ações sobre outro membro exigem level maior que o do alvo. */
@@ -59,6 +60,7 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "team.view",
         "team.manage",
         "schedule.manage",
+        "finance.manage",
       ]),
     },
   ],
@@ -78,6 +80,7 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "team.view",
         "team.manage",
         "schedule.manage",
+        "finance.manage",
       ]),
     },
   ],
@@ -165,6 +168,11 @@ export const permissionService = {
   /** Ver e alterar toda a agenda. */
   canManageSchedule(role: RoleCode | string): boolean {
     return hasCapability(role, "schedule.manage");
+  },
+
+  /** Horas, gastos e financeiro: só owner e admin. */
+  canManageFinance(role: RoleCode | string): boolean {
+    return hasCapability(role, "finance.manage");
   },
 
   /** Alterar papel de um membro: capability + hierarquia sobre o alvo. */

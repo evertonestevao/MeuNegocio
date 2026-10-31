@@ -365,6 +365,7 @@ begin
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
       'quotes', 'quote_items', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
+      'expense_categories', 'expense_templates', 'expenses', 'time_entries', 'time_entry_dismissals',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -374,12 +375,13 @@ begin
     select 'authenticated', t, 'UPDATE' from unnest(array[
       'profiles', 'companies', 'company_members', 'company_invites', 'subscriptions', 'settings',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details',
+      'expense_categories', 'expense_templates', 'expenses',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules',
-      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details']) t
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details', 'expense_categories', 'expense_templates', 'expenses']) t
   ),
   actual as (
     select grantee::text, table_name::text, privilege_type::text
@@ -1242,6 +1244,256 @@ begin
     raise exception 'FALHA OS: reabriu visita assinada';
   exception when sqlstate 'P0001' then
     if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Gastos e horas: só owner e admin; job idempotente; fechamento e reabertura; sobreposição.
+-- A visita assinada do técnico (2031-05-10) já gerou apontamento pendente, das 08:00 às 17:00.
+-- ---------------------------------------------------------------------------
+reset role;
+do $$
+declare
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+  outra uuid := 'a0a0a0a0-0000-4000-8000-000000000002';
+  n int; v_cat uuid; v_tpl uuid; v_visit uuid;
+begin
+  select count(*) into n from public.expense_categories where company_id = co;
+  if n <> 8 then raise exception 'FALHA gastos: empresa com % categorias padrão', n; end if;
+
+  select count(*) into n from public.time_entries te
+  join public.visits v on v.id = te.visit_id
+  where v.visit_date = '2031-05-10' and te.status = 'pending' and te.break_minutes = 60;
+  if n <> 1 then raise exception 'FALHA horas: OS concluída não gerou 1 apontamento pendente com intervalo, gerou %', n; end if;
+
+  select id into v_cat from public.expense_categories where company_id = co and name = 'Aluguel';
+
+  -- Modelo vigente, modelo que começa no futuro, modelo encerrado e modelo inativo.
+  insert into public.expense_templates (id, company_id, description, category_id, amount_cents, day_of_month, starts_on)
+  values ('b0b0b0b0-0000-4000-8000-000000000001', co, 'Aluguel do galpão', v_cat, 100000, 5, date_trunc('month', current_date) - interval '2 months');
+  insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on)
+  values (co, 'Começa depois', v_cat, 100, 5, current_date + interval '3 months');
+  insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, ends_on)
+  values (co, 'Encerrado', v_cat, 100, 5, '2020-01-01', '2020-06-30');
+  insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, active)
+  values (co, 'Inativo', v_cat, 100, 5, '2020-01-01', false);
+  insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, employee_id)
+  values (co, 'Salário', v_cat, 100, 5, '2020-01-01', outra);
+
+  if public.generate_month_expenses(co, current_date) <> 2 then
+    raise exception 'FALHA gastos: mês atual deveria gerar 2 lançamentos';
+  end if;
+  if public.generate_month_expenses(co, current_date) <> 0 then
+    raise exception 'FALHA gastos: repetir o job duplicou';
+  end if;
+  if public.generate_due_expenses() < 0 then raise exception 'FALHA gastos: job'; end if;
+  select count(*) into n from public.expenses where company_id = co and description = 'Salário' and kind = 'payroll';
+  if n <> 1 then raise exception 'FALHA gastos: modelo com funcionário não gerou folha'; end if;
+  if public.generate_month_expenses(co, (current_date + interval '1 month')::date) <> 0 then
+    raise exception 'FALHA gastos: gerou mês futuro';
+  end if;
+
+  -- Excluir o lançamento de um mês não o faz voltar; excluir o modelo mantém o que já foi gerado.
+  update public.expenses set deleted_at = now() where template_id = 'b0b0b0b0-0000-4000-8000-000000000001';
+  if public.generate_month_expenses(co, current_date) <> 0 then
+    raise exception 'FALHA gastos: lançamento excluído voltou';
+  end if;
+  update public.expenses set deleted_at = null where template_id = 'b0b0b0b0-0000-4000-8000-000000000001';
+  update public.expense_templates set deleted_at = now() where id = 'b0b0b0b0-0000-4000-8000-000000000001';
+  select count(*) into n from public.expenses where template_id = 'b0b0b0b0-0000-4000-8000-000000000001' and deleted_at is null;
+  if n <> 1 then raise exception 'FALHA gastos: excluir modelo apagou lançamento'; end if;
+
+  -- Prestador com hora a pagar e visita passada que vira sugestão.
+  update public.employee_payment_details set contract_type = 'clt'
+  where employee_id = 'a0a0a0a0-0000-4000-8000-000000000001';
+  insert into public.employee_payment_details (company_id, employee_id, contract_type, hourly_pay_cents)
+  values (co, outra, 'pj', 6000);
+
+  insert into public.visits (id, company_id, client_id, location_id, kind, visit_date, starts_at, ends_at, status)
+  values ('b1b1b1b1-0000-4000-8000-000000000001', co, 'f3f3f3f3-0000-4000-8000-000000000003', 'f4f4f4f4-0000-4000-8000-000000000004',
+    'execution', '2020-03-10', '08:00', '12:00', 'completed');
+  insert into public.visit_employees (company_id, visit_id, employee_id, time_range, blocks_schedule)
+  values (co, 'b1b1b1b1-0000-4000-8000-000000000001', outra, tsrange('2020-03-10 08:00', '2020-03-10 12:00', '[)'), false);
+end $$;
+
+-- Member e técnico não leem nem agem; outra empresa também não.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare n int; co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  select count(*) into n from public.expenses;
+  if n <> 0 then raise exception 'FALHA gastos: member leu gastos'; end if;
+  select count(*) into n from public.expense_templates;
+  if n <> 0 then raise exception 'FALHA gastos: member leu modelos'; end if;
+  select count(*) into n from public.expense_categories;
+  if n <> 0 then raise exception 'FALHA gastos: member leu categorias'; end if;
+  select count(*) into n from public.time_entries;
+  if n <> 0 then raise exception 'FALHA horas: member leu apontamentos'; end if;
+  begin
+    perform public.get_hours_month(co, '2031-05-01');
+    raise exception 'FALHA horas: member abriu horas';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.close_contractor_month(co, 'a0a0a0a0-0000-4000-8000-000000000002', '2020-03-01');
+    raise exception 'FALHA horas: member fechou';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.generate_due_expenses();
+    raise exception 'FALHA gastos: member chamou o job';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+do $$
+declare n int; co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  select count(*) into n from public.time_entries;
+  if n <> 0 then raise exception 'FALHA horas: técnico leu apontamentos'; end if;
+  select count(*) into n from public.expenses;
+  if n <> 0 then raise exception 'FALHA gastos: técnico leu gastos'; end if;
+  begin
+    perform public.delete_expense(co, gen_random_uuid());
+    raise exception 'FALHA gastos: técnico excluiu';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+declare n int; co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  select count(*) into n from public.expenses where company_id = co;
+  if n <> 0 then raise exception 'FALHA gastos: outra empresa leu'; end if;
+  select count(*) into n from public.time_entries where company_id = co;
+  if n <> 0 then raise exception 'FALHA horas: outra empresa leu'; end if;
+  begin
+    perform public.get_hours_month(co, '2031-05-01');
+    raise exception 'FALHA horas: outra empresa abriu horas';
+  exception when insufficient_privilege then null;
+  end;
+  select count(*) into n from public.expense_categories where company_id = 'c2c2c2c2-0000-4000-8000-000000000002';
+  if n <> 8 then raise exception 'FALHA gastos: outra empresa sem categorias próprias'; end if;
+end $$;
+
+-- Owner: sugestão, ajuste, sobreposição, retirar e restaurar, fechar, pago travado, reabrir.
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+  outra uuid := 'a0a0a0a0-0000-4000-8000-000000000002';
+  tec uuid := 'a0a0a0a0-0000-4000-8000-000000000001';
+  visita uuid := 'b1b1b1b1-0000-4000-8000-000000000001';
+  mes date := '2020-03-01';
+  v_month jsonb; v_avulsa uuid; v_expense uuid; v_amount int; v_status text; n int;
+begin
+  v_month := public.get_hours_month(co, mes);
+  if jsonb_array_length(v_month -> 'suggestions') <> 1 then raise exception 'FALHA horas: visita passada não sugeriu'; end if;
+
+  -- CLT não fecha; sem horas não fecha.
+  begin
+    perform public.close_contractor_month(co, tec, mes);
+    raise exception 'FALHA horas: CLT fechou';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Retirada não é paga.
+  perform public.set_suggestion_dismissed(co, visita, outra, true);
+  begin
+    perform public.close_contractor_month(co, outra, mes);
+    raise exception 'FALHA horas: fechou sem nada em aberto';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  perform public.set_suggestion_dismissed(co, visita, outra, false);
+
+  -- Avulsa: 13:00–19:30 tem 6h30 e, com 30 min de intervalo, 6h de trabalho.
+  v_avulsa := public.save_time_entry(co, null, outra, '2020-03-10', '13:00', '19:30', 30, null, null, 'Avulsa');
+
+  begin
+    perform public.save_time_entry(co, null, outra, '2020-03-10', '19:00', '20:00', 0, null, null, '');
+    raise exception 'FALHA horas: aceitou sobreposição';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_time_entry(co, null, outra, '2020-03-11', '10:00', '11:00', 60, null, null, '');
+    raise exception 'FALHA horas: intervalo maior que a jornada';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_time_entry(co, null, outra, current_date + 2, '10:00', '11:00', 0, null, null, '');
+    raise exception 'FALHA horas: aceitou data futura';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Avulsa em cima de uma sugestão é recusada de saída, não só ao fechar.
+  begin
+    perform public.save_time_entry(co, null, outra, '2020-03-10', '11:00', '12:30', 0, null, null, '');
+    raise exception 'FALHA horas: aceitou avulsa sobre sugestão';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Fechar paga a avulsa (6h) e a sugestão (4h): 10h × R$ 60.
+  v_expense := public.close_contractor_month(co, outra, mes);
+  select amount_cents into v_amount from public.expenses where id = v_expense;
+  if v_amount <> 60000 then raise exception 'FALHA horas: gasto de %, esperado 60000', v_amount; end if;
+  select count(*) into n from public.time_entries where expense_id = v_expense and status = 'paid';
+  if n <> 2 then raise exception 'FALHA horas: % apontamentos pagos, esperado 2', n; end if;
+
+  -- Pago não muda.
+  begin
+    perform public.save_time_entry(co, v_avulsa, outra, '2020-03-10', '13:00', '14:00', 0, null, null, '');
+    raise exception 'FALHA horas: alterou pago';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.remove_time_entry(co, v_avulsa);
+    raise exception 'FALHA horas: excluiu pago';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.set_time_entry_status(co, v_avulsa, 'pending');
+    raise exception 'FALHA horas: mudou status de pago';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Excluir o gasto reabre as horas.
+  perform public.delete_expense(co, v_expense);
+  select status into v_status from public.time_entries where id = v_avulsa;
+  if v_status <> 'approved' then raise exception 'FALHA horas: excluir gasto não reabriu'; end if;
+  select count(*) into n from public.expenses where id = v_expense and deleted_at is null;
+  if n <> 0 then raise exception 'FALHA gastos: gasto continuou ativo'; end if;
+
+  -- Retirar apontamento de visita não deixa a sugestão voltar.
+  select id into v_avulsa from public.time_entries where visit_id = visita and employee_id = outra;
+  perform public.remove_time_entry(co, v_avulsa);
+  v_month := public.get_hours_month(co, mes);
+  if not (v_month -> 'suggestions' -> 0 ->> 'dismissed')::boolean then
+    raise exception 'FALHA horas: retirado voltou como sugestão ativa';
+  end if;
+
+  -- Direto nas tabelas não dá.
+  begin
+    update public.time_entries set status = 'paid' where company_id = co;
+    raise exception 'FALHA horas: alterou direto';
+  exception when insufficient_privilege then null;
   end;
 end $$;
 

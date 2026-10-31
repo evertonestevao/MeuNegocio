@@ -1,5 +1,7 @@
 import {
   BookOpen,
+  Clock,
+  Wallet,
   Building2,
   CalendarDays,
   ClipboardCheck,
@@ -41,6 +43,8 @@ export const navItems: NavItem[] = [
   { title: "Clientes", href: "/dashboard/clients", icon: Building2, roles: ["owner", "admin", "member"] },
   { title: "Catálogo", href: "/dashboard/catalog", icon: BookOpen, roles: ["owner", "admin", "member"] },
   { title: "Equipe", href: "/dashboard/team", icon: HardHat, roles: ["owner", "admin", "member"] },
+  { title: "Horas", href: "/dashboard/hours", icon: Clock, roles: ["owner", "admin"] },
+  { title: "Gastos", href: "/dashboard/expenses", icon: Wallet, roles: ["owner", "admin"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
   { title: "Billing", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
   { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },

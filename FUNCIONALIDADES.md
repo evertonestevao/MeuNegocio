@@ -31,6 +31,8 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 19. [Equipe](#19-equipe)
 20. [Agenda](#20-agenda)
 21. [Ordem de serviço](#21-ordem-de-serviço)
+22. [Horas](#22-horas)
+23. [Gastos](#23-gastos)
 
 ---
 
@@ -52,6 +54,7 @@ member de outra.
 | Cadastrar a equipe e ver contrato e pagamento | ✅ | ✅ | — | — |
 | Ver as ordens de serviço | ✅ | ✅ | ✅ | Só as próprias |
 | Preencher a ordem de serviço | Quem está escalado | Quem está escalado | Quem está escalado | Só as próprias |
+| Horas e gastos | ✅ | ✅ | — | — |
 | Editar nome e dados da empresa | ✅ | ✅ | — | — |
 | Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
 | Ver auditoria | ✅ | ✅ | — | — |
@@ -247,7 +250,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Configurações | Todos |
   | Minhas visitas | Técnico |
   | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
-  | Membros, Auditoria | Owner, admin |
+  | Horas, Gastos, Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
 - **Tema** claro e escuro, com cor primária em `src/app/globals.css`. O menu lateral é escuro nos dois temas.
@@ -362,7 +365,7 @@ Tela em `/dashboard/clients`, para owner, admin e member. O técnico não acessa
 | **Criar e editar cliente** | Owner, admin, member | Nome obrigatório. Documento opcional: CPF com 11 dígitos ou CNPJ com 14. A criação respeita o limite `max_clients` do plano; acima dele, os dados continuam disponíveis e só não dá para criar novos. |
 | **Contatos** | Owner, admin, member | Nome, função, telefone e e-mail. Um único principal por cliente: o primeiro já nasce principal, e marcar outro desmarca o anterior. |
 | **Locais de atendimento** | Owner, admin, member | Nome, endereço completo e observações. |
-| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento ou visita não pode ser excluído. |
+| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente com orçamento, visita ou hora lançada, ou local com orçamento ou visita, não pode ser excluído. |
 
 Toda alteração entra na auditoria. Isolamento por empresa testado em `supabase/tests/rls_test.sql`.
 
@@ -429,7 +432,7 @@ Tela em `/dashboard/team`. O técnico não acessa.
 | **Ver a lista** | Owner, admin, member | Member vê só nome, função, situação e próximas visitas. |
 | **Cadastrar e editar** | Owner, admin | Nome, função, telefone, contrato (CLT, PJ ou autônomo), custo por hora, valor pago por hora, razão social, CPF ou CNPJ, Pix e ativo. |
 | **Vincular usuário** | Owner, admin | Opcional: nem toda pessoa tem login. O usuário precisa ser membro da empresa, e cada usuário se vincula a uma pessoa só. O vínculo é o que dá ao técnico acesso às próprias visitas. |
-| **Excluir** | Owner, admin | Soft delete. Quem aparece em visita não é excluído, só desativado. |
+| **Excluir** | Owner, admin | Soft delete. Quem aparece em visita, gasto ou hora não é excluído, só desativado. |
 
 Telefone, contrato e dados de pagamento ficam em uma tabela separada (`employee_payment_details`), que só owner e admin leem. Esses dados não entram na auditoria.
 
@@ -475,8 +478,43 @@ Regras:
 - Fotos e assinatura ficam no bucket privado `work-orders`, com policies por empresa e visita, e abrem por link temporário de 1 hora. Nunca ficam como data URL no banco.
 - Outro técnico da empresa não abre a visita. Quem não está escalado não preenche, mesmo sendo owner.
 - O escritório ainda pode marcar uma visita como concluída direto na agenda, sem ordem de serviço.
-- Os apontamentos de horas gerados ao concluir entram com o módulo de Horas.
+- Concluir gera apontamentos pendentes para a equipe da visita, sem duplicar (seção 22).
 
 Toda escrita passa por funções do banco; o client só lê estas tabelas. Testes em `supabase/tests/rls_test.sql`.
 
 Código: `src/services/workOrderService.ts`, `src/server/actions/workOrders.ts`, `src/features/work-orders/`, `supabase/migrations/20261031160000_work_orders.sql`.
+
+## 22. Horas
+
+Tela em `/dashboard/hours`, só para owner e admin, com o recurso `hours` do plano. Serve para gestão e pagamento de prestadores e **não substitui ponto eletrônico de CLT**; a tela avisa isso.
+
+| Função | Regras |
+|---|---|
+| **Sugestões da agenda** | Visitas até hoje e não canceladas sugerem horas para quem foi escalado. Com ordem de serviço, valem os horários reais. Jornadas acima de 6 h têm intervalo padrão de 1 h. |
+| **Ajustar, retirar e incluir de volta** | Ajustar uma sugestão a transforma em apontamento. O que é retirado não conta no total nem no fechamento. |
+| **Horas avulsas** | Pessoa, data, entrada, saída, intervalo, cliente opcional e observações. Só até hoje. |
+| **Sobreposição** | A mesma pessoa não tem duas horas no mesmo horário; o banco bloqueia. |
+| **Status** | Pendente, aprovado ou pago. A ordem de serviço concluída gera pendentes, sem duplicar; quem já tem horas nesse horário continua como sugestão. |
+| **Fechar e pagar** | Só PJ e autônomo, com valor por hora cadastrado. Paga o que está na lista do mês, inclusive sugestões, lança um gasto e marca como pago, tudo na mesma transação. O valor é calculado sobre o total de minutos. |
+| **Pago** | Não muda nem é excluído. Excluir o gasto em Gastos devolve as horas para aprovado, e elas podem ser fechadas de novo. |
+| **CLT** | Aparece só ao pedir "Mostrar também CLT" e não fecha horas: recebe por recorrência em Gastos. |
+
+Toda escrita passa por funções do banco. Testes em `supabase/tests/rls_test.sql`.
+
+Código: `src/services/hoursService.ts`, `src/lib/hoursCalc.ts`, `src/server/actions/hours.ts`, `supabase/migrations/20261031170000_hours_expenses.sql`.
+
+## 23. Gastos
+
+Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calendário ou lista), Recorrentes e Categorias.
+
+| Função | Regras |
+|---|---|
+| **Lançamentos** | Descrição, categoria, valor, data, funcionário opcional e observações. Tipos: pontual, recorrente, folha e prestador. |
+| **Recorrências** | Valor, categoria, dia de 1 a 28, início, fim opcional, ativa e funcionário opcional. Com funcionário, gera folha. |
+| **Geração mensal** | Um lançamento por mês para cada recorrência, por job idempotente, respeitando início e fim e sem gerar mês futuro. O job roda todo dia, por causa do fuso de cada empresa, e o botão "Gerar recorrentes do mês" faz o mesmo na hora. Excluir o lançamento de um mês não o faz voltar. |
+| **Editar um lançamento gerado** | Muda só aquele mês. Editar a recorrência vale para os próximos. |
+| **Excluir recorrência** | O que já foi gerado continua. |
+| **Pagamento de prestador** | Vem do fechamento das horas e não é editado. Excluir devolve as horas para aprovado. |
+| **Categorias** | Toda empresa nasce com as categorias padrão. Categoria em uso ou usada pelo sistema não é excluída. |
+
+Código: `src/services/expenseService.ts`, `src/server/actions/expenses.ts`, `src/features/expenses/`.

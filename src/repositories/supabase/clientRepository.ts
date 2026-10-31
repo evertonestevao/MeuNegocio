@@ -119,7 +119,7 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
 
     async hasHistory(companyId, clientId) {
       const counts = await Promise.all(
-        ["quotes", "visits"].map((table) =>
+        ["quotes", "visits", "time_entries"].map((table) =>
           client
             .from(table)
             .select("id", { count: "exact", head: true })

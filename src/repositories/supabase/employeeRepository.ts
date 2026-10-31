@@ -126,13 +126,14 @@ export function createSupabaseEmployeeRepository(client: SupabaseClient): Employ
     },
 
     async hasHistory(companyId, employeeId) {
-      const { count, error } = await client
-        .from("visit_employees")
-        .select("visit_id", { count: "exact", head: true })
-        .eq("company_id", companyId)
-        .eq("employee_id", employeeId);
-      if (error) fail(error);
-      return (count ?? 0) > 0;
+      const counts = await Promise.all([
+        client.from("visit_employees").select("visit_id", { count: "exact", head: true }).eq("company_id", companyId).eq("employee_id", employeeId),
+        client.from("time_entries").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("employee_id", employeeId).is("deleted_at", null),
+        client.from("expenses").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("employee_id", employeeId).is("deleted_at", null),
+        client.from("expense_templates").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("employee_id", employeeId).is("deleted_at", null),
+      ]);
+      for (const { error } of counts) if (error) fail(error);
+      return counts.some(({ count }) => (count ?? 0) > 0);
     },
   };
 }
