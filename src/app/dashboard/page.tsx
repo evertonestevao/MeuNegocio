@@ -48,7 +48,7 @@ function QuoteRow({ quote, today }: { quote: QuoteListItem; today: string }) {
           </span>
         </span>
         <span className="flex items-center gap-3">
-          <Badge variant="secondary">{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+          <Badge variant={quote.status === "approved" ? "success" : "info"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
           <span className="font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
         </span>
       </Link>
@@ -93,12 +93,14 @@ export default async function DashboardPage() {
       <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${finance ? "xl:grid-cols-4" : ""}`}>
         <MetricCard
           icon={CalendarDays}
+          tone="info"
           label="Visitas hoje"
           value={home.today.length}
           hint={nextVisit ? `Próxima às ${nextVisit.starts_at.slice(0, 5)} — ${nextVisit.client_name}` : "Nenhuma visita pendente hoje"}
         />
         <MetricCard
           icon={Send}
+          tone="warning"
           label="Em negociação"
           value={formatCents(forecast.sentCents)}
           hint={`${home.awaitingReply.length} enviado(s) · ${formatCents(forecast.approvedCents)} aprovados para fechar`}
@@ -107,12 +109,15 @@ export default async function DashboardPage() {
           <>
             <MetricCard
               icon={Scale}
+              tone={finance.balanceCents < 0 ? "danger" : "success"}
+              toneValue
               label={`Saldo de ${monthName}`}
               value={formatCents(finance.balanceCents)}
               hint={`Faturou ${formatCents(finance.monthRevenueCents)} · gastou ${formatCents(finance.monthExpenseCents)}`}
             />
             <MetricCard
               icon={Wallet}
+              tone={finance.dueSoonCents > 0 ? "warning" : "success"}
               label="A pagar em 7 dias"
               value={formatCents(finance.dueSoonCents)}
               hint={finance.dueSoonCount === 0 ? "Nenhuma conta nos próximos dias." : `${finance.dueSoonCount} conta(s)`}

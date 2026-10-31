@@ -6,8 +6,8 @@ import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL } from "../schemas";
 
 const STATUS_VARIANT = {
   scheduled: "secondary",
-  in_progress: "default",
-  completed: "outline",
+  in_progress: "info",
+  completed: "success",
   canceled: "outline",
 } as const;
 
