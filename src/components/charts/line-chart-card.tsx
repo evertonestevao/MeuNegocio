@@ -22,8 +22,7 @@ import {
 
 /**
  * Gráfico de LINHA genérico do starter (mudança ao longo do tempo) —
- * infraestrutura, sem dados de negócio. Exemplos de uso com dados fake:
- * src/app/dashboard/page.tsx (seção "Exemplos de gráficos").
+ * infraestrutura, sem dados de negócio.
  *
  * Regras que o componente já cumpre (não desfazer ao customizar):
  * - máximo 5 séries, cor fixa pela POSIÇÃO na lista (tokens --chart-1..5);

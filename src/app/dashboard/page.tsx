@@ -1,22 +1,60 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CreditCard, Mail, ShieldCheck, Users } from "lucide-react";
-import { BarChartCard } from "@/components/charts/bar-chart-card";
-import { DonutChartCard } from "@/components/charts/donut-chart-card";
-import { LineChartCard } from "@/components/charts/line-chart-card";
+import { redirect } from "next/navigation";
+import { CalendarDays, Send, Scale, Wallet } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
-import { createSupabaseInviteRepository } from "@/repositories/supabase/inviteRepository";
-import { createMemoryRateLimiter } from "@/server/rateLimit";
-import { getSupabaseServerClient } from "@/server/supabase-server";
-import { getActiveTenant, getTenantService } from "@/server/tenant";
-import { createBillingService } from "@/services/billingService";
-import { createInviteService } from "@/services/inviteService";
-import { permissionService } from "@/services/permissionService";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { VisitRow } from "@/features/visits/components/visit-row";
+import { formatLongDay, formatMonth } from "@/lib/calendar";
+import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
+import { formatCents } from "@/lib/money";
+import { getFinanceService } from "@/server/home";
+import { getCompanyProfileService } from "@/server/quotes";
+import { getActiveTenant } from "@/server/tenant";
+import type { QuoteListItem } from "@/types/database";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Início" };
+
+const ROLE_LABEL = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" } as const;
+
+function daysSince(timestamp: string | null, today: string): number | null {
+  if (!timestamp) return null;
+  const milliseconds = new Date(`${today}T12:00:00Z`).getTime() - new Date(timestamp).getTime();
+  return Math.max(0, Math.floor(milliseconds / 86_400_000));
+}
+
+function QuoteRow({ quote, today }: { quote: QuoteListItem; today: string }) {
+  const days = daysSince(quote.sent_at, today);
+  const note =
+    quote.status === "approved"
+      ? "aprovado, falta fechar"
+      : days === null
+        ? "aguardando resposta"
+        : days === 0
+          ? "enviado hoje"
+          : `enviado há ${days} dia(s)`;
+  return (
+    <li>
+      <Link href={`/dashboard/quotes/${quote.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm hover:underline">
+        <span className="flex min-w-0 flex-1 basis-52 flex-col">
+          <span className="font-medium break-words">
+            #{formatQuoteNumber(quote.number)} · {quote.title ?? "Sem título"}
+          </span>
+          <span className="text-muted-foreground">
+            {quote.client_name ?? "Sem cliente"} · {note}
+          </span>
+        </span>
+        <span className="flex items-center gap-3">
+          <Badge variant="secondary">{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+          <span className="font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
+        </span>
+      </Link>
+    </li>
+  );
+}
 
 export default async function DashboardPage() {
   const { active } = await getActiveTenant();
@@ -24,142 +62,145 @@ export default async function DashboardPage() {
   // O técnico não usa o painel do escritório: entra direto nas próprias visitas.
   if (active.role === "technician") redirect("/dashboard/my-visits");
 
-  const client = await getSupabaseServerClient();
-  const tenant = await getTenantService();
-  const billing = createBillingService(createSupabaseBillingRepository(client));
-  const isAdmin = permissionService.canManageMembers(active.role);
-
-  const [members, plan, pendingInvites] = await Promise.all([
-    // pageSize mínimo: aqui só o total interessa (métrica), não as linhas.
-    tenant.listMembers(active.id, { page: 1, pageSize: 1 }),
-    billing.getEffectivePlan(active.id),
-    isAdmin
-      ? createInviteService({
-          repo: createSupabaseInviteRepository(client),
-          rateLimiter: createMemoryRateLimiter({ limit: 1000, windowMs: 60_000 }),
-        }).listPending(active.id)
-      : Promise.resolve([]),
-  ]);
-
-  const roleLabel = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" }[active.role];
+  const profile = await (await getCompanyProfileService()).get(active.id);
+  const today = todayInTimezone(profile.timezone);
+  const home = await (await getFinanceService()).getHome({ companyId: active.id, role: active.role }, today);
+  const { finance, forecast } = home;
+  const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
+  const nextVisit = home.today.find((visit) => visit.status === "scheduled" || visit.status === "in_progress");
+  const monthName = formatMonth(today).split(" ")[0].toLowerCase();
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">{active.name}</h2>
-        <p className="text-sm text-muted-foreground">Visão geral da sua empresa</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
+            <span className="break-words">{active.name}</span>
+            <Badge variant="outline">{ROLE_LABEL[active.role]}</Badge>
+          </h2>
+          <p className="text-sm text-muted-foreground first-letter:uppercase">{formatLongDay(today)}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" render={<Link href="/dashboard/schedule?new=1" />} nativeButton={false}>
+            Nova visita
+          </Button>
+          <Button render={<Link href="/dashboard/quotes/new" />} nativeButton={false}>
+            Novo orçamento
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={Users} label="Membros ativos" value={members.total} />
-        {isAdmin ? (
-          <MetricCard icon={Mail} label="Convites pendentes" value={pendingInvites.length} />
-        ) : null}
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${finance ? "xl:grid-cols-4" : ""}`}>
         <MetricCard
-          icon={CreditCard}
-          label="Plano atual"
-          value={plan?.name ?? "—"}
-          hint={plan ? `até ${String(plan.features.max_members ?? "∞")} membros` : undefined}
+          icon={CalendarDays}
+          label="Visitas hoje"
+          value={home.today.length}
+          hint={nextVisit ? `Próxima às ${nextVisit.starts_at.slice(0, 5)} — ${nextVisit.client_name}` : "Nenhuma visita pendente hoje"}
         />
-        <MetricCard icon={ShieldCheck} label="Seu papel" value={roleLabel} />
+        <MetricCard
+          icon={Send}
+          label="Em negociação"
+          value={formatCents(forecast.sentCents)}
+          hint={`${home.awaitingReply.length} enviado(s) · ${formatCents(forecast.approvedCents)} aprovados para fechar`}
+        />
+        {finance ? (
+          <>
+            <MetricCard
+              icon={Scale}
+              label={`Saldo de ${monthName}`}
+              value={formatCents(finance.balanceCents)}
+              hint={`Faturou ${formatCents(finance.monthRevenueCents)} · gastou ${formatCents(finance.monthExpenseCents)}`}
+            />
+            <MetricCard
+              icon={Wallet}
+              label="A pagar em 7 dias"
+              value={formatCents(finance.dueSoonCents)}
+              hint={finance.dueSoonCount === 0 ? "Nenhuma conta nos próximos dias." : `${finance.dueSoonCount} conta(s)`}
+            />
+          </>
+        ) : null}
       </div>
 
-      {/* ------------------------------------------------------------------
-          EXEMPLOS DE GRÁFICOS DO TEMPLATE — dados fake.
-          Os 3 tipos mais usados (linha, barras, donut) já estilizados pelos
-          tokens do tema (--chart-1..5, validados p/ dark/light e daltonismo).
-          Ao criar seu produto: troque os dados fake pelas métricas do seu
-          domínio ou remova esta seção. Componentes: src/components/charts.
-         ------------------------------------------------------------------ */}
-      <section className="flex flex-col gap-4">
-        <div>
-          <h3 className="font-medium">Exemplos de gráficos do template</h3>
-          <p className="text-sm text-muted-foreground">
-            Dados fake — troque pelas métricas do seu produto (componentes em{" "}
-            <code className="rounded bg-muted px-1 py-0.5">src/components/charts</code>).
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <LineChartCard
-            title="Linha: receita mensal"
-            description="Evolução no tempo, 2 séries"
-            data={[
-              { mes: "Jan", assinaturas: 1200, seats: 300 },
-              { mes: "Fev", assinaturas: 1900, seats: 420 },
-              { mes: "Mar", assinaturas: 1700, seats: 380 },
-              { mes: "Abr", assinaturas: 2600, seats: 540 },
-              { mes: "Mai", assinaturas: 3100, seats: 720 },
-              { mes: "Jun", assinaturas: 2900, seats: 680 },
-              { mes: "Jul", assinaturas: 3800, seats: 890 },
-            ]}
-            xKey="mes"
-            series={[
-              { key: "assinaturas", label: "Assinaturas" },
-              { key: "seats", label: "Seats extras" },
-            ]}
-            valueFormat={{ style: "currency", currency: "BRL", maximumFractionDigits: 0 }}
-          />
-          <BarChartCard
-            title="Barras: novos cadastros por semana"
-            description="Magnitude por categoria, 1 série"
-            data={[
-              { semana: "S1", cadastros: 32 },
-              { semana: "S2", cadastros: 41 },
-              { semana: "S3", cadastros: 28 },
-              { semana: "S4", cadastros: 56 },
-              { semana: "S5", cadastros: 49 },
-              { semana: "S6", cadastros: 63 },
-            ]}
-            xKey="semana"
-            yKey="cadastros"
-          />
-          <DonutChartCard
-            title="Donut: distribuição por plano"
-            description="Composição do todo (máx. 5 fatias; excedente vira 'Outros')"
-            data={[
-              { label: "Free", value: 210 },
-              { label: "Pro", value: 96 },
-              { label: "Enterprise", value: 14 },
-            ]}
-          />
-        </div>
-      </section>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle>Hoje</CardTitle>
+            <Link href="/dashboard/schedule" className="text-sm underline underline-offset-4">
+              Ver agenda
+            </Link>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {home.today.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma visita hoje.</p>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {home.today.map((visit) => (
+                  <VisitRow key={visit.id} visit={visit} />
+                ))}
+              </div>
+            )}
+            <h3 className="border-t pt-3 text-sm font-medium text-muted-foreground">
+              Amanhã · {formatDate(addDays(today, 1)).slice(0, 5)}
+            </h3>
+            {home.tomorrow.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma visita amanhã.</p>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {home.tomorrow.map((visit) => (
+                  <VisitRow key={visit.id} visit={visit} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Primeiros passos com o template</CardTitle>
-          <CardDescription>
-            Este dashboard é o ponto de partida do seu SaaS — troque estas etapas pelas métricas
-            do seu domínio.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-            <li>
-              <Link href="/dashboard/members" className="text-foreground underline underline-offset-4">
-                Convide sua equipe
-              </Link>{" "}
-              — convites expiram em 7 dias e podem ser revogados.
-            </li>
-            <li>
-              <Link href="/dashboard/billing" className="text-foreground underline underline-offset-4">
-                Explore o billing
-              </Link>{" "}
-              — o gateway fake simula o ciclo completo de assinatura em dev.
-            </li>
-            <li>
-              Edite <code className="rounded bg-muted px-1 py-0.5">src/config/brand.ts</code> e os
-              tokens em <code className="rounded bg-muted px-1 py-0.5">globals.css</code> para dar a
-              identidade do seu produto.
-            </li>
-            <li>
-              Crie seu domínio em{" "}
-              <code className="rounded bg-muted px-1 py-0.5">src/features/</code> seguindo o fluxo
-              componentes → hooks → services → repositories.
-            </li>
-          </ol>
-        </CardContent>
-      </Card>
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <CardTitle>Orçamentos em andamento</CardTitle>
+              <Link href="/dashboard/quotes" className="text-sm underline underline-offset-4">
+                Ver todos
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {openQuotes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum orçamento esperando resposta ou fechamento.</p>
+              ) : (
+                <ul className="flex flex-col divide-y">
+                  {openQuotes.map((quote) => (
+                    <QuoteRow key={quote.id} quote={quote} today={today} />
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {finance ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <CardTitle>A pagar hoje</CardTitle>
+                <Link href="/dashboard/expenses" className="text-sm underline underline-offset-4">
+                  Ver gastos
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {finance.dueToday.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum gasto com vencimento para hoje.</p>
+                ) : (
+                  <ul className="flex flex-col divide-y text-sm">
+                    {finance.dueToday.map((expense) => (
+                      <li key={expense.id} className="flex justify-between gap-3 py-2">
+                        <span className="min-w-0 break-words">{expense.description}</span>
+                        <span className="shrink-0 font-medium tabular-nums">{formatCents(expense.amount_cents)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

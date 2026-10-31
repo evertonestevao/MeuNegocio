@@ -4,6 +4,7 @@ import {
   Wallet,
   Building2,
   CalendarDays,
+  ChartColumn,
   ClipboardCheck,
   HardHat,
   CreditCard,
@@ -32,7 +33,7 @@ export interface NavItem extends ShellNavItem {
 
 export const navItems: NavItem[] = [
   {
-    title: "Dashboard",
+    title: "Início",
     href: "/dashboard",
     icon: LayoutDashboard,
     roles: ["owner", "admin", "member"],
@@ -45,6 +46,7 @@ export const navItems: NavItem[] = [
   { title: "Equipe", href: "/dashboard/team", icon: HardHat, roles: ["owner", "admin", "member"] },
   { title: "Horas", href: "/dashboard/hours", icon: Clock, roles: ["owner", "admin"] },
   { title: "Gastos", href: "/dashboard/expenses", icon: Wallet, roles: ["owner", "admin"] },
+  { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
   { title: "Billing", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
   { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },

@@ -22,7 +22,7 @@ const SELECT_CLASS =
 
 export interface ExpenseFormOptions {
   categories: ExpenseCategory[];
-  employees: { id: string; name: string }[];
+  employees: { id: string; name: string; active: boolean }[];
 }
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
@@ -52,11 +52,14 @@ function EmployeeSelect({ id, value, options }: { id: string; value?: string | n
   return (
     <select id={id} name="employeeId" defaultValue={value ?? ""} className={SELECT_CLASS}>
       <option value="">Não é de funcionário</option>
-      {options.employees.map((employee) => (
-        <option key={employee.id} value={employee.id}>
-          {employee.name}
-        </option>
-      ))}
+      {options.employees
+        .filter((employee) => employee.active || employee.id === value)
+        .map((employee) => (
+          <option key={employee.id} value={employee.id}>
+            {employee.name}
+            {employee.active ? "" : " (inativo)"}
+          </option>
+        ))}
     </select>
   );
 }

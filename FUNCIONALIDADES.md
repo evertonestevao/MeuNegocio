@@ -20,7 +20,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 8. [Planos, assinatura e billing](#8-planos-assinatura-e-billing)
 9. [Feature flags](#9-feature-flags)
 10. [Auditoria](#10-auditoria)
-11. [Dashboard e navegação](#11-dashboard-e-navegação)
+11. [Início e navegação](#11-início-e-navegação)
 12. [Páginas públicas](#12-páginas-públicas)
 13. [Operação: health check, erros e rate limit](#13-operação-health-check-erros-e-rate-limit)
 14. [Integrações e provedores trocáveis](#14-integrações-e-provedores-trocáveis)
@@ -33,6 +33,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 21. [Ordem de serviço](#21-ordem-de-serviço)
 22. [Horas](#22-horas)
 23. [Gastos](#23-gastos)
+24. [Financeiro](#24-financeiro)
 
 ---
 
@@ -54,7 +55,7 @@ member de outra.
 | Cadastrar a equipe e ver contrato e pagamento | ✅ | ✅ | — | — |
 | Ver as ordens de serviço | ✅ | ✅ | ✅ | Só as próprias |
 | Preencher a ordem de serviço | Quem está escalado | Quem está escalado | Quem está escalado | Só as próprias |
-| Horas e gastos | ✅ | ✅ | — | — |
+| Horas, gastos e financeiro | ✅ | ✅ | — | — |
 | Editar nome e dados da empresa | ✅ | ✅ | — | — |
 | Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
 | Ver auditoria | ✅ | ✅ | — | — |
@@ -237,20 +238,19 @@ que uma operação recusada.
 
 Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
-## 11. Dashboard e navegação
+## 11. Início e navegação
 
-- **Dashboard** (`/dashboard`): cards de membros ativos, convites pendentes, plano e seu papel,
-  além de gráficos de exemplo (linha, barras e donut) para servir de modelo.
+- **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas.
 - **Menu lateral único:** vira drawer abaixo de 1024 px e colapsa em ícones ("rail") no desktop.
   Os itens aparecem conforme o papel:
 
   | Item | Quem vê |
   |---|---|
-  | Dashboard | Owner, admin, member. O técnico entra direto em Minhas visitas |
+  | Início | Owner, admin, member. O técnico entra direto em Minhas visitas |
   | Configurações | Todos |
   | Minhas visitas | Técnico |
   | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
-  | Horas, Gastos, Membros, Auditoria | Owner, admin |
+  | Horas, Gastos, Financeiro, Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
 - **Tema** claro e escuro, com cor primária em `src/app/globals.css`. O menu lateral é escuro nos dois temas.
@@ -518,3 +518,18 @@ Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calend�
 | **Categorias** | Toda empresa nasce com as categorias padrão. Categoria em uso ou usada pelo sistema não é excluída. |
 
 Código: `src/services/expenseService.ts`, `src/server/actions/expenses.ts`, `src/features/expenses/`.
+
+## 24. Financeiro
+
+Tela em `/dashboard/finance`, só para owner e admin.
+
+| Função | Regras |
+|---|---|
+| **Resumo do mês** | Faturamento, gastos e saldo, com a variação sobre o mês anterior. O saldo pode ficar negativo. |
+| **Faturamento** | Vem só de orçamentos fechados, na data de competência. Desfazer o fechamento tira o valor. |
+| **Últimos 6 meses** | Gráfico de faturamento e gastos, com tabela equivalente. |
+| **Gastos por categoria** | Só do mês escolhido, da maior para a menor. |
+| **Previsão** | Aprovados a fechar e enviados aguardando resposta. Fica separada e não entra no saldo. |
+| **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |
+
+Código: `src/services/financeService.ts`, `src/app/dashboard/finance/page.tsx`.

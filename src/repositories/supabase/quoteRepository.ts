@@ -32,6 +32,22 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
       return { items, total: count ?? 0, page: 1, pageSize: limit };
     },
 
+    async listOpen(companyId) {
+      const { data, error } = await client
+        .from("quotes")
+        .select("*, client:clients(name)")
+        .eq("company_id", companyId)
+        .in("status", ["sent", "approved"])
+        .is("deleted_at", null)
+        .order("number", { ascending: false });
+      if (error) fail(error);
+      type Row = Quote & { client: { name: string } | null };
+      return ((data ?? []) as unknown as Row[]).map(({ client: related, ...row }) => ({
+        ...row,
+        client_name: related?.name ?? null,
+      }));
+    },
+
     async countByStatus(companyId) {
       const { data, error } = await client
         .from("quotes")

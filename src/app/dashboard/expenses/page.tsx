@@ -87,7 +87,7 @@ export default async function ExpensesPage({
   ]);
   const options = {
     categories,
-    employees: employees.filter((person) => person.active).map(({ id, name }) => ({ id, name })),
+    employees: employees.map(({ id, name, active: isActive }) => ({ id, name, active: isActive })),
   };
   const total = expenses.reduce((sum, expense) => sum + expense.amount_cents, 0);
   const defaultDate = today.slice(0, 7) === month.slice(0, 7) ? today : month;

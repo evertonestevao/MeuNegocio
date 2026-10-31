@@ -13,6 +13,8 @@ export type QuoteTransition = "send" | "approve" | "refuse" | "expire" | "reopen
 
 export interface QuoteRepository {
   list(companyId: string, params: { offset: number; limit: number; status: QuoteStatus | null; clientId: string | null }): Promise<Paginated<QuoteListItem>>;
+  /** Enviados e aprovados: o que está em negociação ou por fechar. */
+  listOpen(companyId: string): Promise<QuoteListItem[]>;
   countByStatus(companyId: string): Promise<Partial<Record<QuoteStatus, number>>>;
   /** Conta também os apagados: criar e excluir não libera o limite do mês. */
   countCreatedSince(companyId: string, sinceIso: string): Promise<number>;

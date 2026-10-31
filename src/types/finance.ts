@@ -52,6 +52,16 @@ export interface HoursPersonSummary extends HoursEmployee {
   suggestions: TimeSuggestion[];
 }
 
+export interface RevenueListItem {
+  id: string;
+  quote_id: string;
+  amount_cents: number;
+  competence_date: string;
+  quote_number: number;
+  quote_title: string | null;
+  client_name: string | null;
+}
+
 export type ExpenseKind = "recurring" | "one_off" | "payroll" | "contractor";
 
 export interface ExpenseCategory {

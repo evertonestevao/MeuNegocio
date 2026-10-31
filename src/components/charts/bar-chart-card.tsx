@@ -22,7 +22,7 @@ import {
 
 /**
  * Gráfico de BARRAS genérico do starter (comparação de magnitude entre
- * categorias). Exemplos com dados fake: src/app/dashboard/page.tsx.
+ * categorias).
  * Mesmas regras do LineChartCard: máx. 5 séries, cor fixa por posição,
  * eixo único, legenda só com 2+ séries, texto em tokens de texto.
  */
@@ -37,10 +37,12 @@ export interface BarChartCardProps {
   valueFormatter?: (value: number) => string;
   valueFormat?: ValueFormat;
   height?: number;
+  /** Largura do eixo Y, para valores longos como R$ 60.000. */
+  yAxisWidth?: number;
 }
 
 export function BarChartCard(props: BarChartCardProps) {
-  const { title, description, data, xKey, height = 240 } = props;
+  const { title, description, data, xKey, height = 240, yAxisWidth = 48 } = props;
   const valueFormatter = resolveFormatter(props.valueFormatter, props.valueFormat);
   const series = normalizeSeriesList(
     props.series ?? (props.yKey ? [props.yKey] : []),
@@ -73,7 +75,7 @@ export function BarChartCard(props: BarChartCardProps) {
                 tickMargin={8}
               />
               <YAxis
-                width={48}
+                width={yAxisWidth}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}

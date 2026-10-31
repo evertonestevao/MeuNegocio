@@ -22,6 +22,7 @@ const INPUT: QuoteInput = {
 function makeRepo() {
   return {
     list: vi.fn(async () => ({ items: [], total: 0, page: 1, pageSize: 20 })),
+    listOpen: vi.fn(async () => []),
     countByStatus: vi.fn(async () => ({})),
     countCreatedSince: vi.fn(async () => 0),
     get: vi.fn(async () => null),

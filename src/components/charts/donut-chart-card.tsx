@@ -7,7 +7,7 @@ import { MAX_SERIES, resolveFormatter, SERIES_TOKENS, type ValueFormat } from ".
 
 /**
  * DONUT genérico do starter (composição de um todo — ex.: distribuição por
- * plano). Exemplos com dados fake: src/app/dashboard/page.tsx.
+ * plano).
  *
  * Regras: máximo 5 fatias — excedentes são AGREGADAS em "Outros"
  * automaticamente (composição com muitas categorias não se lê num donut);
