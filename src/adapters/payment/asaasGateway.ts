@@ -20,7 +20,7 @@ import type { PaymentGateway } from "./PaymentGateway";
  *  - Webhook: autenticado pelo header `asaas-access-token` (token definido
  *    ao cadastrar o webhook no painel). Pagamento confirmado de uma
  *    assinatura ativa ou renova o plano; vencido vira past_due; estorno vira
- *    payment.refunded. Referência: docs/plano-modulo-revendedores.md §15.
+ *    payment.refunded.
  *  - Seats extras: Asaas cobra por valor, então o adapter atualiza o valor
  *    total da assinatura (plano + extras × preço unitário).
  *  - Portal: o Asaas não tem portal de autogestão — getPortalUrl devolve null.

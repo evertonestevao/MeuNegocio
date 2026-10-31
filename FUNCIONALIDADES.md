@@ -317,4 +317,4 @@ Regras já aplicadas: faixas por nº da venda, duração em meses cobertos, ajus
 só para os próximos lançamentos, um lançamento por pagamento e estorno que reverte o pendente e só
 sinaliza o já pago. Pagamento que cobre mais meses que a duração restante gera comissão
 proporcional. Cliente que volta reabre o vínculo dentro de `client_return_window_days` (padrão: 90
-dias, em `reseller_settings`). Plano completo em `docs/plano-modulo-revendedores.md`.
+dias, em `reseller_settings`).
