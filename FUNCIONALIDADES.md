@@ -274,8 +274,8 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 |---|---|
 | `/` | Landing page: proposta, dores, funções, planos ativos lidos do banco, dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. Editar ou desativar um plano no painel reflete aqui. |
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
-| `/privacy` | Política de Privacidade: controlador, dados, bases legais, suboperadores, cookies, direitos. |
-| `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, como pedir. |
+| `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
+| `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, passagem para o Free, membros extras e como pedir. |
 | `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 
 O rodapé mostra os dados legais da empresa (`brand.legal` em `src/config/brand.ts`): razão social,
