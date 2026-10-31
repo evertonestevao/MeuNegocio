@@ -186,6 +186,16 @@ select sec_test.must_fail('member cria convite',
     values ('5ec0c000-0000-4000-8000-000000000001', 'y@test.local', 'admin', '5ec00000-0000-4000-8000-000000000003')$$);
 
 -- ---------------------------------------------------------------------------
+-- Evidência LGPD: IP e navegador não são escolhidos por quem aceita.
+-- ---------------------------------------------------------------------------
+select sec_test.must_fail('usuário forja o aceite dos termos',
+  $$insert into public.terms_acceptances (user_id, terms_version_id, ip_address, user_agent)
+    values ('5ec00000-0000-4000-8000-000000000003', gen_random_uuid(), '1.2.3.4', 'forjado')$$);
+select sec_test.must_fail('usuário forja o consentimento',
+  $$insert into public.user_consents (user_id, consent_type, granted, ip_address)
+    values ('5ec00000-0000-4000-8000-000000000003', 'email_communications', true, '1.2.3.4')$$);
+
+-- ---------------------------------------------------------------------------
 -- Limites do Free direto no banco, sem passar pelo service.
 -- ---------------------------------------------------------------------------
 select sec_test.login('5ec00000-0000-4000-8000-000000000005', 'sec-free@test.local');
@@ -309,6 +319,38 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Cancelamento: plano segue até o fim do período pago e depois cai para o Free.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_max text;
+  v_enterprise text;
+begin
+  select features ->> 'max_members' into v_enterprise from public.plans where code = 'enterprise';
+
+  update public.subscriptions set status = 'canceled', current_period_end = now() + interval '10 days'
+  where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null;
+  select features ->> 'max_members' into v_max from public.company_plan_terms('5ec0c000-0000-4000-8000-000000000001');
+  if v_max is distinct from v_enterprise then
+    raise exception 'FALHA cancelamento: perdeu o plano antes do fim do período pago';
+  end if;
+
+  update public.subscriptions set current_period_end = now() - interval '1 day'
+  where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null;
+  select features ->> 'max_members' into v_max from public.company_plan_terms('5ec0c000-0000-4000-8000-000000000001');
+  if v_max is not distinct from v_enterprise then
+    raise exception 'FALHA cancelamento: manteve o plano depois do fim do período pago';
+  end if;
+
+  update public.subscriptions set current_period_end = null
+  where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null;
+  select features ->> 'max_members' into v_max from public.company_plan_terms('5ec0c000-0000-4000-8000-000000000001');
+  if v_max is not distinct from v_enterprise then
+    raise exception 'FALHA cancelamento: sem período conhecido não pode manter o plano';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -343,7 +385,8 @@ begin
   from information_schema.role_table_grants
   where table_schema = 'public' and grantee in ('anon', 'authenticated')
     and (
-      (table_name in ('subscriptions', 'audit_logs', 'plans', 'platform_admins', 'plan_audit_log')
+      (table_name in ('subscriptions', 'audit_logs', 'plans', 'platform_admins', 'plan_audit_log',
+        'terms_acceptances', 'user_consents')
         and privilege_type <> 'SELECT')
       or (table_name = 'company_members' and privilege_type not in ('SELECT', 'UPDATE'))
     );

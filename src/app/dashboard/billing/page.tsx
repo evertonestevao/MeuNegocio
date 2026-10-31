@@ -13,7 +13,7 @@ import { AppError } from "@/lib/errors";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
-import { createBillingService } from "@/services/billingService";
+import { createBillingService, hasPlanAccess } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
@@ -64,6 +64,8 @@ export default async function BillingPage() {
   const isFakeGateway = getServerEnv().PAYMENT_GATEWAY === "fake";
   const hasActiveSubscription =
     subscription != null && ["trialing", "active", "past_due"].includes(subscription.status);
+  const canceledWithAccess =
+    subscription != null && subscription.status === "canceled" && hasPlanAccess(subscription);
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,6 +75,13 @@ export default async function BillingPage() {
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
           {subscription ? ` · status ${subscription.status}` : " · sem assinatura (plano free)"}
         </p>
+        {canceledWithAccess ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Assinatura cancelada. Acesso ao plano até{" "}
+            {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}. Depois disso, a
+            empresa passa para o plano Free.
+          </p>
+        ) : null}
       </div>
 
       {isFakeGateway ? (
@@ -83,13 +92,13 @@ export default async function BillingPage() {
         </p>
       ) : null}
 
-      {/* Billing por seat: exceder o plano não bloqueia, cobra a mais. */}
+      {/* Billing por seat: exceder o plano cobra a mais, se ele vender membro extra. */}
       <Card>
         <CardHeader>
           <CardTitle>Seats</CardTitle>
           <CardDescription>
-            Membros ativos e convites pendentes ocupam seat. Exceder o incluso no plano não
-            bloqueia convites — os extras são cobrados por assento.
+            Membros ativos e convites pendentes ocupam seat. Se o plano vende membro extra, o que
+            passar do incluso é cobrado por assento. Se não vende, novos convites são recusados.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-sm">
@@ -148,7 +157,8 @@ export default async function BillingPage() {
                     <SubscribeButton
                       planId={plan.id}
                       isFakeGateway={isFakeGateway}
-                      isCurrent={isCurrent}
+                      // Cancelada: ainda é o plano em uso, mas pode assinar de novo.
+                      isCurrent={isCurrent && !canceledWithAccess}
                     />
                   )}
                 </div>

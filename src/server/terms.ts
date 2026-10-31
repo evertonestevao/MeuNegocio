@@ -2,11 +2,12 @@ import "server-only";
 import { headers } from "next/headers";
 import { createSupabaseTermsRepository } from "@/repositories/supabase/termsRepository";
 import { createTermsService, type RequestEvidence, type TermsService } from "@/services/termsService";
+import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
 
 export async function getTermsService(): Promise<TermsService> {
   const client = await getSupabaseServerClient();
-  return createTermsService(createSupabaseTermsRepository(client));
+  return createTermsService(createSupabaseTermsRepository(client, getSupabaseAdminClient()));
 }
 
 /** IP e user-agent da request atual — evidência LGPD do aceite. */

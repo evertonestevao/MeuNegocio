@@ -239,9 +239,13 @@ begin
   select count(*) into n from public.terms_acceptances;
   if n <> 0 then raise exception 'FALHA terms_acceptances: aceite alheio visível'; end if;
 
-  -- aceite em nome próprio: permitido
-  insert into public.terms_acceptances (user_id, terms_version_id)
-  values ('a1a1a1a1-0000-4000-8000-000000000001', v_version);
+  -- aceite em nome próprio, direto na API: bloqueado (só o servidor grava a evidência)
+  begin
+    insert into public.terms_acceptances (user_id, terms_version_id)
+    values ('a1a1a1a1-0000-4000-8000-000000000001', v_version);
+    raise exception 'FALHA terms_acceptances: usuário gravou a própria evidência';
+  exception when sqlstate '42501' then null;
+  end;
 
   -- aceite em nome de OUTRO usuário: bloqueado
   begin
@@ -273,9 +277,13 @@ begin
   exception when sqlstate '42501' then null;
   end;
 
-  -- user_consents: em nome próprio ok; em nome de outro, bloqueado
-  insert into public.user_consents (user_id, consent_type, granted)
-  values ('a1a1a1a1-0000-4000-8000-000000000001', 'email_communications', true);
+  -- user_consents: direto na API, bloqueado em nome próprio e de outro
+  begin
+    insert into public.user_consents (user_id, consent_type, granted)
+    values ('a1a1a1a1-0000-4000-8000-000000000001', 'email_communications', true);
+    raise exception 'FALHA user_consents: usuário gravou a própria evidência';
+  exception when sqlstate '42501' then null;
+  end;
   begin
     insert into public.user_consents (user_id, consent_type, granted)
     values ('b2b2b2b2-0000-4000-8000-000000000002', 'email_communications', true);
@@ -382,7 +390,6 @@ begin
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
-      'terms_acceptances', 'user_consents',
       'company_invites', 'settings', 'resellers', 'commission_rules',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details', 'expense_categories', 'expense_templates', 'expenses']) t
   ),

@@ -178,6 +178,22 @@ describe("canAccessFeature", () => {
     expect(await service.canAccessFeature("company-1", "api_access")).toBe(false);
   });
 
+  it("assinatura cancelada mantém o plano até o fim do período pago", async () => {
+    const canceledUntil = (end: string | null) =>
+      createBillingService(
+        makeRepo({
+          plans: [proPlan, freePlan],
+          subscriptions: [
+            makeSubscription({ plan_id: "plan-pro", status: "canceled", current_period_end: end }),
+          ],
+        }),
+      ).canAccessFeature("company-1", "api_access");
+
+    expect(await canceledUntil(new Date(Date.now() + 86_400_000).toISOString())).toBe(true);
+    expect(await canceledUntil(new Date(Date.now() - 86_400_000).toISOString())).toBe(false);
+    expect(await canceledUntil(null)).toBe(false);
+  });
+
   it("mantém acesso em past_due (carência de cobrança)", async () => {
     const service = createBillingService(
       makeRepo({
@@ -351,6 +367,24 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
         externalPriceId: "price_seat",
       },
     ]);
+  });
+
+  it("não altera cobrança no gateway durante o período pago de uma assinatura cancelada", async () => {
+    const { gateway, calls } = makeGatewaySpy();
+    await createBillingService(
+      makeRepo({
+        plans: [threeSeatPlan],
+        subscriptions: [
+          makeSubscription({
+            plan_id: "plan-3seats",
+            status: "canceled",
+            current_period_end: new Date(Date.now() + 86_400_000).toISOString(),
+          }),
+        ],
+        members: 5,
+      }),
+    ).syncSeatsWithGateway("company-1", gateway, "price_seat");
+    expect(calls).toEqual([]);
   });
 
   it("não chama o gateway sem assinatura ativa (plano free) nem com assinatura cancelada", async () => {

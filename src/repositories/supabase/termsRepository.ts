@@ -4,10 +4,15 @@ import type { TermsRepository } from "@/services/termsService";
 import type { TermsAcceptance, TermsVersion, UserConsent } from "@/types/database";
 
 /**
- * Implementação Supabase do TermsRepository. Client do usuário logado: a RLS
- * garante que aceites/consentimentos só são lidos/gravados em nome próprio.
+ * Implementação Supabase do TermsRepository. Lê com o client do usuário logado:
+ * a RLS restringe aos registros dele. Grava com writeClient (service_role), que
+ * só o servidor tem, com o autor vindo da sessão verificada: assim o usuário não
+ * escolhe o IP e o navegador da evidência. Sem writeClient, o banco recusa a gravação.
  */
-export function createSupabaseTermsRepository(client: SupabaseClient): TermsRepository {
+export function createSupabaseTermsRepository(
+  client: SupabaseClient,
+  writeClient: SupabaseClient = client,
+): TermsRepository {
   async function currentUserId(): Promise<string> {
     const { data } = await client.auth.getUser();
     if (!data.user) {
@@ -42,7 +47,7 @@ export function createSupabaseTermsRepository(client: SupabaseClient): TermsRepo
     },
 
     async insertAcceptance({ termsVersionId, ipAddress, userAgent }) {
-      const { error } = await client.from("terms_acceptances").insert({
+      const { error } = await writeClient.from("terms_acceptances").insert({
         user_id: await currentUserId(),
         terms_version_id: termsVersionId,
         ip_address: ipAddress,
@@ -55,7 +60,7 @@ export function createSupabaseTermsRepository(client: SupabaseClient): TermsRepo
     },
 
     async insertConsent({ consentType, granted, ipAddress, userAgent }) {
-      const { error } = await client.from("user_consents").insert({
+      const { error } = await writeClient.from("user_consents").insert({
         user_id: await currentUserId(),
         consent_type: consentType,
         granted,

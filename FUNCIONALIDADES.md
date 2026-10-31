@@ -96,7 +96,7 @@ Código: `src/services/authService.ts`, `src/server/actions/auth.ts`, `src/proxy
 | **Termos versionados** | Cada versão fica em `terms_versions`; só uma é a vigente. A página pública `/terms` mostra a vigente. |
 | **Aceite no onboarding** | A primeira empresa só é criada depois do aceite da versão vigente. |
 | **Reaceite obrigatório** | Ao publicar uma versão nova, todo usuário é levado a `/accept-terms` antes de continuar. |
-| **Evidência do aceite** | Grava data, IP e navegador de cada aceite (LGPD). |
+| **Evidência do aceite** | Grava data, IP e navegador de cada aceite (LGPD). Só o servidor grava, com os dados da request, e o usuário não consegue inserir nem alterar o registro. |
 | **Consentimento por finalidade** | Hoje existe a finalidade `email_communications` (opcional, revogável). Cada mudança gera um registro novo, com histórico. |
 
 Publicar termos novos: migration em produção, ou `scripts/publish-terms.sh` em desenvolvimento.
@@ -203,7 +203,7 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 |---|---|---|
 | **Ver plano e uso de seats** (`/dashboard/billing`) | Owner | — |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
-| **Cancelar assinatura** | Owner | Cancela no gateway. O acesso segue até o fim do período pago. |
+| **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois a empresa passa para o Free. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
 | **Cobrança por seat** | Automático | Ao convidar, revogar ou remover membros, os extras são sincronizados com o gateway: item com quantidade (Stripe) ou novo valor total da assinatura (Asaas). |
 | **Webhook de pagamento** (`POST /api/webhooks/[gateway]`, com `/payment` mantida para webhooks já cadastrados) | Gateway | Autenticidade verificada por cada provedor (HMAC no Stripe, token no Asaas). Os eventos atualizam `subscriptions` de forma idempotente e entram na auditoria. Em uma reassinatura, a assinatura anterior da empresa vai para o histórico e a nova assume. |
 | **Limites por plano** | Código e banco | `canAccessFeature()` e `getFeatureLimit()` são o ponto único de checagem no código. Triggers repetem no banco os limites de membros, clientes e orçamentos e a criação de ordem de serviço e de horas. Quem passou do limite por downgrade não perde nada, só não cria mais. |

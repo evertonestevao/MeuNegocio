@@ -23,6 +23,9 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
 
   await page.getByRole("button", { name: "Cancelar assinatura" }).click();
   await expect(page.getByText("status canceled")).toBeVisible();
+  // O período já pago continua valendo: o plano não cai para o Free na hora.
+  await expect(page.getByText(/Acesso ao plano até/)).toBeVisible();
+  await expect(page.getByText("Plano atual:")).not.toContainText("Free");
 
   await page.getByRole("button", { name: "Ativar (dev)" }).first().click();
   await expect(page.getByText("status active")).toBeVisible();

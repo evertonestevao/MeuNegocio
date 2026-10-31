@@ -46,11 +46,24 @@ const ACCESS_STATUSES: ReadonlySet<Subscription["status"]> = new Set([
   "past_due", // carência: acesso mantido enquanto o gateway tenta cobrar
 ]);
 
+/**
+ * A assinatura dá acesso ao plano agora? Cancelada mantém o plano até o fim do
+ * período já pago. Mesma regra de public.company_plan_terms, no banco.
+ */
+export function hasPlanAccess(subscription: Subscription, now: Date = new Date()): boolean {
+  if (ACCESS_STATUSES.has(subscription.status)) return true;
+  return (
+    subscription.status === "canceled" &&
+    subscription.current_period_end !== null &&
+    new Date(subscription.current_period_end) > now
+  );
+}
+
 export function createBillingService(repo: BillingRepository) {
   /** Plano efetivo da empresa: o da assinatura válida, senão o plano free. */
   async function getEffectivePlan(companyId: string): Promise<Plan | null> {
     const subscription = await repo.getActiveSubscription(companyId);
-    if (subscription && ACCESS_STATUSES.has(subscription.status)) {
+    if (subscription && hasPlanAccess(subscription)) {
       const plan = await repo.getPlanById(subscription.plan_id);
       if (plan) return plan;
     }
@@ -63,7 +76,7 @@ export function createBillingService(repo: BillingRepository) {
     plan: Plan | null,
   ): Promise<{ baseCents: number; extraSeatCents: number }> {
     const subscription = await repo.getActiveSubscription(companyId);
-    if (subscription && ACCESS_STATUSES.has(subscription.status)) {
+    if (subscription && hasPlanAccess(subscription)) {
       return {
         baseCents: subscription.contracted_price_cents,
         extraSeatCents: subscription.contracted_extra_seat_price_cents,
@@ -179,7 +192,7 @@ export function createBillingService(repo: BillingRepository) {
 
   /**
    * Recalcula os seats extras e sincroniza a quantidade no gateway.
-   * Sem assinatura ativa (plano free) não há o que cobrar — no-op.
+   * Sem assinatura ativa (plano free) ou já cancelada não há o que cobrar — no-op.
    * Chamar após convite criado/revogado e membro removido.
    */
   async function syncSeatsWithGateway(
