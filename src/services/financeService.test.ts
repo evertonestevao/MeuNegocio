@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
-import type { Expense, RevenueListItem } from "@/types/finance";
-import { buildFinanceOverview, buildForecast, createFinanceService, percentChange, type FinanceReaders } from "./financeService";
+import type { Expense, ExpenseTemplate, RevenueListItem } from "@/types/finance";
+import { buildFinanceOverview, buildForecast, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
 const MEMBER: ActorContext = { companyId: "co", role: "member" };
@@ -16,6 +16,7 @@ function makeReaders() {
   return {
     listRevenues: vi.fn(async (): Promise<RevenueListItem[]> => []),
     listExpenses: vi.fn<FinanceReaders["listExpenses"]>(async () => []),
+    listExpenseTemplates: vi.fn<FinanceReaders["listExpenseTemplates"]>(async () => []),
     listOpenQuotes: vi.fn(async (): Promise<QuoteListItem[]> => []),
     listVisits: vi.fn(async (): Promise<VisitListItem[]> => []),
   } satisfies FinanceReaders;
@@ -128,6 +129,40 @@ describe("início", () => {
     expect(finance?.dueSoonCount).toBe(2);
     expect(finance?.dueToday).toHaveLength(1);
     expect(readers.listExpenses).toHaveBeenCalledWith("co", "2026-10-31", "2026-11-07");
+  });
+
+  describe("recorrências ainda não geradas", () => {
+    const template = (overrides: Partial<ExpenseTemplate>) =>
+      ({ amount_cents: 1000, day_of_month: 5, starts_on: "2026-01-01", ends_on: null, active: true, ...overrides }) as ExpenseTemplate;
+
+    it("no fim do mês, soma as contas do início do próximo", async () => {
+      const readers = makeReaders();
+      readers.listExpenseTemplates.mockResolvedValue([template({ amount_cents: 180000 }), template({ amount_cents: 320000 })]);
+      const { finance } = await createFinanceService(readers).getHome(OWNER, "2026-10-31");
+      expect(finance?.dueSoonCents).toBe(500000);
+      expect(finance?.dueSoonCount).toBe(2);
+      expect(finance?.dueToday).toEqual([]);
+    });
+
+    it("no meio do mês não projeta: o mês atual já foi gerado e excluir não pode voltar", () => {
+      expect(projectUngeneratedRecurring([template({})], "2026-10-10", "2026-10-17")).toEqual([]);
+    });
+
+    it("ignora vencimento depois do prazo", () => {
+      expect(projectUngeneratedRecurring([template({ day_of_month: 8 })], "2026-10-31", "2026-11-07")).toEqual([]);
+      expect(projectUngeneratedRecurring([template({ day_of_month: 7 })], "2026-10-31", "2026-11-07")).toHaveLength(1);
+    });
+
+    it("segue a vigência da geração", () => {
+      const project = (overrides: Partial<ExpenseTemplate>) =>
+        projectUngeneratedRecurring([template(overrides)], "2026-10-31", "2026-11-07");
+      expect(project({ active: false })).toEqual([]);
+      expect(project({ starts_on: "2026-12-01" })).toEqual([]);
+      expect(project({ ends_on: "2026-10-31" })).toEqual([]);
+      // Vigência é por mês, como no banco: vale o mês inteiro de início e de fim.
+      expect(project({ starts_on: "2026-11-20" })).toHaveLength(1);
+      expect(project({ ends_on: "2026-11-02" })).toHaveLength(1);
+    });
   });
 
   it("separa orçamentos aguardando resposta dos aprovados por fechar", async () => {

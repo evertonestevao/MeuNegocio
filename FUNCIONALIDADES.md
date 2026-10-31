@@ -253,6 +253,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 ## 11. Início e navegação
 
 - **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas.
+- **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
 - **Menu lateral único:** vira drawer abaixo de 1024 px e colapsa em ícones ("rail") no desktop.
   Os itens aparecem conforme o papel:
 

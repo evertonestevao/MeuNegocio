@@ -3,7 +3,7 @@ import { addDays } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
-import type { Expense, RevenueListItem } from "@/types/finance";
+import type { Expense, ExpenseTemplate, RevenueListItem } from "@/types/finance";
 import { totalsByCategory } from "./expenseService";
 import { permissionService } from "./permissionService";
 
@@ -15,6 +15,7 @@ import { permissionService } from "./permissionService";
 export interface FinanceReaders {
   listRevenues(companyId: string, from: string, to: string): Promise<RevenueListItem[]>;
   listExpenses(companyId: string, from: string, to: string): Promise<Expense[]>;
+  listExpenseTemplates(companyId: string): Promise<ExpenseTemplate[]>;
   listOpenQuotes(companyId: string): Promise<QuoteListItem[]>;
   listVisits(companyId: string, from: string, to: string): Promise<VisitListItem[]>;
 }
@@ -87,16 +88,40 @@ export interface HomeFinance {
   dueToday: Expense[];
 }
 
-export function buildHomeFinance(input: { today: string; revenues: Sized[]; monthExpenses: Expense[]; upcoming: Expense[] }): HomeFinance {
-  const { today, revenues, monthExpenses, upcoming } = input;
+/**
+ * Recorrências que vencem até `until` em meses ainda não gerados. O mês só é gerado quando começa,
+ * então, no fim do mês, as contas do início do próximo ainda não são lançamentos. O mês atual fica
+ * de fora: ele já foi gerado, e um lançamento excluído não pode voltar a contar. Regras de
+ * vigência iguais às de public.generate_month_expenses.
+ */
+export function projectUngeneratedRecurring(templates: ExpenseTemplate[], today: string, until: string): Sized[] {
+  const currentMonth = `${today.slice(0, 7)}-01`;
+  const lastMonth = `${until.slice(0, 7)}-01`;
+  const projected: Sized[] = [];
+  for (let month = addMonths(currentMonth, 1); month <= lastMonth; month = addMonths(month, 1)) {
+    for (const template of templates) {
+      const inForce =
+        template.active &&
+        template.starts_on.slice(0, 7) <= month.slice(0, 7) &&
+        (template.ends_on === null || template.ends_on.slice(0, 7) >= month.slice(0, 7));
+      if (inForce && addDays(month, template.day_of_month - 1) <= until) {
+        projected.push({ amount_cents: template.amount_cents });
+      }
+    }
+  }
+  return projected;
+}
+
+export function buildHomeFinance(input: { today: string; revenues: Sized[]; monthExpenses: Expense[]; upcoming: Expense[]; projected?: Sized[] }): HomeFinance {
+  const { today, revenues, monthExpenses, upcoming, projected = [] } = input;
   const monthRevenueCents = sum(revenues);
   const monthExpenseCents = sum(monthExpenses);
   return {
     monthRevenueCents,
     monthExpenseCents,
     balanceCents: monthRevenueCents - monthExpenseCents,
-    dueSoonCents: sum(upcoming),
-    dueSoonCount: upcoming.length,
+    dueSoonCents: sum(upcoming) + sum(projected),
+    dueSoonCount: upcoming.length + projected.length,
     dueToday: upcoming.filter((expense) => expense.expense_date === today),
   };
 }
@@ -133,12 +158,15 @@ export function createFinanceService(readers: FinanceReaders) {
       if (permissionService.canManageFinance(actor.role)) {
         const monthStart = `${today.slice(0, 7)}-01`;
         const monthEnd = addDays(addMonths(monthStart, 1), -1);
-        const [revenues, monthExpenses, upcoming] = await Promise.all([
+        const until = addDays(today, 7);
+        const [revenues, monthExpenses, upcoming, templates] = await Promise.all([
           readers.listRevenues(actor.companyId, monthStart, monthEnd),
           readers.listExpenses(actor.companyId, monthStart, monthEnd),
-          readers.listExpenses(actor.companyId, today, addDays(today, 7)),
+          readers.listExpenses(actor.companyId, today, until),
+          readers.listExpenseTemplates(actor.companyId),
         ]);
-        finance = buildHomeFinance({ today, revenues, monthExpenses, upcoming });
+        const projected = projectUngeneratedRecurring(templates, today, until);
+        finance = buildHomeFinance({ today, revenues, monthExpenses, upcoming, projected });
       }
 
       return {
