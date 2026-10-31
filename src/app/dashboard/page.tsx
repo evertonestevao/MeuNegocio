@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           icon={CreditCard}
           label="Plano atual"
           value={plan?.name ?? "—"}
-          hint={plan ? `até ${String(plan.features.max_members ?? "?")} membros` : undefined}
+          hint={plan ? `até ${String(plan.features.max_members ?? "∞")} membros` : undefined}
         />
         <MetricCard icon={ShieldCheck} label="Seu papel" value={roleLabel} />
       </div>

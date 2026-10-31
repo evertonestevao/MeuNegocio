@@ -37,7 +37,7 @@ export function CommissionFields({
           id={`${idPrefix}-value`}
           name="value"
           inputMode="decimal"
-          placeholder={isPercent ? "30" : "19,90"}
+          placeholder={isPercent ? "30" : "20,00"}
           defaultValue={defaults?.value}
           required
         />

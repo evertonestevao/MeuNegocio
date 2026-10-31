@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
+import { PLAN_FEATURES, describePlanFeature } from "@/config/planFeatures";
 import {
   CancelSubscriptionButton,
   SubscribeButton,
@@ -27,19 +28,8 @@ function formatPrice(plan: Plan): string {
   return `${value}/${plan.billing_interval === "month" ? "mês" : "ano"}`;
 }
 
-const featureLabels: Record<string, string> = {
-  max_members: "membros",
-  api_access: "Acesso à API",
-  reports: "Relatórios",
-  audit_retention_days: "dias de auditoria",
-};
-
 function featureList(plan: Plan): string[] {
-  return Object.entries(plan.features).map(([key, value]) => {
-    const label = featureLabels[key] ?? key;
-    if (typeof value === "boolean") return `${label}: ${value ? "sim" : "não"}`;
-    return `${String(value)} ${label}`;
-  });
+  return PLAN_FEATURES.map((feature) => describePlanFeature(feature, plan.features[feature.key]));
 }
 
 export default async function BillingPage() {

@@ -80,7 +80,7 @@ export interface Plan {
   price_cents: number;
   currency: string;
   billing_interval: BillingInterval;
-  /** Limites e flags do plano, ex.: { max_members: 5, api_access: true } */
+  /** Limites e flags do plano, ex.: { max_members: 5, hours: true }; limite null é ilimitado */
   features: Record<string, unknown>;
   /** Preço mensal (centavos) por seat além de features.max_members; 0 = não vende extra. */
   extra_seat_price_cents: number;
@@ -88,6 +88,17 @@ export interface Plan {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PlanAuditEntry {
+  id: string;
+  plan_id: string;
+  action: "created" | "updated" | "activated" | "deactivated";
+  changed_by: string | null;
+  changed_by_name: string | null;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown>;
+  changed_at: string;
 }
 
 export interface Subscription {

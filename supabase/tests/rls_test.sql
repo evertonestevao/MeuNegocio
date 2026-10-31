@@ -362,7 +362,7 @@ begin
     select 'anon', t, p from unnest(array['terms_versions']) t, unnest(array['SELECT']) p
     union all
     select 'authenticated', t, 'SELECT' from unnest(array[
-      'roles', 'plans', 'terms_versions', 'platform_admins', 'profiles', 'companies',
+      'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -483,6 +483,52 @@ begin
 end $$;
 
 reset role;
+
+-- ---------------------------------------------------------------------------
+-- Catálogo de planos: quem não é super admin não escreve nem lê o histórico.
+-- ---------------------------------------------------------------------------
+insert into public.plan_audit_log (plan_id, action, new_values)
+select id, 'updated', '{}' from public.plans where code = 'pro';
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+
+do $$
+declare n int;
+begin
+  select count(*) into n from public.plan_audit_log;
+  if n <> 0 then raise exception 'FALHA planos: usuário comum leu plan_audit_log'; end if;
+
+  update public.plans set price_cents = 1 where code = 'pro';
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALHA planos: usuário comum alterou um plano'; end if;
+exception when insufficient_privilege then
+  null;
+end $$;
+
+do $$
+begin
+  perform public.admin_set_plan_active(id, false, auth.uid()) from public.plans where code = 'pro';
+  raise exception 'FALHA planos: usuário comum executou admin_set_plan_active';
+exception when insufficient_privilege then
+  null;
+end $$;
+
+reset role;
+
+insert into public.platform_admins (user_id) values ('a1a1a1a1-0000-4000-8000-000000000001');
+set local role authenticated;
+
+do $$
+declare n int;
+begin
+  select count(*) into n from public.plan_audit_log;
+  if n <> 1 then raise exception 'FALHA planos: super admin não leu plan_audit_log'; end if;
+end $$;
+
+reset role;
+delete from public.platform_admins where user_id = 'a1a1a1a1-0000-4000-8000-000000000001';
 
 -- ---------------------------------------------------------------------------
 -- Exclusão de usuário: FKs de autoria não podem impedir (LGPD, art. 18).

@@ -37,7 +37,12 @@ export async function getAreaLinks(): Promise<AreaLink[]> {
   const { isSuperAdmin, isReseller } = await getResellerRoles();
   return [
     ...(isReseller ? [{ href: "/vendedor", label: "Área do vendedor" }] : []),
-    ...(isSuperAdmin ? [{ href: "/admin/revendedores", label: "Revendedores" }] : []),
+    ...(isSuperAdmin
+      ? [
+          { href: "/admin/revendedores", label: "Revendedores" },
+          { href: "/admin/planos", label: "Planos" },
+        ]
+      : []),
   ];
 }
 

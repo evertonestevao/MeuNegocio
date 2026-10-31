@@ -150,14 +150,25 @@ Código: `src/services/accountService.ts`, `src/server/account.ts`, `src/server/
 
 ## 8. Planos, assinatura e billing
 
-| Plano | Preço/mês | Membros inclusos | Membro extra | Auditoria | API | Relatórios |
-|---|---|---|---|---|:-:|:-:|
-| Free | R$ 0 | 3 | — | 7 dias | — | — |
-| Pro | R$ 99 | 15 | R$ 19,90 | 90 dias | ✅ | ✅ |
-| Enterprise | R$ 499 | 999 | R$ 39,90 | 365 dias | ✅ | ✅ |
+Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/admin/planos`):
 
-Os valores vêm das migrations `seed_plans` e `plans_extra_seat_price`. A landing
-(`src/features/marketing/content.ts`) espelha esses dados: mudou em um lugar, mude no outro.
+| Plano | Preço/mês | Membros inclusos | Membro extra | Clientes | Orçamentos/mês | Auditoria | Link de aprovação, OS e horas |
+|---|---|---|---|---|---|---|:-:|
+| Free | R$ 0 | 2 | — | 30 | 20 | 7 dias | — |
+| Pro | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | 90 dias | ✅ |
+| Enterprise | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | 365 dias | ✅ |
+
+**Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
+
+- Cria planos e edita nome, preço, membro extra, limites e recursos. Ativa e desativa.
+- O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
+  oferta e quem já assina continua neles.
+- Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
+  é ilimitado.
+- O plano padrão (`free`) não pode ser desativado nem cobrado, porque vale para quem não tem assinatura.
+- Limites e recursos valem na hora para todas as empresas do plano.
+- Toda alteração fica em `plan_audit_log`, com quem alterou, valor anterior e valor novo.
+- Com Stripe, o painel avisa que o preço também precisa ser alterado lá.
 
 | Função | Quem | Como funciona |
 |---|---|---|

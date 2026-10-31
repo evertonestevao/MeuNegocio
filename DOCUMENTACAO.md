@@ -267,7 +267,7 @@ Todas as tabelas de negócio têm `company_id` (a qual empresa a linha pertence)
 
 **`roles`** — catálogo dos 3 papéis (tabela de referência, leitura para autenticados)
 
-**`plans`** — catálogo de planos (global, não tem `company_id`; gerido por migration)
+**`plans`** — catálogo de planos (global, não tem `company_id`; seed por migration e, depois, gerido pelo super_admin em `/admin/planos`, com histórico em `plan_audit_log`)
 | Campo | Significado |
 |---|---|
 | `code` | `free` \| `pro` \| `enterprise` (único) |
