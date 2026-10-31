@@ -149,8 +149,8 @@ export async function cancelSubscriptionAction(
     const companyId = String(formData.get("companyId") ?? "");
     await requireOwner(companyId);
 
-    const client = await getSupabaseServerClient();
-    const repo = createSupabaseBillingRepository(client);
+    // service_role: usuário não escreve em subscriptions; requireOwner já validou o ator.
+    const repo = createSupabaseBillingRepository(getSupabaseAdminClient());
     const subscription = await repo.getActiveSubscription(companyId);
     if (!subscription) {
       throw new AppError("not_found", "Nenhuma assinatura ativa");

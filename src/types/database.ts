@@ -321,6 +321,9 @@ export interface Subscription {
   /** IDs do gateway são neutros — nunca colunas stripe_* no schema. */
   external_subscription_id: string | null;
   external_customer_id: string | null;
+  /** Preços do plano na contratação, gravados pelo banco: editar o plano não os altera. */
+  contracted_price_cents: number;
+  contracted_extra_seat_price_cents: number;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

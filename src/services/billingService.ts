@@ -30,8 +30,10 @@ export interface SeatUsage {
   used: number;
   /** Seats além do incluso (0 quando ilimitado ou dentro do limite). */
   extraSeats: number;
-  /** Custo mensal dos extras em centavos (extraSeats * plano). */
+  /** Custo mensal dos extras em centavos (extraSeats * preço contratado). */
   extraCostCents: number;
+  /** false quando as vagas acabaram e o plano não vende membro extra. */
+  canAddSeat: boolean;
 }
 
 /** Plano usado quando a empresa não tem assinatura ativa. */
@@ -53,6 +55,21 @@ export function createBillingService(repo: BillingRepository) {
       if (plan) return plan;
     }
     return repo.getPlanByCode(DEFAULT_PLAN_CODE);
+  }
+
+  /** Preços que valem para a empresa: os contratados, ou os do plano free sem assinatura. */
+  async function getEffectivePrices(
+    companyId: string,
+    plan: Plan | null,
+  ): Promise<{ baseCents: number; extraSeatCents: number }> {
+    const subscription = await repo.getActiveSubscription(companyId);
+    if (subscription && ACCESS_STATUSES.has(subscription.status)) {
+      return {
+        baseCents: subscription.contracted_price_cents,
+        extraSeatCents: subscription.contracted_extra_seat_price_cents,
+      };
+    }
+    return { baseCents: plan?.price_cents ?? 0, extraSeatCents: plan?.extra_seat_price_cents ?? 0 };
   }
 
   /**
@@ -136,8 +153,9 @@ export function createBillingService(repo: BillingRepository) {
   }
 
   /**
-   * Uso de seats da empresa (billing por assento). Exceder o incluso NUNCA
-   * bloqueia — vira cobrança extra. Limite ausente/não numérico = ilimitado.
+   * Uso de seats da empresa (billing por assento). Exceder o incluso vira
+   * cobrança extra; sem preço de extra, não há como exceder e o convite é
+   * recusado. Limite ausente/não numérico = ilimitado.
    */
   async function getSeatUsage(companyId: string): Promise<SeatUsage> {
     const [plan, members, invites] = await Promise.all([
@@ -145,6 +163,7 @@ export function createBillingService(repo: BillingRepository) {
       repo.countActiveMembers(companyId),
       repo.countPendingInvites(companyId),
     ]);
+    const { extraSeatCents } = await getEffectivePrices(companyId, plan);
     const used = members + invites;
     const rawIncluded = plan?.features["max_members"];
     const included = typeof rawIncluded === "number" ? rawIncluded : null;
@@ -153,7 +172,8 @@ export function createBillingService(repo: BillingRepository) {
       included,
       used,
       extraSeats,
-      extraCostCents: extraSeats * (plan?.extra_seat_price_cents ?? 0),
+      extraCostCents: extraSeats * extraSeatCents,
+      canAddSeat: included === null || used < included || extraSeatCents > 0,
     };
   }
 
@@ -168,10 +188,7 @@ export function createBillingService(repo: BillingRepository) {
     extraSeatExternalPriceId: string | null,
   ): Promise<SeatUsage> {
     const usage = await getSeatUsage(companyId);
-    const [subscription, plan] = await Promise.all([
-      repo.getActiveSubscription(companyId),
-      getEffectivePlan(companyId),
-    ]);
+    const subscription = await repo.getActiveSubscription(companyId);
     if (
       subscription &&
       ACCESS_STATUSES.has(subscription.status) &&
@@ -180,8 +197,8 @@ export function createBillingService(repo: BillingRepository) {
       await gateway.syncExtraSeats({
         externalSubscriptionId: subscription.external_subscription_id,
         quantity: usage.extraSeats,
-        unitPriceCents: plan?.extra_seat_price_cents ?? 0,
-        basePriceCents: plan?.price_cents ?? 0,
+        unitPriceCents: subscription.contracted_extra_seat_price_cents,
+        basePriceCents: subscription.contracted_price_cents,
         externalPriceId: extraSeatExternalPriceId,
       });
     }

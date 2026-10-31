@@ -105,11 +105,14 @@ begin
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'FALHA companies: UPDATE cross-tenant afetou % linha(s)', n; end if;
 
-  update public.company_members set role = 'owner'
-  where user_id = 'a1a1a1a1-0000-4000-8000-000000000001';
-  get diagnostics n = row_count;
-  -- update da própria linha exige is_company_admin; alice é owner do c1, então
-  -- pode — mas nunca da linha de outro tenant. Confere que não tocou o c2:
+  -- Papel owner só muda por transfer_company_ownership, nem na própria linha.
+  begin
+    update public.company_members set role = 'owner'
+    where user_id = 'a1a1a1a1-0000-4000-8000-000000000001';
+    raise exception 'FALHA company_members: UPDATE direto para owner foi aceito';
+  exception when sqlstate '42501' then null;
+  end;
+  -- Nunca toca a linha de outro tenant:
   perform 1 from public.company_members
     where company_id = 'c2c2c2c2-0000-4000-8000-000000000002' and role <> 'owner';
   if found then raise exception 'FALHA company_members: papel de outro tenant alterado'; end if;
@@ -373,14 +376,14 @@ begin
       'reseller_admin_totals', 'reseller_admin_clients', 'reseller_admin_commissions', 'reseller_admin_link_alerts']) t
     union all
     select 'authenticated', t, 'UPDATE' from unnest(array[
-      'profiles', 'companies', 'company_members', 'company_invites', 'subscriptions', 'settings',
+      'profiles', 'companies', 'company_members', 'company_invites', 'settings',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details',
       'expense_categories', 'expense_templates', 'expenses',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
-      'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
-      'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules',
+      'terms_acceptances', 'user_consents',
+      'company_invites', 'settings', 'resellers', 'commission_rules',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details', 'expense_categories', 'expense_templates', 'expenses']) t
   ),
   actual as (
@@ -494,6 +497,9 @@ reset role;
 -- Clientes: outra empresa e técnico não leem; member não apaga.
 -- ---------------------------------------------------------------------------
 reset role;
+-- Os blocos seguintes testam papéis, não plano: a empresa precisa de vagas e recursos pagos.
+insert into public.subscriptions (company_id, plan_id, status)
+select 'c1c1c1c1-0000-4000-8000-000000000001', id, 'active' from public.plans where code = 'enterprise';
 insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data) values
   ('d3d3d3d3-0000-4000-8000-000000000003', 'rls-member@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Member RLS"}'),
   ('e4e4e4e4-0000-4000-8000-000000000004', 'rls-tecnico@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Técnico RLS"}');

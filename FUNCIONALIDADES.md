@@ -131,8 +131,14 @@ Código: `src/services/tenantService.ts`, `src/server/actions/tenant.ts`, `src/s
 | **Mudar papel** (entre admin, member e técnico) | Owner, admin | Hierarquia: só sobre papéis abaixo do seu. |
 | **Remover membro** | Owner, admin | Soft delete. O owner nunca pode ser removido. |
 
-Cada convite pendente reserva uma vaga (seat). Passar da franquia do plano não bloqueia o convite:
-a cobrança de usuários extras é recalculada (ver seção 8).
+Cada convite pendente reserva uma vaga (seat). Passar da franquia depende do plano: se ele vende
+membro extra, o convite passa e a cobrança é recalculada (ver seção 8); se não vende, como o Free, o
+convite é recusado até liberar uma vaga. Um convite já emitido também é recusado no aceite se a
+empresa não tiver mais vaga, por exemplo depois de um downgrade. Ninguém é removido por isso.
+
+Essas regras também valem no banco, para quem chama a API direto: entrar na empresa só por convite,
+ação sobre outro membro só com papel acima do dele, e o papel owner muda apenas por transferência.
+Convite não pode ser para owner e, depois de criado, só pode ser revogado.
 
 Código: `src/services/inviteService.ts`, `src/services/tenantService.ts`.
 
@@ -187,6 +193,9 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
   é ilimitado.
 - O plano padrão (`free`) não pode ser desativado nem cobrado, porque vale para quem não tem assinatura.
 - Limites e recursos valem na hora para todas as empresas do plano.
+- Preços não: cada assinatura guarda o preço e o valor do membro extra da contratação
+  (`contracted_price_cents`, `contracted_extra_seat_price_cents`). Editar o plano só afeta novas
+  assinaturas e trocas de plano.
 - Toda alteração fica em `plan_audit_log`, com quem alterou, valor anterior e valor novo.
 - Com Stripe, o painel avisa que o preço também precisa ser alterado lá.
 
@@ -197,7 +206,8 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 | **Cancelar assinatura** | Owner | Cancela no gateway. O acesso segue até o fim do período pago. |
 | **Cobrança por seat** | Automático | Ao convidar, revogar ou remover membros, os extras são sincronizados com o gateway: item com quantidade (Stripe) ou novo valor total da assinatura (Asaas). |
 | **Webhook de pagamento** (`POST /api/webhooks/[gateway]`, com `/payment` mantida para webhooks já cadastrados) | Gateway | Autenticidade verificada por cada provedor (HMAC no Stripe, token no Asaas). Os eventos atualizam `subscriptions` de forma idempotente e entram na auditoria. Em uma reassinatura, a assinatura anterior da empresa vai para o histórico e a nova assume. |
-| **Limites por plano** | Código | `canAccessFeature()` e `getFeatureLimit()` são o ponto único de checagem. |
+| **Limites por plano** | Código e banco | `canAccessFeature()` e `getFeatureLimit()` são o ponto único de checagem no código. Triggers repetem no banco os limites de membros, clientes e orçamentos e a criação de ordem de serviço e de horas. Quem passou do limite por downgrade não perde nada, só não cria mais. |
+| **Escrita em assinatura** | Servidor | Só o webhook e o cancelamento gravam em `subscriptions`, com service_role. O usuário apenas lê. |
 
 **Gateways disponíveis** (`PAYMENT_GATEWAY`):
 

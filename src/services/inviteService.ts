@@ -45,12 +45,17 @@ export type CreateInviteInput = z.input<typeof createInviteSchema>;
 interface InviteServiceDeps {
   repo: InviteRepository;
   rateLimiter: RateLimiter;
+  /** Vagas do plano. Telas só de leitura não passam; o banco barra de qualquer forma. */
+  seats?: { canAddSeat(companyId: string): Promise<boolean> };
   /** Opcionais até os passos seguintes ligarem tudo. */
   notifier?: InviteNotifier;
   audit?: AuditService;
 }
 
-export function createInviteService({ repo, rateLimiter, notifier, audit }: InviteServiceDeps) {
+export const SEAT_LIMIT_MESSAGE =
+  "Seu plano não tem mais vagas de membro. Troque de plano ou revogue um convite pendente.";
+
+export function createInviteService({ repo, rateLimiter, seats, notifier, audit }: InviteServiceDeps) {
   async function invite(input: CreateInviteInput): Promise<CompanyInvite> {
     const parsed = createInviteSchema.safeParse(input);
     if (!parsed.success) {
@@ -61,6 +66,10 @@ export function createInviteService({ repo, rateLimiter, notifier, audit }: Invi
     // Limite por quem convida dentro da empresa — não por email convidado,
     // senão um atacante testaria emails variados sem nunca ser limitado.
     await rateLimiter.consume(`invite:${companyId}:${invitedBy}`);
+
+    if (seats && !(await seats.canAddSeat(companyId))) {
+      throw new AppError("conflict", SEAT_LIMIT_MESSAGE);
+    }
 
     const created = await repo.createInvite({
       companyId,

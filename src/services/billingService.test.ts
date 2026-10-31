@@ -36,6 +36,8 @@ function makeSubscription(overrides: Partial<Subscription>): Subscription {
     cancel_at_period_end: false,
     external_subscription_id: "ext-1",
     external_customer_id: "cus-1",
+    contracted_price_cents: 9900,
+    contracted_extra_seat_price_cents: 1990,
     deleted_at: null,
     created_at: "",
     updated_at: "",
@@ -234,7 +236,69 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
       used: 4,
       extraSeats: 1,
       extraCostCents: 1990,
+      canAddSeat: true,
     });
+  });
+
+  it("plano sem preço de extra bloqueia na última vaga, contando convites pendentes", async () => {
+    const free = makePlan({
+      id: "free",
+      code: DEFAULT_PLAN_CODE,
+      features: { max_members: 2 },
+      extra_seat_price_cents: 0,
+    });
+    const usageWith = (members: number, pendingInvites: number) =>
+      createBillingService(makeRepo({ plans: [free], subscriptions: [], members, pendingInvites })).getSeatUsage("company-1");
+
+    expect((await usageWith(1, 0)).canAddSeat).toBe(true);
+    expect((await usageWith(1, 1)).canAddSeat).toBe(false);
+    expect((await usageWith(2, 0)).canAddSeat).toBe(false);
+    expect((await usageWith(5, 0)).canAddSeat).toBe(false);
+  });
+
+  it("plano sem limite numérico nunca bloqueia", async () => {
+    const service = createBillingService(
+      makeRepo({
+        plans: [makePlan({ id: "free", code: DEFAULT_PLAN_CODE, features: { max_members: null } })],
+        subscriptions: [],
+        members: 50,
+      }),
+    );
+    expect((await service.getSeatUsage("company-1")).canAddSeat).toBe(true);
+  });
+
+  it("assinante mantém o preço contratado quando o plano é editado", async () => {
+    const { gateway, calls } = makeGatewaySpy();
+    const edited = { ...threeSeatPlan, price_cents: 99900, extra_seat_price_cents: 9990 };
+    const service = createBillingService(
+      makeRepo({
+        plans: [edited],
+        subscriptions: [
+          makeSubscription({
+            plan_id: "plan-3seats",
+            contracted_price_cents: 14900,
+            contracted_extra_seat_price_cents: 1990,
+          }),
+        ],
+        members: 5,
+      }),
+    );
+    const usage = await service.syncSeatsWithGateway("company-1", gateway, null);
+    expect(usage.extraCostCents).toBe(2 * 1990);
+    expect(calls[0]).toMatchObject({ unitPriceCents: 1990, basePriceCents: 14900 });
+  });
+
+  it("preço de extra contratado zero bloqueia mesmo que o plano passe a vender extra", async () => {
+    const service = createBillingService(
+      makeRepo({
+        plans: [threeSeatPlan],
+        subscriptions: [
+          makeSubscription({ plan_id: "plan-3seats", contracted_extra_seat_price_cents: 0 }),
+        ],
+        members: 3,
+      }),
+    );
+    expect((await service.getSeatUsage("company-1")).canAddSeat).toBe(false);
   });
 
   it("dentro do limite: zero extras e custo zero", async () => {
@@ -283,7 +347,7 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
         externalSubscriptionId: "ext-sub",
         quantity: 2,
         unitPriceCents: 1990,
-        basePriceCents: threeSeatPlan.price_cents,
+        basePriceCents: 9900,
         externalPriceId: "price_seat",
       },
     ]);

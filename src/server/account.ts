@@ -15,14 +15,19 @@ import { getSupabaseServerClient } from "./supabase-server";
 const accountLimiter = createRateLimiter({ limit: 5, windowMs: 60 * 60_000 });
 
 /**
- * Service de conta: leitura e auditoria com o client do usuário (RLS ativa);
- * só a exclusão definitiva usa service_role.
+ * Service de conta: leitura com o client do usuário (RLS ativa); só a exclusão
+ * definitiva e a gravação na auditoria usam service_role.
  */
 export async function getAccountService(): Promise<AccountService> {
   const client = await getSupabaseServerClient();
-  const audit = createAuditService(createSupabaseAuditRepository(client));
+  const audit = createAuditService(createSupabaseAuditRepository(getSupabaseAdminClient()));
   return createAccountService({
-    repo: createSupabaseAccountRepository(client),
+    repo: {
+      ...createSupabaseAccountRepository(client),
+      // service_role: encerrar empresa não é aberto ao usuário no banco; o service só chega aqui
+      // com empresas em que ele é o único membro, conferidas na sessão dele.
+      closeCompany: (companyId) => createSupabaseAccountRepository(getSupabaseAdminClient()).closeCompany(companyId),
+    },
     // Lazy: o client service_role só é criado se a exclusão chegar até aqui.
     remover: {
       deleteUser: (userId) =>

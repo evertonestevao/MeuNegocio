@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
 import type { InviteRepository } from "@/services/inviteService";
+import { SEAT_LIMIT_MESSAGE } from "@/services/inviteService";
 import type { CompanyInvite, CompanyMember } from "@/types/database";
 import type { MyPendingInvite } from "@/types/tenant";
 
@@ -26,6 +27,9 @@ export function createSupabaseInviteRepository(client: SupabaseClient): InviteRe
         // 23505 = unique_violation (convite pendente duplicado p/ mesmo email)
         if (error?.code === "23505") {
           throw new AppError("conflict", "Já existe um convite pendente para este email");
+        }
+        if (error?.code === "MN001") {
+          throw new AppError("conflict", SEAT_LIMIT_MESSAGE, error);
         }
         throw new AppError("internal_error", "Falha ao criar convite", error);
       }
@@ -77,6 +81,9 @@ export function createSupabaseInviteRepository(client: SupabaseClient): InviteRe
       const { data, error } = await client
         .rpc("accept_company_invite", { p_token: token })
         .single<CompanyMember>();
+      if (error?.code === "MN001") {
+        throw new AppError("conflict", "Esta empresa não tem mais vagas no plano atual. Fale com quem convidou você.", error);
+      }
       if (error || !data) {
         // A RPC lança para token inválido/expirado/de outro email — a mensagem
         // interna fica no log; o usuário recebe um erro genérico e seguro.

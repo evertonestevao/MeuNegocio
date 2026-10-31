@@ -8,11 +8,12 @@ import { getEmailProvider } from "@/adapters/email";
 import { AppError } from "@/lib/errors";
 import { recordCompanyReferralFromCookie } from "@/modules/resellers/server";
 import { recordAudit } from "@/server/audit";
-import { syncCompanySeats } from "@/server/billing";
+import { getServerBillingService, syncCompanySeats } from "@/server/billing";
 import { getRequestEvidence, getTermsService } from "@/server/terms";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { createSupabaseInviteRepository } from "@/repositories/supabase/inviteRepository";
 import { createRateLimiter } from "@/server/rateLimit";
+import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { ACTIVE_COMPANY_COOKIE, getTenantService } from "@/server/tenant";
 import { createAuditService } from "@/services/auditService";
@@ -114,11 +115,14 @@ async function getInviteService() {
   return createInviteService({
     repo: createSupabaseInviteRepository(client),
     rateLimiter: inviteLimiter,
+    seats: {
+      canAddSeat: async (companyId) => (await (await getServerBillingService()).getSeatUsage(companyId)).canAddSeat,
+    },
     notifier: createEmailService({
       provider: getEmailProvider(),
       appUrl: getServerEnv().APP_URL,
     }),
-    audit: createAuditService(createSupabaseAuditRepository(client)),
+    audit: createAuditService(createSupabaseAuditRepository(getSupabaseAdminClient())),
   });
 }
 
@@ -145,8 +149,7 @@ export async function inviteMemberAction(
       role: String(formData.get("role") ?? "member") as "admin" | "member" | "technician",
       invitedBy: data.user.id,
     });
-    // Billing por seat: exceder o plano não bloqueia o convite — recalcula
-    // os extras e ajusta a cobrança no gateway.
+    // Billing por seat: recalcula os extras e ajusta a cobrança no gateway.
     await syncCompanySeats(companyId);
     revalidatePath("/dashboard/members");
     return { success: "Convite enviado" };

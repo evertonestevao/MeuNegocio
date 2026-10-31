@@ -3,6 +3,7 @@ import { createMemoryRateLimiter } from "@/server/rateLimit";
 import type { CompanyInvite, CompanyMember } from "@/types/database";
 import {
   createInviteService,
+  SEAT_LIMIT_MESSAGE,
   type InviteRepository,
 } from "./inviteService";
 
@@ -55,6 +56,30 @@ function makeService(deps: Partial<Parameters<typeof createInviteService>[0]> = 
 }
 
 describe("inviteService.invite", () => {
+  it("recusa o convite sem vaga no plano, antes de gravar ou enviar email", async () => {
+    let created = false;
+    const service = makeService({
+      repo: makeRepo({
+        async createInvite(data) {
+          created = true;
+          return makeInvite({ email: data.email });
+        },
+      }),
+      seats: { canAddSeat: async () => false },
+    });
+    await expect(
+      service.invite({ companyId: COMPANY_ID, email: "novo@test.com", role: "member", invitedBy: USER_ID }),
+    ).rejects.toMatchObject({ code: "conflict", message: SEAT_LIMIT_MESSAGE });
+    expect(created).toBe(false);
+  });
+
+  it("convida quando o plano tem vaga", async () => {
+    const service = makeService({ seats: { canAddSeat: async () => true } });
+    await expect(
+      service.invite({ companyId: COMPANY_ID, email: "novo@test.com", role: "member", invitedBy: USER_ID }),
+    ).resolves.toMatchObject({ email: "novo@test.com" });
+  });
+
   it("cria convite com email normalizado para minúsculas", async () => {
     let created: { email: string } | undefined;
     const service = makeService({
