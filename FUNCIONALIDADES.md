@@ -25,6 +25,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 13. [Operação: health check, erros e rate limit](#13-operação-health-check-erros-e-rate-limit)
 14. [Integrações e provedores trocáveis](#14-integrações-e-provedores-trocáveis)
 15. [Revendedores (em construção)](#15-revendedores-em-construção)
+16. [Clientes](#16-clientes)
 
 ---
 
@@ -33,15 +34,17 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 Cada usuário tem um papel **por empresa**: a mesma pessoa pode ser owner de uma empresa e
 member de outra.
 
-| Capacidade | Owner | Admin | Member |
-|---|:-:|:-:|:-:|
-| Ver dados da empresa e lista de membros | ✅ | ✅ | ✅ |
-| Editar nome da empresa | ✅ | ✅ | — |
-| Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — |
-| Ver auditoria | ✅ | ✅ | — |
-| Assinar, trocar e cancelar plano | ✅ | — | — |
-| Transferir a propriedade da empresa | ✅ | — | — |
-| Sair da empresa | — ² | ✅ | ✅ |
+| Capacidade | Owner | Admin | Member | Técnico |
+|---|:-:|:-:|:-:|:-:|
+| Ver dados da empresa e lista de membros | ✅ | ✅ | ✅ | ✅ |
+| Ver, criar e editar clientes, contatos e locais | ✅ | ✅ | ✅ | — |
+| Apagar registros de negócio | ✅ | ✅ | — | — |
+| Editar nome da empresa | ✅ | ✅ | — | — |
+| Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
+| Ver auditoria | ✅ | ✅ | — | — |
+| Assinar, trocar e cancelar plano | ✅ | — | — | — |
+| Transferir a propriedade da empresa | ✅ | — | — | — |
+| Sair da empresa | — ² | ✅ | ✅ | ✅ |
 
 ¹ Ações sobre outro membro exigem papel **acima** do papel do alvo: um admin gerencia members,
 mas não outros admins nem o owner.
@@ -105,10 +108,10 @@ Código: `src/services/tenantService.ts`, `src/server/actions/tenant.ts`, `src/s
 | Função | Quem | Regras |
 |---|---|---|
 | **Listar membros** (`/dashboard/members`) | Owner, admin | Paginado (20 por página). Vira tabela no desktop e cards no mobile. |
-| **Convidar por email** | Owner, admin | Papel admin ou member. O convite expira em 7 dias. Limite de 20 convites por hora por pessoa. |
+| **Convidar por email** | Owner, admin | Papel admin, member ou técnico. O convite expira em 7 dias. Limite de 20 convites por hora por pessoa. |
 | **Revogar convite pendente** | Owner, admin | — |
 | **Aceitar convite** (`/invites/accept`) | O convidado | Pelo link do email ou em Configurações › "Convites pendentes para você". O menu mostra um badge com a contagem. |
-| **Mudar papel** (admin ↔ member) | Owner, admin | Hierarquia: só sobre papéis abaixo do seu. |
+| **Mudar papel** (entre admin, member e técnico) | Owner, admin | Hierarquia: só sobre papéis abaixo do seu. |
 | **Remover membro** | Owner, admin | Soft delete. O owner nunca pode ser removido. |
 
 Cada convite pendente reserva uma vaga (seat). Passar da franquia do plano não bloqueia o convite:
@@ -228,6 +231,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Item | Quem vê |
   |---|---|
   | Dashboard, Configurações | Todos |
+  | Clientes | Owner, admin, member |
   | Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
@@ -330,3 +334,19 @@ só para os próximos lançamentos, um lançamento por pagamento e estorno que r
 sinaliza o já pago. Pagamento que cobre mais meses que a duração restante gera comissão
 proporcional. Cliente que volta reabre o vínculo dentro de `client_return_window_days` (padrão: 90
 dias, em `reseller_settings`).
+
+## 16. Clientes
+
+Tela em `/dashboard/clients`, para owner, admin e member. O técnico não acessa os cadastros.
+
+| Função | Quem | Regras |
+|---|---|---|
+| **Listar e buscar** | Owner, admin, member | Por nome ou documento, 20 por página. Tabela no desktop e cards no mobile. |
+| **Criar e editar cliente** | Owner, admin, member | Nome obrigatório. Documento opcional: CPF com 11 dígitos ou CNPJ com 14. A criação respeita o limite `max_clients` do plano; acima dele, os dados continuam disponíveis e só não dá para criar novos. |
+| **Contatos** | Owner, admin, member | Nome, função, telefone e e-mail. Um único principal por cliente: o primeiro já nasce principal, e marcar outro desmarca o anterior. |
+| **Locais de atendimento** | Owner, admin, member | Nome, endereço completo e observações. |
+| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento ou visita não será excluído quando esses módulos existirem. |
+
+Toda alteração entra na auditoria. Isolamento por empresa testado em `supabase/tests/rls_test.sql`.
+
+Código: `src/services/clientService.ts`, `src/server/actions/clients.ts`, `src/features/clients/`.

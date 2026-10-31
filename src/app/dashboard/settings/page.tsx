@@ -69,7 +69,7 @@ export default async function SettingsPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{invite.company_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    papel: {invite.role === "admin" ? "Admin" : "Member"} · expira em{" "}
+                    papel: {invite.role === "admin" ? "Admin" : invite.role === "technician" ? "Técnico" : "Member"} · expira em{" "}
                     {new Date(invite.expires_at).toLocaleDateString("pt-BR")}
                   </p>
                 </div>

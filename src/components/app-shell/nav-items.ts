@@ -1,4 +1,5 @@
 import {
+  Building2,
   CreditCard,
   LayoutDashboard,
   ScrollText,
@@ -27,8 +28,9 @@ export const navItems: NavItem[] = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["owner", "admin", "member"],
+    roles: ["owner", "admin", "member", "technician"],
   },
+  { title: "Clientes", href: "/dashboard/clients", icon: Building2, roles: ["owner", "admin", "member"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
   { title: "Billing", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
   { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },
@@ -36,7 +38,7 @@ export const navItems: NavItem[] = [
     title: "Configurações",
     href: "/dashboard/settings",
     icon: Settings,
-    roles: ["owner", "admin", "member"],
+    roles: ["owner", "admin", "member", "technician"],
   },
 ];
 

@@ -3,7 +3,7 @@
  * Fonte única — não redeclarar essas interfaces em outros arquivos.
  */
 
-export type RoleCode = "owner" | "admin" | "member";
+export type RoleCode = "owner" | "admin" | "member" | "technician";
 
 export type InviteStatus = "pending" | "accepted" | "revoked" | "expired";
 
@@ -85,6 +85,49 @@ export interface Plan {
   /** Preço mensal (centavos) por seat além de features.max_members; 0 = não vende extra. */
   extra_seat_price_cents: number;
   is_active: boolean;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Client {
+  id: string;
+  company_id: string;
+  name: string;
+  document: string | null;
+  notes: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientListItem extends Client {
+  primary_contact_name: string | null;
+  primary_contact_phone: string | null;
+  location_count: number;
+}
+
+export interface ClientContact {
+  id: string;
+  company_id: string;
+  client_id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  is_primary: boolean;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientLocation {
+  id: string;
+  company_id: string;
+  client_id: string;
+  name: string;
+  address: string;
+  notes: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

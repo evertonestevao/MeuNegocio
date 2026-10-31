@@ -25,7 +25,9 @@ export type Capability =
   | "members.manage" // convidar, revogar convite, mudar papel, remover
   | "company.edit"
   | "audit.view"
-  | "billing.manage";
+  | "billing.manage"
+  | "clients.manage" // ver, criar e editar clientes
+  | "records.delete"; // apagar registros de negócio
 
 export interface RoleDefinition {
   /** Hierarquia: ações sobre outro membro exigem level maior que o do alvo. */
@@ -43,6 +45,8 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "company.edit",
         "audit.view",
         "billing.manage",
+        "clients.manage",
+        "records.delete",
       ]),
     },
   ],
@@ -50,10 +54,18 @@ const roleRegistry = new Map<string, RoleDefinition>([
     "admin",
     {
       level: 2,
-      capabilities: new Set<Capability>(["members.manage", "company.edit", "audit.view"]),
+      capabilities: new Set<Capability>([
+        "members.manage",
+        "company.edit",
+        "audit.view",
+        "clients.manage",
+        "records.delete",
+      ]),
     },
   ],
-  ["member", { level: 1, capabilities: new Set<Capability>() }],
+  ["member", { level: 1, capabilities: new Set<Capability>(["clients.manage"]) }],
+  // Campo: as próprias visitas e ordens de serviço, decididas por dono do registro.
+  ["technician", { level: 1, capabilities: new Set<Capability>() }],
 ]);
 
 /** Registra (ou sobrescreve) um papel — ponto de extensão por produto. */
@@ -95,6 +107,16 @@ export const permissionService = {
   /** Decisões de billing (assinar, cancelar): só owner por default. */
   canManageBilling(role: RoleCode | string): boolean {
     return hasCapability(role, "billing.manage");
+  },
+
+  /** Ver, criar e editar clientes, contatos e locais. */
+  canManageClients(role: RoleCode | string): boolean {
+    return hasCapability(role, "clients.manage");
+  },
+
+  /** Apagar registros de negócio: só owner e admin. */
+  canDeleteRecords(role: RoleCode | string): boolean {
+    return hasCapability(role, "records.delete");
   },
 
   /** Alterar papel de um membro: capability + hierarquia sobre o alvo. */

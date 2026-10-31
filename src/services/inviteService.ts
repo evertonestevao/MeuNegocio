@@ -15,7 +15,7 @@ export interface InviteRepository {
   createInvite(data: {
     companyId: string;
     email: string;
-    role: "admin" | "member";
+    role: "admin" | "member" | "technician";
     invitedBy: string;
   }): Promise<CompanyInvite>;
   revokeInvite(inviteId: string, companyId: string): Promise<void>;
@@ -36,7 +36,7 @@ const createInviteSchema = z.object({
   email: z.email(),
   // Owner não é convidável: só existe pela criação da empresa (ou
   // transferência explícita, fora do MVP).
-  role: z.enum(["admin", "member"]),
+  role: z.enum(["admin", "member", "technician"]),
   invitedBy: z.uuid(),
 });
 

@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       : Promise.resolve([]),
   ]);
 
-  const roleLabel = { owner: "Owner", admin: "Admin", member: "Member" }[active.role];
+  const roleLabel = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" }[active.role];
 
   return (
     <div className="flex flex-col gap-6">

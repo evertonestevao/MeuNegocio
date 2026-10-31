@@ -39,7 +39,8 @@ import {
 import { permissionService } from "@/services/permissionService";
 import type { MemberWithProfile } from "@/types/tenant";
 
-const roleLabel = { owner: "Owner", admin: "Admin", member: "Member" } as const;
+const roleLabel = { owner: "Owner", admin: "Admin", member: "Member", technician: "Técnico" } as const;
+const ASSIGNABLE_ROLES = ["admin", "member", "technician"] as const;
 
 /**
  * Lista de membros: tabela no desktop, cards empilhados no mobile (plano
@@ -147,7 +148,7 @@ function MemberActions({ member }: { member: MemberWithProfile }) {
     });
   }
 
-  const nextRole = member.role === "admin" ? "member" : "admin";
+  const nextRoles = ASSIGNABLE_ROLES.filter((role) => role !== member.role);
   const memberName = member.profile?.full_name ?? "este membro";
 
   return (
@@ -166,19 +167,22 @@ function MemberActions({ member }: { member: MemberWithProfile }) {
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {canChange ? (
-            <DropdownMenuItem
-              onClick={() =>
-                run(
-                  () => changeMemberRoleAction(active.id, member.id, nextRole),
-                  `Papel alterado para ${roleLabel[nextRole]}`,
-                )
-              }
-            >
-              <ShieldCheck className="size-4" />
-              Tornar {roleLabel[nextRole]}
-            </DropdownMenuItem>
-          ) : null}
+          {canChange
+            ? nextRoles.map((nextRole) => (
+                <DropdownMenuItem
+                  key={nextRole}
+                  onClick={() =>
+                    run(
+                      () => changeMemberRoleAction(active.id, member.id, nextRole),
+                      `Papel alterado para ${roleLabel[nextRole]}`,
+                    )
+                  }
+                >
+                  <ShieldCheck className="size-4" />
+                  Tornar {roleLabel[nextRole]}
+                </DropdownMenuItem>
+              ))
+            : null}
           {canRemove ? (
             <DropdownMenuItem
               variant="destructive"

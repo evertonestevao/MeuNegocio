@@ -142,7 +142,7 @@ export async function inviteMemberAction(
     await invites.invite({
       companyId,
       email: String(formData.get("email") ?? ""),
-      role: formData.get("role") === "admin" ? "admin" : "member",
+      role: String(formData.get("role") ?? "member") as "admin" | "member" | "technician",
       invitedBy: data.user.id,
     });
     // Billing por seat: exceder o plano não bloqueia o convite — recalcula

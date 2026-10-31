@@ -43,7 +43,7 @@ export function PendingInvites({ invites }: { invites: CompanyInvite[] }) {
               </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Badge variant="secondary">{invite.role === "admin" ? "Admin" : "Member"}</Badge>
+              <Badge variant="secondary">{invite.role === "admin" ? "Admin" : invite.role === "technician" ? "Técnico" : "Member"}</Badge>
               <Button
                 variant="ghost"
                 size="icon-sm"

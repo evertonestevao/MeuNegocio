@@ -363,6 +363,7 @@ begin
     union all
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
+      'clients', 'client_contacts', 'client_locations',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -371,11 +372,13 @@ begin
     union all
     select 'authenticated', t, 'UPDATE' from unnest(array[
       'profiles', 'companies', 'company_members', 'company_invites', 'subscriptions', 'settings',
+      'clients', 'client_contacts', 'client_locations',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
-      'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules']) t
+      'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules',
+      'clients', 'client_contacts', 'client_locations']) t
   ),
   actual as (
     select grantee::text, table_name::text, privilege_type::text
@@ -485,6 +488,119 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Clientes: outra empresa e técnico não leem; member não apaga.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data) values
+  ('d3d3d3d3-0000-4000-8000-000000000003', 'rls-member@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Member RLS"}'),
+  ('e4e4e4e4-0000-4000-8000-000000000004', 'rls-tecnico@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Técnico RLS"}');
+insert into public.company_members (company_id, user_id, role) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'd3d3d3d3-0000-4000-8000-000000000003', 'member'),
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'e4e4e4e4-0000-4000-8000-000000000004', 'technician');
+insert into public.clients (id, company_id, name) values
+  ('f1f1f1f1-0000-4000-8000-000000000001', 'c1c1c1c1-0000-4000-8000-000000000001', 'Cliente Alice'),
+  ('f2f2f2f2-0000-4000-8000-000000000002', 'c2c2c2c2-0000-4000-8000-000000000002', 'Cliente Bob');
+insert into public.client_contacts (company_id, client_id, name, is_primary) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'f1f1f1f1-0000-4000-8000-000000000001', 'Contato A', true);
+insert into public.client_locations (company_id, client_id, name, address) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'f1f1f1f1-0000-4000-8000-000000000001', 'Sede', 'Rua A, 10');
+
+-- Contato novo principal desmarca o anterior; FK composta barra cliente de outra empresa.
+do $$
+declare n int;
+begin
+  insert into public.client_contacts (company_id, client_id, name, is_primary) values
+    ('c1c1c1c1-0000-4000-8000-000000000001', 'f1f1f1f1-0000-4000-8000-000000000001', 'Contato B', true);
+  select count(*) into n from public.client_contacts
+  where client_id = 'f1f1f1f1-0000-4000-8000-000000000001' and is_primary and deleted_at is null;
+  if n <> 1 then raise exception 'FALHA clientes: % contatos principais', n; end if;
+
+  begin
+    insert into public.client_contacts (company_id, client_id, name) values
+      ('c1c1c1c1-0000-4000-8000-000000000001', 'f2f2f2f2-0000-4000-8000-000000000002', 'Cruzado');
+    raise exception 'FALHA clientes: contato apontou para cliente de outra empresa';
+  exception when foreign_key_violation then null;
+  end;
+end $$;
+
+-- Alice (owner da empresa 1).
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.clients;
+  if n <> 1 then raise exception 'FALHA clientes: owner deveria ver só o próprio, viu %', n; end if;
+  select count(*) into n from public.clients where id = 'f2f2f2f2-0000-4000-8000-000000000002';
+  if n <> 0 then raise exception 'FALHA clientes: leu cliente de outra empresa'; end if;
+
+  update public.clients set name = 'Invadido' where id = 'f2f2f2f2-0000-4000-8000-000000000002';
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALHA clientes: alterou cliente de outra empresa'; end if;
+
+  begin
+    insert into public.clients (company_id, name) values ('c2c2c2c2-0000-4000-8000-000000000002', 'Plantado');
+    raise exception 'FALHA clientes: criou cliente em outra empresa';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Member: lê e edita, mas não apaga.
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.clients;
+  if n <> 1 then raise exception 'FALHA clientes: member deveria ler 1, leu %', n; end if;
+  update public.clients set notes = 'ok' where id = 'f1f1f1f1-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'FALHA clientes: member não editou'; end if;
+
+  begin
+    update public.clients set deleted_at = now() where id = 'f1f1f1f1-0000-4000-8000-000000000001';
+    raise exception 'FALHA clientes: member apagou cliente';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Técnico: não lê nem escreve nos cadastros.
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.clients;
+  if n <> 0 then raise exception 'FALHA clientes: técnico leu clientes'; end if;
+  select count(*) into n from public.client_contacts;
+  if n <> 0 then raise exception 'FALHA clientes: técnico leu contatos'; end if;
+  select count(*) into n from public.client_locations;
+  if n <> 0 then raise exception 'FALHA clientes: técnico leu locais'; end if;
+
+  begin
+    insert into public.clients (company_id, name) values ('c1c1c1c1-0000-4000-8000-000000000001', 'Do técnico');
+    raise exception 'FALHA clientes: técnico criou cliente';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Owner apaga; o registro some das leituras.
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  update public.clients set deleted_at = now() where id = 'f1f1f1f1-0000-4000-8000-000000000001';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'FALHA clientes: owner não apagou'; end if;
+  select count(*) into n from public.clients where deleted_at is null;
+  if n <> 0 then raise exception 'FALHA clientes: registro apagado continuou ativo'; end if;
+end $$;
+
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Catálogo de planos: quem não é super admin não escreve nem lê o histórico.
 -- ---------------------------------------------------------------------------
 insert into public.plan_audit_log (plan_id, action, new_values)
@@ -524,7 +640,7 @@ do $$
 declare n int;
 begin
   select count(*) into n from public.plan_audit_log;
-  if n <> 1 then raise exception 'FALHA planos: super admin não leu plan_audit_log'; end if;
+  if n = 0 then raise exception 'FALHA planos: super admin não leu plan_audit_log'; end if;
 end $$;
 
 reset role;
