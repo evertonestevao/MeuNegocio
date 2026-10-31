@@ -364,7 +364,7 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees',
+      'quotes', 'quote_items', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -1027,6 +1027,225 @@ begin
   raise exception 'FALHA agenda: restrição EXCLUDE não barrou';
 exception when exclusion_violation then null;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Ordem de serviço: só quem está escalado preenche; o escritório só lê; concluída não muda;
+-- o técnico recebe da visita só o necessário; arquivos seguem a empresa e a visita.
+-- A visita de 2031-05-10 às 12:00 é do técnico; a de 2031-07-01 é da outra pessoa.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.client_contacts (company_id, client_id, name, phone, is_primary) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'f3f3f3f3-0000-4000-8000-000000000003', 'Contato Campo', '14999990000', true);
+update public.clients set document = '11222333000181', notes = 'SEGREDO-COMERCIAL' where id = 'f3f3f3f3-0000-4000-8000-000000000003';
+insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data) values
+  ('a5a5a5a5-0000-4000-8000-000000000005', 'rls-tecnico2@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Técnico Dois"}');
+insert into public.company_members (company_id, user_id, role) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'a5a5a5a5-0000-4000-8000-000000000005', 'technician');
+
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+set local role authenticated;
+do $$
+declare
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+  mine uuid; other uuid; v_order uuid; v_sheet jsonb; v_status text; n int; v_path text;
+begin
+  select id into mine from public.visits where visit_date = '2031-05-10' and starts_at = '12:00';
+  -- A visita da outra pessoa não é visível ao técnico: as funções recusam mesmo com o id correto.
+  perform set_config('app.mine', mine::text, true);
+
+  v_sheet := public.get_visit_sheet(co, mine);
+  if v_sheet is null then raise exception 'FALHA OS: técnico não abriu a própria visita'; end if;
+  if v_sheet::text like '%SEGREDO-COMERCIAL%' or v_sheet::text like '%11222333000181%' then
+    raise exception 'FALHA OS: técnico recebeu documento ou observações do cliente';
+  end if;
+  if v_sheet -> 'contact' ->> 'phone' <> '14999990000' then raise exception 'FALHA OS: faltou o contato'; end if;
+
+  select count(*) into n from jsonb_array_elements(public.list_my_visits(co, '2031-01-01', '2031-12-31')) x
+  where x ->> 'visit_date' = '2031-07-01';
+  if n <> 0 then raise exception 'FALHA OS: lista trouxe visita de outra pessoa'; end if;
+
+  begin
+    perform public.save_work_order(co, mine, '{}', 'x', null);
+    raise exception 'FALHA OS: salvou sem iniciar';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  v_order := public.start_work_order(co, mine);
+  perform set_config('app.order', v_order::text, true);
+  select status into v_status from public.visits where id = mine;
+  if v_status <> 'in_progress' then raise exception 'FALHA OS: cheguei não pôs em andamento'; end if;
+  if public.start_work_order(co, mine) <> v_order then raise exception 'FALHA OS: cheguei duplicou a OS'; end if;
+  select jsonb_array_length(checklist) into n from public.work_orders where id = v_order;
+  if n <> 4 then raise exception 'FALHA OS: checklist de visita técnica com % itens', n; end if;
+
+  perform public.save_work_order(co, mine, array['1', '3'], 'Tudo certo', '08:00');
+  select count(*) into n from public.work_orders w, jsonb_array_elements(w.checklist) i
+  where w.id = v_order and (i ->> 'done')::boolean;
+  if n <> 2 then raise exception 'FALHA OS: checklist não salvou'; end if;
+
+  -- Caminho de foto fora da pasta da OS é recusado.
+  begin
+    perform public.add_work_order_photo(co, mine, 'outra-empresa/x/a.jpg', '');
+    raise exception 'FALHA OS: aceitou arquivo de outra pasta';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  perform public.add_work_order_photo(co, mine, co || '/' || v_order || '/a.jpg', 'Antes');
+
+  -- Política dos arquivos.
+  if not public.can_write_work_order_file(co || '/' || v_order || '/b.jpg') then
+    raise exception 'FALHA arquivos: técnico não grava na própria OS';
+  end if;
+  if public.can_write_work_order_file('c2c2c2c2-0000-4000-8000-000000000002/' || v_order || '/b.jpg') then
+    raise exception 'FALHA arquivos: gravou em pasta de outra empresa';
+  end if;
+
+  -- Concluir exige assinatura, nome e fim depois do início.
+  begin
+    perform public.complete_work_order(co, mine, null, 'Ana', '17:00');
+    raise exception 'FALHA OS: concluiu sem assinatura';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.complete_work_order(co, mine, co || '/' || v_order || '/s.png', ' ', '17:00');
+    raise exception 'FALHA OS: concluiu sem nome';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.complete_work_order(co, mine, co || '/' || v_order || '/s.png', 'Ana', '07:00');
+    raise exception 'FALHA OS: aceitou fim antes do início';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  begin
+    update public.work_orders set report = 'x' where id = v_order;
+    raise exception 'FALHA OS: alterou work_orders direto';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Outro técnico da empresa, member e outra empresa não preenchem. Member lê.
+select set_config('request.jwt.claims',
+  '{"sub":"a5a5a5a5-0000-4000-8000-000000000005","email":"rls-tecnico2@test.local","role":"authenticated"}', true);
+do $$
+declare mine uuid := current_setting('app.mine')::uuid; n int;
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  if public.get_visit_sheet(co, mine) is not null then raise exception 'FALHA OS: outro técnico abriu a visita'; end if;
+  select count(*) into n from public.work_orders;
+  if n <> 0 then raise exception 'FALHA OS: outro técnico leu OS'; end if;
+  select count(*) into n from public.work_order_photos;
+  if n <> 0 then raise exception 'FALHA OS: outro técnico leu fotos'; end if;
+  begin
+    perform public.save_work_order(co, mine, '{}', 'x', null);
+    raise exception 'FALHA OS: outro técnico salvou';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  if public.can_read_work_order_file(co || '/' || current_setting('app.order') || '/a.jpg') then
+    raise exception 'FALHA arquivos: outro técnico lê foto';
+  end if;
+  if public.can_write_work_order_file(co || '/' || current_setting('app.order') || '/b.jpg') then
+    raise exception 'FALHA arquivos: outro técnico grava foto';
+  end if;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare mine uuid := current_setting('app.mine')::uuid; n int; v_order uuid;
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  if public.get_visit_sheet(co, mine) is null then raise exception 'FALHA OS: member não leu a visita'; end if;
+  select id into v_order from public.work_orders where visit_id = mine;
+  if v_order is null then raise exception 'FALHA OS: member não leu a OS'; end if;
+  if not public.can_read_work_order_file(co || '/' || v_order || '/a.jpg') then
+    raise exception 'FALHA arquivos: member não lê foto';
+  end if;
+  if public.can_write_work_order_file(co || '/' || v_order || '/b.jpg') then
+    raise exception 'FALHA arquivos: member grava na OS de outra pessoa';
+  end if;
+  begin
+    perform public.save_work_order(co, mine, '{}', 'x', null);
+    raise exception 'FALHA OS: member preencheu OS de outra pessoa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+declare mine uuid := current_setting('app.mine')::uuid; n int; v_order uuid;
+begin
+  if public.get_visit_sheet('c1c1c1c1-0000-4000-8000-000000000001', mine) is not null then
+    raise exception 'FALHA OS: outra empresa abriu a visita';
+  end if;
+  if public.get_visit_sheet('c2c2c2c2-0000-4000-8000-000000000002', mine) is not null then
+    raise exception 'FALHA OS: visita abriu pela empresa errada';
+  end if;
+  select count(*) into n from public.work_orders;
+  if n <> 0 then raise exception 'FALHA OS: outra empresa leu OS'; end if;
+  if public.can_read_work_order_file('c1c1c1c1-0000-4000-8000-000000000001/' || current_setting('app.order') || '/a.jpg') then
+    raise exception 'FALHA arquivos: outra empresa lê foto';
+  end if;
+end $$;
+
+-- Concluir fecha tudo.
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+do $$
+declare mine uuid := current_setting('app.mine')::uuid; v_order uuid; v_status text;
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  select id into v_order from public.work_orders where visit_id = mine;
+  perform public.complete_work_order(co, mine, co || '/' || v_order || '/s.png', 'Ana Cliente', '17:00');
+  select status into v_status from public.visits where id = mine;
+  if v_status <> 'completed' then raise exception 'FALHA OS: visita não concluiu'; end if;
+  begin
+    perform public.save_work_order(co, mine, '{}', 'mudei', null);
+    raise exception 'FALHA OS: alterou OS concluída';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.add_work_order_photo(co, mine, co || '/' || v_order || '/z.jpg', '');
+    raise exception 'FALHA OS: foto em OS concluída';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  if public.can_write_work_order_file(co || '/' || v_order || '/z.jpg') then
+    raise exception 'FALHA arquivos: gravação em OS concluída';
+  end if;
+end $$;
+
+-- Visita assinada não volta atrás nem é excluída.
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare mine uuid := current_setting('app.mine')::uuid;
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+begin
+  begin
+    perform public.delete_visit(co, mine);
+    raise exception 'FALHA OS: excluiu visita assinada';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_visit(co, mine, 'f3f3f3f3-0000-4000-8000-000000000003', 'f4f4f4f4-0000-4000-8000-000000000004', null, 'assessment', '2031-05-10', '12:00', '13:00', 'scheduled', '', array['a0a0a0a0-0000-4000-8000-000000000001'::uuid]);
+    raise exception 'FALHA OS: reabriu visita assinada';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Catálogo de planos: quem não é super admin não escreve nem lê o histórico.

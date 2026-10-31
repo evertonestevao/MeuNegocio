@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreditCard, Mail, ShieldCheck, Users } from "lucide-react";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
@@ -20,6 +21,8 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const { active } = await getActiveTenant();
   if (!active) return null; // layout já redirecionou
+  // O técnico não usa o painel do escritório: entra direto nas próprias visitas.
+  if (active.role === "technician") redirect("/dashboard/my-visits");
 
   const client = await getSupabaseServerClient();
   const tenant = await getTenantService();

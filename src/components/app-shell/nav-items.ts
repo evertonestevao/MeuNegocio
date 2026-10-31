@@ -2,6 +2,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  ClipboardCheck,
   HardHat,
   CreditCard,
   FileText,
@@ -32,8 +33,9 @@ export const navItems: NavItem[] = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["owner", "admin", "member", "technician"],
+    roles: ["owner", "admin", "member"],
   },
+  { title: "Minhas visitas", href: "/dashboard/my-visits", icon: ClipboardCheck, roles: ["technician"] },
   { title: "Agenda", href: "/dashboard/schedule", icon: CalendarDays, roles: ["owner", "admin", "member"] },
   { title: "Orçamentos", href: "/dashboard/quotes", icon: FileText, roles: ["owner", "admin", "member"] },
   { title: "Clientes", href: "/dashboard/clients", icon: Building2, roles: ["owner", "admin", "member"] },
@@ -52,6 +54,7 @@ export const navItems: NavItem[] = [
 
 /** Título da página atual a partir do pathname (breadcrumb/header mobile). */
 export function titleForPath(pathname: string, items: ShellNavItem[] = navItems): string {
+  if (pathname.startsWith("/dashboard/work-orders")) return "Ordem de serviço";
   const match = [...items]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));

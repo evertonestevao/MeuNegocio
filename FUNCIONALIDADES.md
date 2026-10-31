@@ -30,6 +30,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 18. [Orçamentos](#18-orçamentos)
 19. [Equipe](#19-equipe)
 20. [Agenda](#20-agenda)
+21. [Ordem de serviço](#21-ordem-de-serviço)
 
 ---
 
@@ -49,6 +50,8 @@ member de outra.
 | Ver e alterar toda a agenda | ✅ | ✅ | ✅ | — |
 | Ver nome, função e situação da equipe | ✅ | ✅ | ✅ | — |
 | Cadastrar a equipe e ver contrato e pagamento | ✅ | ✅ | — | — |
+| Ver as ordens de serviço | ✅ | ✅ | ✅ | Só as próprias |
+| Preencher a ordem de serviço | Quem está escalado | Quem está escalado | Quem está escalado | Só as próprias |
 | Editar nome e dados da empresa | ✅ | ✅ | — | — |
 | Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
 | Ver auditoria | ✅ | ✅ | — | — |
@@ -240,7 +243,9 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
   | Item | Quem vê |
   |---|---|
-  | Dashboard, Configurações | Todos |
+  | Dashboard | Owner, admin, member. O técnico entra direto em Minhas visitas |
+  | Configurações | Todos |
+  | Minhas visitas | Técnico |
   | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
   | Membros, Auditoria | Owner, admin |
   | Billing | Owner |
@@ -284,7 +289,7 @@ significa escrever um adapter novo, sem mexer em regra de negócio.
 |---|---|---|
 | `PaymentGateway` | Asaas, Stripe, fake | `PAYMENT_GATEWAY` |
 | `EmailProvider` | Resend, console | `EMAIL_PROVIDER` |
-| `StorageProvider` | Supabase Storage | — |
+| `StorageProvider` | Supabase Storage (avatares em bucket público; fotos e assinaturas em bucket privado, com link temporário) | — |
 | `NotificationProvider` | console | `NOTIFICATION_PROVIDER` |
 | `ErrorReporter` | Sentry, console | `ERROR_REPORTER` |
 | Rate limiter | memória, Upstash Redis | `RATE_LIMIT_STORE` |
@@ -445,8 +450,33 @@ Regras:
 - Exige cliente, local do próprio cliente, data, fim depois do início e ao menos 1 pessoa ativa. Quem foi desativado depois de escalado pode continuar na visita, mas não entra em visita nova.
 - **Conflito de horário:** a mesma pessoa não fica em duas visitas ativas (agendada ou em andamento) com horário sobreposto. O formulário avisa ao vivo, e o banco bloqueia com uma restrição `EXCLUDE`, à prova de dois usuários salvando ao mesmo tempo. Horários que só encostam não conflitam. Cancelar, concluir ou excluir libera o horário.
 - Datas e horas são data + hora local da empresa.
-- O técnico vê só as próprias visitas no banco; a tela dele chega com a ordem de serviço.
+- O técnico vê só as próprias visitas, sem editar, em Minhas visitas (seção 21).
+- Visita com ordem de serviço assinada não pode ser reaberta nem excluída.
 
 Toda escrita passa por funções do banco; o client só lê estas tabelas. Testes em `supabase/tests/rls_test.sql`.
 
 Código: `src/services/visitService.ts`, `src/lib/calendar.ts`, `src/server/actions/visits.ts`, `src/features/visits/`, `supabase/migrations/20261031150000_employees_visits.sql`.
+
+## 21. Ordem de serviço
+
+Tela para celular em `/dashboard/my-visits` (lista) e `/dashboard/work-orders/[visitId]` (ordem de serviço). Recurso `work_orders` do plano.
+
+| Função | Quem | Regras |
+|---|---|---|
+| **Ver as próprias visitas** | Quem está escalado | Próximas e concluídas recentes. Mostra cliente, local, contato e equipe, sem documento nem observações do cliente. Só funciona com pessoa da equipe vinculada ao usuário. |
+| **"Cheguei"** | Quem está escalado | Põe a visita em andamento e cria a ordem de serviço com o checklist padrão do tipo da visita. Repetir não duplica. |
+| **Checklist, relatório e início real** | Quem está escalado | Salvos automaticamente enquanto a ordem está aberta. |
+| **Fotos com legenda** | Quem está escalado | Até 30 por ordem. Comprimidas no navegador (até 900 KB). O servidor confere o tipo real do arquivo. |
+| **Concluir** | Quem está escalado | Exige assinatura, nome de quem assinou e fim depois do início. A visita vira concluída, e a ordem não muda mais. |
+| **Ver e baixar PDF** | Owner, admin, member; técnico nas próprias | O escritório só lê. PDF com checklist, relatório, fotos e assinatura, gerado no navegador. |
+
+Regras:
+
+- Fotos e assinatura ficam no bucket privado `work-orders`, com policies por empresa e visita, e abrem por link temporário de 1 hora. Nunca ficam como data URL no banco.
+- Outro técnico da empresa não abre a visita. Quem não está escalado não preenche, mesmo sendo owner.
+- O escritório ainda pode marcar uma visita como concluída direto na agenda, sem ordem de serviço.
+- Os apontamentos de horas gerados ao concluir entram com o módulo de Horas.
+
+Toda escrita passa por funções do banco; o client só lê estas tabelas. Testes em `supabase/tests/rls_test.sql`.
+
+Código: `src/services/workOrderService.ts`, `src/server/actions/workOrders.ts`, `src/features/work-orders/`, `supabase/migrations/20261031160000_work_orders.sql`.

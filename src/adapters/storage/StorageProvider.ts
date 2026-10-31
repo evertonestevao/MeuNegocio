@@ -20,4 +20,6 @@ export interface StorageProvider {
   remove(path: string): Promise<void>;
   /** URL pública do arquivo (buckets públicos). Função pura, sem I/O. */
   getPublicUrl(path: string): string;
+  /** Link temporário de um arquivo em bucket privado. Lança AppError se não houver acesso. */
+  createSignedUrl(path: string, expiresInSeconds: number): Promise<string>;
 }

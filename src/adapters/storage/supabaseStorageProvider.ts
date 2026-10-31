@@ -35,5 +35,13 @@ export function createSupabaseStorageProvider(
     getPublicUrl(path: string) {
       return client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
     },
+
+    async createSignedUrl(path: string, expiresInSeconds: number) {
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+      if (error || !data) {
+        throw new AppError("internal_error", "Falha ao abrir arquivo", error);
+      }
+      return data.signedUrl;
+    },
   };
 }

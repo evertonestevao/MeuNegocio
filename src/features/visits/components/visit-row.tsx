@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/dates";
 import type { VisitListItem } from "@/types/database";
@@ -27,7 +28,14 @@ export function VisitRow({ visit, showDate, showClient = true, actions }: { visi
           <Badge variant="outline">{VISIT_KIND_LABEL[visit.kind]}</Badge>
           <Badge variant={STATUS_VARIANT[visit.status]}>{VISIT_STATUS_LABEL[visit.status]}</Badge>
         </div>
-        {actions ? <div className="flex">{actions}</div> : null}
+        <div className="flex items-center">
+          {visit.status === "in_progress" || visit.status === "completed" ? (
+            <Link href={`/dashboard/work-orders/${visit.id}`} className="px-1 text-xs underline underline-offset-4">
+              Ordem de serviço
+            </Link>
+          ) : null}
+          {actions}
+        </div>
       </div>
     </div>
   );
