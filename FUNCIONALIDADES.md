@@ -107,7 +107,7 @@ Código: `src/services/termsService.ts`, `src/server/actions/terms.ts`.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Criar empresa** (`/onboarding`) | Qualquer usuário logado | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). |
+| **Criar empresa** (`/onboarding`) | Qualquer usuário logado | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
 | **Várias empresas por usuário** | Todos | O seletor no topo do painel troca a **empresa ativa**. |
 | **Empresa ativa** | Todos | Guardada em cookie só como preferência. A cada request o servidor confere se o usuário ainda é membro. |
 | **Editar nome** (Configurações) | Owner, admin | — |

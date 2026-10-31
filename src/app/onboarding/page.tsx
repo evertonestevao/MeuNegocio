@@ -27,7 +27,7 @@ export default async function OnboardingPage() {
       <Link href="/" className="mb-8 text-2xl font-semibold tracking-tight">
         {brand.name}
       </Link>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-xl">
         <CardHeader>
           <CardTitle>Crie sua empresa</CardTitle>
           <CardDescription>
@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateCompanyForm requireTerms={requireTerms} />
+          <CreateCompanyForm requireTerms={requireTerms} withProfile />
         </CardContent>
       </Card>
     </div>

@@ -3,12 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { getServerEnv } from "@/config/env";
 import { getEmailProvider } from "@/adapters/email";
+import { reportError } from "@/adapters/errorReporting";
 import { AppError } from "@/lib/errors";
 import { recordCompanyReferralFromCookie } from "@/modules/resellers/server";
 import { recordAudit } from "@/server/audit";
 import { getServerBillingService, syncCompanySeats } from "@/server/billing";
+import { getCompanyProfileService } from "@/server/quotes";
 import { getRequestEvidence, getTermsService } from "@/server/terms";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { createSupabaseInviteRepository } from "@/repositories/supabase/inviteRepository";
@@ -17,6 +20,7 @@ import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { ACTIVE_COMPANY_COOKIE, getTenantService } from "@/server/tenant";
 import { createAuditService } from "@/services/auditService";
+import { companyProfileSchema } from "@/services/companyProfileService";
 import { createEmailService } from "@/services/emailService";
 import { createInviteService } from "@/services/inviteService";
 import { permissionService } from "@/services/permissionService";
@@ -42,7 +46,14 @@ export async function createCompanyAction(
   formData: FormData,
 ): Promise<ActionState> {
   let companyId: string;
+  let destination = "/dashboard";
   try {
+    // Onboarding envia os dados da empresa. Valida antes de tudo: dado inválido não deixa
+    // termos aceitos nem empresa criada pela metade.
+    const profile = formData.has("timezone")
+      ? companyProfileSchema.parse(Object.fromEntries(formData))
+      : null;
+
     // Gate de termos no onboarding: sem aceite da versão vigente, a empresa
     // não é criada (o checkbox required do form é só UX; a verdade é aqui).
     const terms = await getTermsService();
@@ -67,10 +78,23 @@ export async function createCompanyAction(
     companyId = company.id;
     await setActiveCompanyCookie(companyId);
     await recordCompanyReferralFromCookie(companyId);
+
+    if (profile) {
+      try {
+        const profiles = await getCompanyProfileService();
+        await profiles.save({ companyId, role: company.role }, profile);
+      } catch (err) {
+        // A empresa já existe: repetir o onboarding não é possível, então leva o usuário
+        // até a tela onde ele preenche de novo, em vez de perder os dados em silêncio.
+        void reportError(err, { source: "action" });
+        destination = "/dashboard/settings";
+      }
+    }
   } catch (err) {
+    if (err instanceof z.ZodError) return { error: err.issues[0]?.message ?? "Dados inválidos." };
     return toActionError(err);
   }
-  redirect("/dashboard");
+  redirect(destination);
 }
 
 // Nota: actions chamadas imperativamente (fora de <form action>) NÃO usam
