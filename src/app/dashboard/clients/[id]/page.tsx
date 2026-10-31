@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft, MapPin, Plus } from "lucide-react";
+import { CalendarDays, ChevronLeft, MapPin, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,11 @@ import {
   RemoveLocationButton,
 } from "@/features/clients/components/client-forms";
 import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatCents } from "@/lib/money";
 import { getClientService } from "@/server/clients";
 import { getQuoteService } from "@/server/quotes";
+import { getVisitService } from "@/server/schedule";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -37,6 +39,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     { companyId: active.id, role: active.role },
     { clientId: client.id, pageSize: 50 },
   );
+  const visits = (await (await getVisitService()).list({ companyId: active.id, role: active.role }, { clientId: client.id })).reverse();
   const canDelete = permissionService.canDeleteRecords(active.role);
 
   return (
@@ -55,6 +58,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
           <div className="flex flex-wrap gap-2">
             <EditClientButton client={client} />
+            <Button variant="outline" render={<Link href={`/dashboard/schedule?new=1&client=${client.id}`} />} nativeButton={false}>
+              <CalendarDays className="size-4" /> Agendar visita
+            </Button>
             <Button render={<Link href={`/dashboard/quotes/new?client=${client.id}`} />} nativeButton={false}>
               <Plus className="size-4" /> Novo orçamento
             </Button>
@@ -137,6 +143,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Visitas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {visits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">As visitas deste cliente aparecem aqui.</p>
+          ) : (
+            <div className="flex flex-col divide-y">
+              {visits.map((visit) => (
+                <VisitRow key={visit.id} visit={visit} showDate showClient={false} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

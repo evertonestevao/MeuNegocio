@@ -228,6 +228,77 @@ export interface Revenue {
   competence_date: string;
 }
 
+export type ContractType = "clt" | "pj" | "freelancer";
+
+export interface Employee {
+  id: string;
+  company_id: string;
+  name: string;
+  job_title: string | null;
+  active: boolean;
+  user_id: string | null;
+}
+
+/** Só owner e admin leem. */
+export interface EmployeePaymentDetails {
+  employee_id: string;
+  phone: string | null;
+  contract_type: ContractType;
+  hourly_cost_cents: number;
+  hourly_pay_cents: number;
+  legal_name: string | null;
+  tax_id: string | null;
+  pix_key: string | null;
+}
+
+export interface EmployeeListItem extends Employee {
+  /** Null para quem não é owner nem admin. */
+  details: EmployeePaymentDetails | null;
+  next_visit: { visit_date: string; starts_at: string; client_name: string } | null;
+  upcoming_count: number;
+}
+
+export type VisitKind = "assessment" | "execution";
+export type VisitStatus = "scheduled" | "in_progress" | "completed" | "canceled";
+
+export interface Visit {
+  id: string;
+  company_id: string;
+  client_id: string;
+  location_id: string;
+  quote_id: string | null;
+  kind: VisitKind;
+  visit_date: string;
+  starts_at: string;
+  ends_at: string;
+  status: VisitStatus;
+  notes: string | null;
+}
+
+export interface VisitListItem extends Visit {
+  client_name: string;
+  location_name: string;
+  employees: { id: string; name: string }[];
+}
+
+export interface VisitBusySlot {
+  visit_id: string;
+  employee_id: string;
+  visit_date: string;
+  starts_at: string;
+  ends_at: string;
+  client_name: string;
+}
+
+export interface QuotePickerOption {
+  id: string;
+  number: number;
+  title: string | null;
+  client_id: string;
+  location_id: string | null;
+  status: QuoteStatus;
+}
+
 export interface PlanAuditEntry {
   id: string;
   plan_id: string;

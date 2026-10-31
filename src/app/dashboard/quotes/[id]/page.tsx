@@ -3,15 +3,17 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
 import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService } from "@/server/quotes";
+import { getVisitService } from "@/server/schedule";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -30,6 +32,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   if (!detail) notFound();
   const { quote, items, responses, revenue } = detail;
 
+  const visits = await (await getVisitService()).list(actor, { quoteId: quote.id });
   const [{ clients, catalog, profile }, clientDetail, allowsPublicLink] = await Promise.all([
     loadQuoteEditorData(actor),
     quote.client_id ? (await getClientService()).getDetail(actor, quote.client_id) : Promise.resolve(null),
@@ -74,6 +77,18 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </Card>
         ))}
       </div>
+      {visits.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Visitas deste orçamento</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col divide-y">
+            {visits.map((visit) => (
+              <VisitRow key={visit.id} visit={visit} showDate showClient={false} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
       <QuoteEditor
         key={quote.updated_at}
         quote={quote}

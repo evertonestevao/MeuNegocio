@@ -27,6 +27,7 @@ export function DialogForm({
   validate,
   submitLabel,
   variant,
+  defaultOpen = false,
   children,
 }: {
   title: string;
@@ -36,9 +37,10 @@ export function DialogForm({
   validate?: (formData: FormData) => unknown;
   submitLabel: string;
   variant?: "default" | "destructive";
+  defaultOpen?: boolean;
   children?: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [state, dispatch, pending] = useActionState(
     async (prev: ActionState | undefined, data: FormData): Promise<ActionState | undefined> => {
       try {

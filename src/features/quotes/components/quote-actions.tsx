@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { Copy, Download, Link2, MessageCircle } from "lucide-react";
+import { CalendarDays, Copy, Download, Link2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { DialogForm } from "@/components/dialog-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -182,6 +182,12 @@ export function QuoteActions({
             <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "refuse" }} title="Cliente recusou" description="Marcar este orçamento como recusado pelo cliente? Recusado é final." label="Cliente recusou" />
             <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "expire" }} title="Marcar como expirado" description="Marcar como expirado? Depois você pode reabrir com nova validade." label="Marcar como expirado" />
           </>
+        ) : null}
+
+        {(quote.status === "approved" || quote.status === "closed") && quote.client_id ? (
+          <Button variant="outline" render={<a href={`/dashboard/schedule?new=1&quote=${quote.id}`} />} nativeButton={false}>
+            <CalendarDays className="size-4" /> Agendar execução
+          </Button>
         ) : null}
 
         {quote.status === "approved" && canClose ? (

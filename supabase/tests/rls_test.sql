@@ -364,7 +364,7 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_responses', 'revenues',
+      'quotes', 'quote_items', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -373,13 +373,13 @@ begin
     union all
     select 'authenticated', t, 'UPDATE' from unnest(array[
       'profiles', 'companies', 'company_members', 'company_invites', 'subscriptions', 'settings',
-      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules',
-      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs']) t
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details']) t
   ),
   actual as (
     select grantee::text, table_name::text, privilege_type::text
@@ -849,6 +849,183 @@ begin
   if public.expire_due_quotes() < 1 then raise exception 'FALHA job: não expirou vencido'; end if;
   select status into v_status from public.quotes where id = v_quote;
   if v_status <> 'expired' then raise exception 'FALHA job: status %', v_status; end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Equipe e agenda: pagamento só para owner/admin; técnico vê só as próprias visitas; a mesma
+-- pessoa não fica em duas visitas ativas no mesmo horário.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.employees (id, company_id, name, active, user_id) values
+  ('a0a0a0a0-0000-4000-8000-000000000001', 'c1c1c1c1-0000-4000-8000-000000000001', 'Técnico Vinculado', true, 'e4e4e4e4-0000-4000-8000-000000000004'),
+  ('a0a0a0a0-0000-4000-8000-000000000002', 'c1c1c1c1-0000-4000-8000-000000000001', 'Outra Pessoa', true, null),
+  ('a0a0a0a0-0000-4000-8000-000000000003', 'c1c1c1c1-0000-4000-8000-000000000001', 'Inativa', false, null),
+  ('a0a0a0a0-0000-4000-8000-000000000004', 'c2c2c2c2-0000-4000-8000-000000000002', 'Do Bob', true, null);
+insert into public.employee_payment_details (company_id, employee_id, hourly_pay_cents) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'a0a0a0a0-0000-4000-8000-000000000001', 5000);
+
+do $$
+begin
+  begin
+    insert into public.employees (company_id, name, user_id) values
+      ('c1c1c1c1-0000-4000-8000-000000000001', 'Forasteiro', 'b2b2b2b2-0000-4000-8000-000000000002');
+    raise exception 'FALHA equipe: vinculou usuário de outra empresa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+-- Member: lê equipe sem pagamento, não edita, agenda sim.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare n int; v_a uuid; v_b uuid; v_c uuid;
+  co uuid := 'c1c1c1c1-0000-4000-8000-000000000001';
+  cli uuid := 'f3f3f3f3-0000-4000-8000-000000000003';
+  loc uuid := 'f4f4f4f4-0000-4000-8000-000000000004';
+  tec uuid := 'a0a0a0a0-0000-4000-8000-000000000001';
+  outra uuid := 'a0a0a0a0-0000-4000-8000-000000000002';
+  inativa uuid := 'a0a0a0a0-0000-4000-8000-000000000003';
+begin
+  select count(*) into n from public.employees;
+  if n <> 3 then raise exception 'FALHA equipe: member deveria ver 3, viu %', n; end if;
+  select count(*) into n from public.employee_payment_details;
+  if n <> 0 then raise exception 'FALHA equipe: member leu pagamento'; end if;
+  update public.employees set name = 'Hackeado' where id = tec;
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FALHA equipe: member editou'; end if;
+
+  v_a := public.save_visit(co, null, cli, loc, null, 'execution', '2031-05-10', '08:00', '12:00', 'scheduled', '', array[tec]);
+
+  -- Sobreposição recusada; encostar não conflita.
+  begin
+    perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-05-10', '11:00', '13:00', 'scheduled', '', array[outra, tec]);
+    raise exception 'FALHA agenda: aceitou sobreposição';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  v_b := public.save_visit(co, null, cli, loc, null, 'assessment', '2031-05-10', '12:00', '13:00', 'scheduled', '', array[tec]);
+
+  -- Mover para cima de outra visita também é recusado.
+  begin
+    perform public.save_visit(co, v_b, cli, loc, null, 'assessment', '2031-05-10', '11:30', '13:00', 'scheduled', '', array[tec]);
+    raise exception 'FALHA agenda: mover criou sobreposição';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Cancelada não bloqueia; visita sem conflito reativa, com conflito não.
+  perform public.save_visit(co, v_a, cli, loc, null, 'execution', '2031-05-10', '08:00', '12:00', 'canceled', '', array[tec]);
+  v_c := public.save_visit(co, null, cli, loc, null, 'execution', '2031-05-10', '09:00', '10:00', 'scheduled', '', array[tec]);
+  begin
+    perform public.save_visit(co, v_a, cli, loc, null, 'execution', '2031-05-10', '08:00', '12:00', 'scheduled', '', array[tec]);
+    raise exception 'FALHA agenda: reativou sobre outra visita';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Regras de preenchimento.
+  begin
+    perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-06-10', '08:00', '12:00', 'scheduled', '', array[]::uuid[]);
+    raise exception 'FALHA agenda: aceitou sem equipe';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-06-10', '08:00', '12:00', 'scheduled', '', array[inativa]);
+    raise exception 'FALHA agenda: aceitou pessoa inativa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-06-10', '12:00', '08:00', 'scheduled', '', array[tec]);
+    raise exception 'FALHA agenda: aceitou fim antes do início';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-06-10', '08:00', '12:00', 'scheduled', '', array['a0a0a0a0-0000-4000-8000-000000000004'::uuid]);
+    raise exception 'FALHA agenda: escalou pessoa de outra empresa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Visita só de outra pessoa, para provar o filtro do técnico.
+  perform public.save_visit(co, null, cli, loc, null, 'execution', '2031-07-01', '08:00', '09:00', 'scheduled', '', array[outra]);
+
+  begin
+    perform public.delete_visit(co, v_b);
+    raise exception 'FALHA agenda: member excluiu visita';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    update public.visits set notes = 'x' where id = v_b;
+    raise exception 'FALHA agenda: alterou visits direto';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Técnico: só as próprias visitas, sem editar, sem equipe nem pagamento.
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.visits where visit_date = '2031-07-01';
+  if n <> 0 then raise exception 'FALHA agenda: técnico viu visita de outra pessoa'; end if;
+  select count(*) into n from public.visits where visit_date = '2031-05-10';
+  if n = 0 then raise exception 'FALHA agenda: técnico não viu a própria visita'; end if;
+  select count(*) into n from public.employees;
+  if n <> 0 then raise exception 'FALHA equipe: técnico leu equipe'; end if;
+  select count(*) into n from public.employee_payment_details;
+  if n <> 0 then raise exception 'FALHA equipe: técnico leu pagamento'; end if;
+  begin
+    perform public.save_visit('c1c1c1c1-0000-4000-8000-000000000001', null, 'f3f3f3f3-0000-4000-8000-000000000003', 'f4f4f4f4-0000-4000-8000-000000000004', null, 'execution', '2031-08-01', '08:00', '09:00', 'scheduled', '', array['a0a0a0a0-0000-4000-8000-000000000001'::uuid]);
+    raise exception 'FALHA agenda: técnico criou visita';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Outra empresa não lê nem age. Owner vê pagamento e exclui, e a exclusão libera o horário.
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.visits where company_id = 'c1c1c1c1-0000-4000-8000-000000000001';
+  if n <> 0 then raise exception 'FALHA agenda: outra empresa leu'; end if;
+  select count(*) into n from public.employees where company_id = 'c1c1c1c1-0000-4000-8000-000000000001';
+  if n <> 0 then raise exception 'FALHA equipe: outra empresa leu'; end if;
+  begin
+    perform public.save_visit('c2c2c2c2-0000-4000-8000-000000000002', null, 'f3f3f3f3-0000-4000-8000-000000000003', 'f4f4f4f4-0000-4000-8000-000000000004', null, 'execution', '2031-08-01', '08:00', '09:00', 'scheduled', '', array['a0a0a0a0-0000-4000-8000-000000000004'::uuid]);
+    raise exception 'FALHA agenda: usou cliente de outra empresa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare n int; v_id uuid;
+begin
+  select count(*) into n from public.employee_payment_details;
+  if n <> 1 then raise exception 'FALHA equipe: owner não leu pagamento'; end if;
+  select id into v_id from public.visits where visit_date = '2031-05-10' and starts_at = '09:00';
+  perform public.delete_visit('c1c1c1c1-0000-4000-8000-000000000001', v_id);
+  perform public.save_visit('c1c1c1c1-0000-4000-8000-000000000001', null, 'f3f3f3f3-0000-4000-8000-000000000003', 'f4f4f4f4-0000-4000-8000-000000000004', null, 'execution', '2031-05-10', '09:00', '10:00', 'scheduled', '', array['a0a0a0a0-0000-4000-8000-000000000001'::uuid]);
+end $$;
+
+-- A restrição do banco segura mesmo quem escreve direto, como numa corrida entre dois usuários.
+reset role;
+do $$
+begin
+  insert into public.visit_employees (company_id, visit_id, employee_id, time_range)
+  select v.company_id, v.id, 'a0a0a0a0-0000-4000-8000-000000000001', tsrange('2031-05-10 09:30', '2031-05-10 09:45', '[)')
+  from public.visits v where v.visit_date = '2031-07-01';
+  raise exception 'FALHA agenda: restrição EXCLUDE não barrou';
+exception when exclusion_violation then null;
 end $$;
 
 -- ---------------------------------------------------------------------------

@@ -28,6 +28,8 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 16. [Clientes](#16-clientes)
 17. [Catálogo](#17-catálogo)
 18. [Orçamentos](#18-orçamentos)
+19. [Equipe](#19-equipe)
+20. [Agenda](#20-agenda)
 
 ---
 
@@ -44,6 +46,9 @@ member de outra.
 | Ver o catálogo; criar, editar e enviar orçamentos | ✅ | ✅ | ✅ | — |
 | Editar o catálogo e ver custo e margem | ✅ | ✅ | — | — |
 | Fechar orçamento e desfazer o fechamento | ✅ | ✅ | — | — |
+| Ver e alterar toda a agenda | ✅ | ✅ | ✅ | — |
+| Ver nome, função e situação da equipe | ✅ | ✅ | ✅ | — |
+| Cadastrar a equipe e ver contrato e pagamento | ✅ | ✅ | — | — |
 | Editar nome e dados da empresa | ✅ | ✅ | — | — |
 | Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
 | Ver auditoria | ✅ | ✅ | — | — |
@@ -236,7 +241,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Item | Quem vê |
   |---|---|
   | Dashboard, Configurações | Todos |
-  | Orçamentos, Clientes, Catálogo | Owner, admin, member |
+  | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
   | Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
@@ -348,11 +353,11 @@ Tela em `/dashboard/clients`, para owner, admin e member. O técnico não acessa
 | Função | Quem | Regras |
 |---|---|---|
 | **Listar e buscar** | Owner, admin, member | Por nome ou documento, 20 por página. Tabela no desktop e cards no mobile. |
-| **Orçamentos do cliente** | Owner, admin, member | A tela do cliente lista os orçamentos dele e cria um novo já com o cliente preenchido. |
+| **Orçamentos do cliente** | Owner, admin, member | A tela do cliente lista os orçamentos e as visitas dele, e cria orçamento ou visita já com o cliente preenchido. |
 | **Criar e editar cliente** | Owner, admin, member | Nome obrigatório. Documento opcional: CPF com 11 dígitos ou CNPJ com 14. A criação respeita o limite `max_clients` do plano; acima dele, os dados continuam disponíveis e só não dá para criar novos. |
 | **Contatos** | Owner, admin, member | Nome, função, telefone e e-mail. Um único principal por cliente: o primeiro já nasce principal, e marcar outro desmarca o anterior. |
 | **Locais de atendimento** | Owner, admin, member | Nome, endereço completo e observações. |
-| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento não pode ser excluído; a mesma regra valerá para visitas quando o módulo existir. |
+| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento ou visita não pode ser excluído. |
 
 Toda alteração entra na auditoria. Isolamento por empresa testado em `supabase/tests/rls_test.sql`.
 
@@ -409,3 +414,39 @@ Outras regras:
 Toda escrita passa por funções do banco; o client só lê estas tabelas. Isolamento e permissões testados em `supabase/tests/rls_test.sql`.
 
 Código: `src/services/quoteService.ts`, `src/lib/quoteCalc.ts`, `src/server/actions/quotes.ts`, `src/features/quotes/`, `supabase/migrations/20261031140000_quotes.sql`.
+
+## 19. Equipe
+
+Tela em `/dashboard/team`. O técnico não acessa.
+
+| Função | Quem | Regras |
+|---|---|---|
+| **Ver a lista** | Owner, admin, member | Member vê só nome, função, situação e próximas visitas. |
+| **Cadastrar e editar** | Owner, admin | Nome, função, telefone, contrato (CLT, PJ ou autônomo), custo por hora, valor pago por hora, razão social, CPF ou CNPJ, Pix e ativo. |
+| **Vincular usuário** | Owner, admin | Opcional: nem toda pessoa tem login. O usuário precisa ser membro da empresa, e cada usuário se vincula a uma pessoa só. O vínculo é o que dá ao técnico acesso às próprias visitas. |
+| **Excluir** | Owner, admin | Soft delete. Quem aparece em visita não é excluído, só desativado. |
+
+Telefone, contrato e dados de pagamento ficam em uma tabela separada (`employee_payment_details`), que só owner e admin leem. Esses dados não entram na auditoria.
+
+Código: `src/services/employeeService.ts`, `src/server/actions/team.ts`, `src/features/team/`.
+
+## 20. Agenda
+
+Tela em `/dashboard/schedule`, com visões de mês e semana, filtros por pessoa e tipo e a lista do dia selecionado.
+
+| Função | Quem | Regras |
+|---|---|---|
+| **Ver e agendar** | Owner, admin, member | Tipo (visita técnica ou execução), cliente, local, data, início, fim, situação, orçamento opcional, equipe e observações. |
+| **Excluir** | Owner, admin | Soft delete. A exclusão libera o horário da equipe. |
+| **Agendar a partir de outra tela** | Owner, admin, member | "Agendar visita" no cliente e "Agendar execução" no orçamento aprovado ou fechado já preenchem os dados. |
+
+Regras:
+
+- Exige cliente, local do próprio cliente, data, fim depois do início e ao menos 1 pessoa ativa. Quem foi desativado depois de escalado pode continuar na visita, mas não entra em visita nova.
+- **Conflito de horário:** a mesma pessoa não fica em duas visitas ativas (agendada ou em andamento) com horário sobreposto. O formulário avisa ao vivo, e o banco bloqueia com uma restrição `EXCLUDE`, à prova de dois usuários salvando ao mesmo tempo. Horários que só encostam não conflitam. Cancelar, concluir ou excluir libera o horário.
+- Datas e horas são data + hora local da empresa.
+- O técnico vê só as próprias visitas no banco; a tela dele chega com a ordem de serviço.
+
+Toda escrita passa por funções do banco; o client só lê estas tabelas. Testes em `supabase/tests/rls_test.sql`.
+
+Código: `src/services/visitService.ts`, `src/lib/calendar.ts`, `src/server/actions/visits.ts`, `src/features/visits/`, `supabase/migrations/20261031150000_employees_visits.sql`.

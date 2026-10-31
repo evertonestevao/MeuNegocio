@@ -117,16 +117,19 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
 
     softDelete: (companyId, clientId) => softDeleteRow("clients", companyId, clientId),
 
-    // Visitas entram aqui quando o módulo existir.
     async hasHistory(companyId, clientId) {
-      const { count, error } = await client
-        .from("quotes")
-        .select("id", { count: "exact", head: true })
-        .eq("company_id", companyId)
-        .eq("client_id", clientId)
-        .is("deleted_at", null);
-      if (error) fail(error);
-      return (count ?? 0) > 0;
+      const counts = await Promise.all(
+        ["quotes", "visits"].map((table) =>
+          client
+            .from(table)
+            .select("id", { count: "exact", head: true })
+            .eq("company_id", companyId)
+            .eq("client_id", clientId)
+            .is("deleted_at", null),
+        ),
+      );
+      for (const { error } of counts) if (error) fail(error);
+      return counts.some(({ count }) => (count ?? 0) > 0);
     },
 
     async listContacts(companyId, clientId) {
@@ -222,16 +225,19 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
 
     softDeleteLocation: (companyId, locationId) => softDeleteRow("client_locations", companyId, locationId),
 
-    // Visitas entram aqui quando o módulo existir.
     async locationHasHistory(companyId, locationId) {
-      const { count, error } = await client
-        .from("quotes")
-        .select("id", { count: "exact", head: true })
-        .eq("company_id", companyId)
-        .eq("location_id", locationId)
-        .is("deleted_at", null);
-      if (error) fail(error);
-      return (count ?? 0) > 0;
+      const counts = await Promise.all(
+        ["quotes", "visits"].map((table) =>
+          client
+            .from(table)
+            .select("id", { count: "exact", head: true })
+            .eq("company_id", companyId)
+            .eq("location_id", locationId)
+            .is("deleted_at", null),
+        ),
+      );
+      for (const { error } of counts) if (error) fail(error);
+      return counts.some(({ count }) => (count ?? 0) > 0);
     },
   };
 }

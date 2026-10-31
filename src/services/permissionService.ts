@@ -30,7 +30,10 @@ export type Capability =
   | "records.delete" // apagar registros de negócio
   | "catalog.manage" // editar o catálogo, com custo e margem
   | "quotes.manage" // ver catálogo; criar, editar e enviar orçamentos
-  | "quotes.close"; // fechar orçamento e desfazer o fechamento
+  | "quotes.close" // fechar orçamento e desfazer o fechamento
+  | "team.view" // ver nome, função e situação da equipe
+  | "team.manage" // cadastrar equipe, com contrato e pagamento
+  | "schedule.manage"; // ver e alterar toda a agenda
 
 export interface RoleDefinition {
   /** Hierarquia: ações sobre outro membro exigem level maior que o do alvo. */
@@ -53,6 +56,9 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "catalog.manage",
         "quotes.manage",
         "quotes.close",
+        "team.view",
+        "team.manage",
+        "schedule.manage",
       ]),
     },
   ],
@@ -69,10 +75,13 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "catalog.manage",
         "quotes.manage",
         "quotes.close",
+        "team.view",
+        "team.manage",
+        "schedule.manage",
       ]),
     },
   ],
-  ["member", { level: 1, capabilities: new Set<Capability>(["clients.manage", "quotes.manage"]) }],
+  ["member", { level: 1, capabilities: new Set<Capability>(["clients.manage", "quotes.manage", "team.view", "schedule.manage"]) }],
   // Campo: as próprias visitas e ordens de serviço, decididas por dono do registro.
   ["technician", { level: 1, capabilities: new Set<Capability>() }],
 ]);
@@ -141,6 +150,21 @@ export const permissionService = {
   /** Fechar orçamento e desfazer o fechamento. */
   canCloseQuotes(role: RoleCode | string): boolean {
     return hasCapability(role, "quotes.close");
+  },
+
+  /** Ver nome, função e situação da equipe. */
+  canViewTeam(role: RoleCode | string): boolean {
+    return hasCapability(role, "team.view");
+  },
+
+  /** Cadastrar a equipe e ver contrato e pagamento. */
+  canManageTeam(role: RoleCode | string): boolean {
+    return hasCapability(role, "team.manage");
+  },
+
+  /** Ver e alterar toda a agenda. */
+  canManageSchedule(role: RoleCode | string): boolean {
+    return hasCapability(role, "schedule.manage");
   },
 
   /** Alterar papel de um membro: capability + hierarquia sobre o alvo. */
