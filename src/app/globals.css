@@ -51,7 +51,8 @@
 /*
  * Tokens de tema (plano §11): cor primária configurável NESTE arquivo.
  * Para trocar a identidade visual do produto, altere --primary e --ring
- * em :root e .dark (e --sidebar-primary, que segue a primária).
+ * em :root e .dark. O menu lateral é escuro nos dois temas, com destaque âmbar
+ * em --sidebar-primary.
  */
 :root {
   --background: oklch(1 0 0);
@@ -60,7 +61,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.511 0.204 273.9);
+  --primary: oklch(0.239 0.032 252.9);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -71,21 +72,21 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.511 0.204 273.9 / 55%);
+  --ring: oklch(0.239 0.032 252.9 / 55%);
   --chart-1: oklch(0.511 0.204 273.9);
   --chart-2: oklch(0.62 0.17 250);
   --chart-3: oklch(0.7 0.14 200);
   --chart-4: oklch(0.55 0.18 300);
   --chart-5: oklch(0.65 0.15 160);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.511 0.204 273.9);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.239 0.032 252.9);
+  --sidebar-foreground: oklch(0.966 0.006 255.5);
+  --sidebar-primary: oklch(0.813 0.167 82);
+  --sidebar-primary-foreground: oklch(0.239 0.032 252.9);
+  --sidebar-accent: oklch(0.327 0.042 253);
+  --sidebar-accent-foreground: oklch(0.966 0.006 255.5);
+  --sidebar-border: oklch(0.347 0.039 253.2);
+  --sidebar-ring: oklch(0.813 0.167 82);
 }
 
 .dark {
@@ -95,7 +96,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.673 0.182 276.7);
+  --primary: oklch(0.77 0.086 252.6);
   --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -106,7 +107,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.673 0.182 276.7 / 55%);
+  --ring: oklch(0.77 0.086 252.6 / 55%);
   /* Paleta categórica dark validada (scripts do skill dataviz):
      banda L 0.48-0.67, CVD e contraste >= 3:1 sobre a superfície dark. */
   --chart-1: oklch(0.64 0.182 276.7);
@@ -114,14 +115,14 @@
   --chart-3: oklch(0.66 0.12 195);
   --chart-4: oklch(0.55 0.16 310);
   --chart-5: oklch(0.63 0.13 160);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.209 0.026 251.5);
+  --sidebar-foreground: oklch(0.966 0.006 255.5);
+  --sidebar-primary: oklch(0.813 0.167 82);
+  --sidebar-primary-foreground: oklch(0.209 0.026 251.5);
+  --sidebar-accent: oklch(0.292 0.037 252.2);
+  --sidebar-accent-foreground: oklch(0.966 0.006 255.5);
+  --sidebar-border: oklch(0.292 0.037 252.2);
+  --sidebar-ring: oklch(0.813 0.167 82);
 }
 
 @layer base {

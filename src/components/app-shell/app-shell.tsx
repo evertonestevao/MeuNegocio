@@ -70,22 +70,25 @@ export function AppShell({
       <aside
         data-collapsed={collapsed}
         className={cn(
-          "sticky top-0 hidden h-svh shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
+          "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
           collapsed ? "w-14" : "w-60",
         )}
       >
-        <div className={cn("flex h-14 items-center border-b px-4", collapsed && "px-2 justify-center")}>
+        <div className={cn("flex h-14 items-center border-b border-sidebar-border px-4", collapsed && "px-2 justify-center")}>
           <Link href={homeHref} className="truncate font-semibold tracking-tight">
             {collapsed ? brand.name.slice(0, 1) : brand.name}
           </Link>
         </div>
         {nav(collapsed)}
-        <div className="mt-auto border-t p-2">
+        <div className="mt-auto border-t border-sidebar-border p-2">
           <Button
             variant="ghost"
             size={collapsed ? "icon" : "sm"}
             onClick={toggleCollapsed}
-            className={cn("w-full", !collapsed && "justify-start gap-2")}
+            className={cn(
+              "w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              !collapsed && "justify-start gap-2",
+            )}
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
           >
             {collapsed ? <ChevronsRight /> : <ChevronsLeft />}
@@ -96,9 +99,12 @@ export function AppShell({
 
       {/* Sidebar mobile: mesmo SidebarNav dentro de um drawer off-canvas. */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="left" className="w-72 p-0 lg:hidden">
-          <SheetHeader className="h-14 justify-center border-b px-4">
-            <SheetTitle className="text-left font-semibold">{brand.name}</SheetTitle>
+        <SheetContent
+          side="left"
+          className="w-72 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground lg:hidden"
+        >
+          <SheetHeader className="h-14 justify-center border-b border-sidebar-border px-4">
+            <SheetTitle className="text-left font-semibold text-sidebar-foreground">{brand.name}</SheetTitle>
           </SheetHeader>
           {nav(false, () => setDrawerOpen(false))}
         </SheetContent>

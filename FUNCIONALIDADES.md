@@ -1,12 +1,12 @@
 # Funcionalidades do sistema
 
-O que o starter kit faz, quem pode usar cada função e quais regras se aplicam. Para setup,
+O que o MeuNegócio faz, quem pode usar cada função e quais regras se aplicam. Para setup,
 arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-10-30
+**Última atualização:** 2026-10-31
 
 ## Sumário
 
@@ -220,7 +220,8 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
-- **Tema** claro e escuro, com cor primária em `src/app/globals.css`.
+- **Tema** claro e escuro, com cor primária em `src/app/globals.css`. O menu lateral é escuro nos dois temas.
+- **Nome do produto:** provisório e editável só em `src/config/brand.ts`. Um teste falha se o nome aparecer fixo em outro arquivo de `src/`.
 - **Acessibilidade:** link "Pular para o conteúdo" (primeiro Tab), rótulos em pt-BR para leitores
   de tela, descrição textual nos gráficos.
 
