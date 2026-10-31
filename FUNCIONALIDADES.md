@@ -26,6 +26,8 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 14. [Integrações e provedores trocáveis](#14-integrações-e-provedores-trocáveis)
 15. [Revendedores (em construção)](#15-revendedores-em-construção)
 16. [Clientes](#16-clientes)
+17. [Catálogo](#17-catálogo)
+18. [Orçamentos](#18-orçamentos)
 
 ---
 
@@ -39,7 +41,10 @@ member de outra.
 | Ver dados da empresa e lista de membros | ✅ | ✅ | ✅ | ✅ |
 | Ver, criar e editar clientes, contatos e locais | ✅ | ✅ | ✅ | — |
 | Apagar registros de negócio | ✅ | ✅ | — | — |
-| Editar nome da empresa | ✅ | ✅ | — | — |
+| Ver o catálogo; criar, editar e enviar orçamentos | ✅ | ✅ | ✅ | — |
+| Editar o catálogo e ver custo e margem | ✅ | ✅ | — | — |
+| Fechar orçamento e desfazer o fechamento | ✅ | ✅ | — | — |
+| Editar nome e dados da empresa | ✅ | ✅ | — | — |
 | Convidar, revogar convite, mudar papel, remover membro | ✅ | ✅¹ | — | — |
 | Ver auditoria | ✅ | ✅ | — | — |
 | Assinar, trocar e cancelar plano | ✅ | — | — | — |
@@ -231,7 +236,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Item | Quem vê |
   |---|---|
   | Dashboard, Configurações | Todos |
-  | Clientes | Owner, admin, member |
+  | Orçamentos, Clientes, Catálogo | Owner, admin, member |
   | Membros, Auditoria | Owner, admin |
   | Billing | Owner |
 
@@ -248,6 +253,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador, dados, bases legais, suboperadores, cookies, direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, como pedir. |
+| `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 
 O rodapé mostra os dados legais da empresa (`brand.legal` em `src/config/brand.ts`): razão social,
 CNPJ, endereço, email de suporte e do encarregado de dados.
@@ -342,11 +348,64 @@ Tela em `/dashboard/clients`, para owner, admin e member. O técnico não acessa
 | Função | Quem | Regras |
 |---|---|---|
 | **Listar e buscar** | Owner, admin, member | Por nome ou documento, 20 por página. Tabela no desktop e cards no mobile. |
+| **Orçamentos do cliente** | Owner, admin, member | A tela do cliente lista os orçamentos dele e cria um novo já com o cliente preenchido. |
 | **Criar e editar cliente** | Owner, admin, member | Nome obrigatório. Documento opcional: CPF com 11 dígitos ou CNPJ com 14. A criação respeita o limite `max_clients` do plano; acima dele, os dados continuam disponíveis e só não dá para criar novos. |
 | **Contatos** | Owner, admin, member | Nome, função, telefone e e-mail. Um único principal por cliente: o primeiro já nasce principal, e marcar outro desmarca o anterior. |
 | **Locais de atendimento** | Owner, admin, member | Nome, endereço completo e observações. |
-| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento ou visita não será excluído quando esses módulos existirem. |
+| **Excluir cliente, contato ou local** | Owner, admin | Soft delete. Removido o contato principal, o mais antigo assume. Cliente ou local com orçamento não pode ser excluído; a mesma regra valerá para visitas quando o módulo existir. |
 
 Toda alteração entra na auditoria. Isolamento por empresa testado em `supabase/tests/rls_test.sql`.
 
 Código: `src/services/clientService.ts`, `src/server/actions/clients.ts`, `src/features/clients/`.
+
+## 17. Catálogo
+
+Tela em `/dashboard/catalog`, com produtos e serviços.
+
+| Função | Quem | Regras |
+|---|---|---|
+| **Ver e usar nos orçamentos** | Owner, admin, member | Member vê nome e preço, sem custo nem margem. O técnico não acessa. |
+| **Criar e editar** | Owner, admin | Tipo, nome, descrição, unidade, modo de preço (fechado ou por hora, só em serviços), preço, custo e ativo. Item inativo não aparece ao montar orçamentos. |
+| **Excluir** | Owner, admin | Soft delete. Orçamentos guardam cópia dos valores e não mudam ao alterar ou excluir um item. |
+
+O custo fica em uma tabela separada (`catalog_item_costs`), que só owner e admin leem.
+
+Código: `src/services/catalogService.ts`, `src/server/actions/catalog.ts`, `src/features/catalog/`.
+
+## 18. Orçamentos
+
+Telas em `/dashboard/quotes`. O técnico não acessa.
+
+**Cálculo:** preço fechado = quantidade × preço; por hora = horas × pessoas (mínimo 1) × valor por hora. Arredonda só no fim de cada linha. Total = subtotal − desconto, nunca negativo. O banco recalcula ao salvar. Valores em centavos.
+
+| De | Para | Quem | Regras |
+|---|---|---|---|
+| Rascunho | Enviado | Owner, admin, member | Exige cliente e ao menos 1 item. Sem validade, usa a padrão da empresa. Enviar pelo WhatsApp já marca como enviado. |
+| Rascunho ou enviado | Recusado | Owner, admin, member | Recusado é final. |
+| Enviado | Aprovado | Owner, admin, member, ou o cliente pelo link | Pode ser registrado à mão quando o cliente responde por telefone. |
+| Enviado | Expirado | Owner, admin, member, ou o job | O job roda de hora em hora e usa o fuso da empresa. |
+| Expirado | Rascunho | Owner, admin, member | Reabrir pede nova validade. |
+| Aprovado | Fechado | Owner, admin | Pede valor (> 0) e data de competência e cria a receita. |
+| Fechado | Aprovado | Owner, admin | "Desfazer fechamento" apaga a receita. |
+
+Outras regras:
+
+- **Número** sequencial por empresa, gerado no banco, sem colisão.
+- **Só rascunho é editável.** Os demais são somente leitura; "Duplicar" cria um rascunho novo com número e link próprios.
+- **Excluir:** owner e admin, em rascunho, recusado ou expirado. Enviado precisa antes ser recusado ou expirado; aprovado e fechado não podem ser excluídos.
+- **Limite do plano:** `max_quotes_month` vale ao criar e duplicar. Orçamentos excluídos continuam contando no mês. Acima do limite nada é apagado, e os rascunhos existentes seguem editáveis.
+- **Custo, lucro e margem** estimados aparecem só para owner e admin, com o custo atual do catálogo, e nunca vão para o PDF nem para o link.
+- **PDF** gerado no navegador (`jspdf`). **WhatsApp** por link `wa.me`, sem provedor, para o contato principal.
+- **Dados para orçamentos** (Configurações, owner e admin): CNPJ, telefone, e-mail, endereço, validade padrão, observações padrão e fuso. Todos os papéis leem, porque o documento precisa deles.
+
+**Link de aprovação** (`/orcamento/[token]`, recurso `public_approval` do plano):
+
+- Sem login, com token aleatório próprio de 256 bits, nunca o id do orçamento. Rascunho não abre.
+- Mostra só o que o cliente precisa ver e permite baixar o PDF.
+- Aceita resposta apenas com status enviado e dentro da validade, uma única vez. Exige nome, e motivo na recusa.
+- Rate limit por IP: 10 respostas a cada 10 minutos e 60 visualizações por minuto. A escrita passa pelo servidor.
+- A resposta aparece no orçamento e entra na auditoria.
+
+Toda escrita passa por funções do banco; o client só lê estas tabelas. Isolamento e permissões testados em `supabase/tests/rls_test.sql`.
+
+Código: `src/services/quoteService.ts`, `src/lib/quoteCalc.ts`, `src/server/actions/quotes.ts`, `src/features/quotes/`, `supabase/migrations/20261031140000_quotes.sql`.

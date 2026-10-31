@@ -67,6 +67,22 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
       return count ?? 0;
     },
 
+    async listForPicker(companyId) {
+      const { data, error } = await client
+        .from("clients")
+        .select("id, name, locations:client_locations(id, name, deleted_at)")
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) fail(error);
+      type Row = { id: string; name: string; locations: { id: string; name: string; deleted_at: string | null }[] };
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        name: row.name,
+        locations: row.locations.filter((location) => !location.deleted_at).map(({ id, name }) => ({ id, name })),
+      }));
+    },
+
     async get(companyId, clientId) {
       const { data, error } = await client
         .from("clients")
@@ -101,9 +117,16 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
 
     softDelete: (companyId, clientId) => softDeleteRow("clients", companyId, clientId),
 
-    // Orçamentos e visitas entram aqui quando esses módulos existirem.
-    async hasHistory() {
-      return false;
+    // Visitas entram aqui quando o módulo existir.
+    async hasHistory(companyId, clientId) {
+      const { count, error } = await client
+        .from("quotes")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("client_id", clientId)
+        .is("deleted_at", null);
+      if (error) fail(error);
+      return (count ?? 0) > 0;
     },
 
     async listContacts(companyId, clientId) {
@@ -199,9 +222,16 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
 
     softDeleteLocation: (companyId, locationId) => softDeleteRow("client_locations", companyId, locationId),
 
-    // Orçamentos e visitas entram aqui quando esses módulos existirem.
-    async locationHasHistory() {
-      return false;
+    // Visitas entram aqui quando o módulo existir.
+    async locationHasHistory(companyId, locationId) {
+      const { count, error } = await client
+        .from("quotes")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("location_id", locationId)
+        .is("deleted_at", null);
+      if (error) fail(error);
+      return (count ?? 0) > 0;
     },
   };
 }

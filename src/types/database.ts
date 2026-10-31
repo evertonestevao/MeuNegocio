@@ -133,6 +133,101 @@ export interface ClientLocation {
   updated_at: string;
 }
 
+export interface ClientPickerOption {
+  id: string;
+  name: string;
+  locations: { id: string; name: string }[];
+}
+
+export interface CompanyProfile {
+  company_id: string;
+  cnpj: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  quote_validity_days: number;
+  quote_default_notes: string | null;
+  timezone: string;
+}
+
+export type CatalogKind = "product" | "service";
+export type PricingMode = "fixed" | "hourly";
+
+export interface CatalogItem {
+  id: string;
+  company_id: string;
+  kind: CatalogKind;
+  name: string;
+  description: string | null;
+  unit: string;
+  pricing_mode: PricingMode;
+  price_cents: number;
+  active: boolean;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Só preenchido para owner e admin; a tabela de custos é restrita a eles. */
+  cost_cents: number | null;
+}
+
+export type QuoteStatus = "draft" | "sent" | "approved" | "refused" | "expired" | "closed";
+
+export interface Quote {
+  id: string;
+  company_id: string;
+  number: number;
+  client_id: string | null;
+  location_id: string | null;
+  title: string | null;
+  status: QuoteStatus;
+  valid_until: string | null;
+  discount_cents: number;
+  subtotal_cents: number;
+  total_cents: number;
+  notes: string | null;
+  public_token: string;
+  sent_at: string | null;
+  approved_at: string | null;
+  refused_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuoteListItem extends Quote {
+  client_name: string | null;
+}
+
+export interface QuoteItem {
+  id: string;
+  quote_id: string;
+  catalog_item_id: string | null;
+  sort_order: number;
+  description: string;
+  unit: string;
+  pricing_mode: PricingMode;
+  quantity: number;
+  people: number;
+  unit_price_cents: number;
+  line_total_cents: number;
+}
+
+export interface QuoteResponse {
+  id: string;
+  quote_id: string;
+  decision: "approved" | "refused";
+  name: string;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface Revenue {
+  id: string;
+  quote_id: string;
+  amount_cents: number;
+  competence_date: string;
+}
+
 export interface PlanAuditEntry {
   id: string;
   plan_id: string;

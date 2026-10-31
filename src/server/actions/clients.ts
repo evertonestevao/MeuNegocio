@@ -11,16 +11,8 @@ import {
 import { AppError } from "@/lib/errors";
 import { recordAudit } from "@/server/audit";
 import { getClientService } from "@/server/clients";
-import { getActiveTenant } from "@/server/tenant";
-import type { ActorContext } from "@/services/clientService";
+import { getActor } from "@/server/actor";
 import { toActionError, type ActionState } from "./action-state";
-
-/** A empresa vem sempre da sessão no servidor, nunca do formulário. */
-async function getActor(): Promise<ActorContext> {
-  const { active } = await getActiveTenant();
-  if (!active) throw new AppError("forbidden", "Nenhuma empresa ativa");
-  return { companyId: active.id, role: active.role };
-}
 
 function idFrom(formData: FormData, key: string): string {
   const parsed = z.uuid().safeParse(formData.get(key));

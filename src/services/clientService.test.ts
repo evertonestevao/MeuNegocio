@@ -50,6 +50,7 @@ function makeRepo() {
   return {
     list: vi.fn(async () => ({ items: [], total: 0, page: 1, pageSize: 20 })),
     count: vi.fn(async () => 0),
+    listForPicker: vi.fn(async () => []),
     get: vi.fn(async (): Promise<Client | null> => CLIENT),
     insert: vi.fn(async () => CLIENT),
     update: vi.fn(async () => undefined),

@@ -363,7 +363,8 @@ begin
     union all
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
-      'clients', 'client_contacts', 'client_locations',
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
+      'quotes', 'quote_items', 'quote_responses', 'revenues',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -372,13 +373,13 @@ begin
     union all
     select 'authenticated', t, 'UPDATE' from unnest(array[
       'profiles', 'companies', 'company_members', 'company_invites', 'subscriptions', 'settings',
-      'clients', 'client_contacts', 'client_locations',
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'resellers', 'commission_rules',
-      'clients', 'client_contacts', 'client_locations']) t
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs']) t
   ),
   actual as (
     select grantee::text, table_name::text, privilege_type::text
@@ -599,6 +600,256 @@ begin
 end $$;
 
 reset role;
+
+-- ---------------------------------------------------------------------------
+-- Catálogo e orçamentos: custo só para owner/admin; escrita só pelas funções.
+-- Alice = owner, d3 = member, e4 = técnico, todos da empresa 1. Bob = outra empresa.
+-- ---------------------------------------------------------------------------
+reset role;
+-- O cliente anterior foi apagado pelo teste; este continua ativo.
+insert into public.clients (id, company_id, name) values
+  ('f3f3f3f3-0000-4000-8000-000000000003', 'c1c1c1c1-0000-4000-8000-000000000001', 'Cliente Orçamento');
+insert into public.client_locations (id, company_id, client_id, name, address) values
+  ('f4f4f4f4-0000-4000-8000-000000000004', 'c1c1c1c1-0000-4000-8000-000000000001', 'f3f3f3f3-0000-4000-8000-000000000003', 'Sede', 'Rua A, 10');
+insert into public.catalog_items (id, company_id, kind, name, unit, price_cents) values
+  ('f5f5f5f5-0000-4000-8000-000000000005', 'c1c1c1c1-0000-4000-8000-000000000001', 'product', 'Disjuntor', 'un', 1000),
+  ('f6f6f6f6-0000-4000-8000-000000000006', 'c2c2c2c2-0000-4000-8000-000000000002', 'product', 'Do Bob', 'un', 1000);
+insert into public.catalog_item_costs (company_id, catalog_item_id, cost_cents) values
+  ('c1c1c1c1-0000-4000-8000-000000000001', 'f5f5f5f5-0000-4000-8000-000000000005', 400);
+
+-- Member: vê catálogo sem custo, cria e envia, não fecha nem exclui nem escreve direto.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare n int; v_id uuid; v_id2 uuid; v_total int; v_number int; v_number2 int;
+begin
+  select count(*) into n from public.catalog_items;
+  if n <> 1 then raise exception 'FALHA catálogo: member deveria ver 1 item, viu %', n; end if;
+  select count(*) into n from public.catalog_item_costs;
+  if n <> 0 then raise exception 'FALHA catálogo: member leu custo'; end if;
+  begin
+    update public.catalog_items set price_cents = 1 where id = 'f5f5f5f5-0000-4000-8000-000000000005';
+    get diagnostics n = row_count;
+    if n <> 0 then raise exception 'FALHA catálogo: member editou preço'; end if;
+  end;
+
+  v_id := public.save_quote(
+    'c1c1c1c1-0000-4000-8000-000000000001', null, 'f3f3f3f3-0000-4000-8000-000000000003',
+    'f4f4f4f4-0000-4000-8000-000000000004', 'Serviço', current_date + 10, 500, 'Condições',
+    '[{"catalog_item_id":"f5f5f5f5-0000-4000-8000-000000000005","description":"Disjuntor","unit":"un","pricing_mode":"fixed","quantity":2,"people":9,"unit_price_cents":1000},
+      {"description":"Mão de obra","unit":"h","pricing_mode":"hourly","quantity":1.5,"people":2,"unit_price_cents":1001}]');
+  -- 2×1000 + round(1,5×2×1001) = 2000 + 3003; menos 500.
+  select total_cents, number into v_total, v_number from public.quotes where id = v_id;
+  if v_total <> 4503 then raise exception 'FALHA orçamento: total %, esperado 4503', v_total; end if;
+
+  v_id2 := public.save_quote('c1c1c1c1-0000-4000-8000-000000000001', null, null, null, '', null, 99999, '', '[]');
+  select total_cents, number into v_total, v_number2 from public.quotes where id = v_id2;
+  if v_total <> 0 then raise exception 'FALHA orçamento: total negativo'; end if;
+  if v_number2 <> v_number + 1 then raise exception 'FALHA orçamento: número não sequencial'; end if;
+
+  -- Rascunho sem cliente ou sem itens não é enviado.
+  begin
+    perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id2, 'send');
+    raise exception 'FALHA orçamento: enviou sem cliente';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  -- Transição inválida é recusada.
+  begin
+    perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 'approve');
+    raise exception 'FALHA orçamento: aprovou rascunho';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 'send');
+
+  -- Enviado não é editável.
+  begin
+    perform public.save_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 'f3f3f3f3-0000-4000-8000-000000000003', null, 'x', null, 0, '', '[]');
+    raise exception 'FALHA orçamento: editou enviado';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 'approve');
+
+  begin
+    perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 100, current_date);
+    raise exception 'FALHA orçamento: member fechou';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.delete_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id2);
+    raise exception 'FALHA orçamento: member excluiu';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Escrita direta nas tabelas é negada, mesmo para quem tem acesso.
+  begin
+    update public.quotes set total_cents = 1 where id = v_id;
+    raise exception 'FALHA orçamento: alterou quotes direto';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.revenues (company_id, quote_id, amount_cents, competence_date)
+    values ('c1c1c1c1-0000-4000-8000-000000000001', v_id, 1, current_date);
+    raise exception 'FALHA orçamento: criou receita direto';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Member não chega às funções do link público nem do job.
+  begin
+    perform public.get_public_quote('x');
+    raise exception 'FALHA orçamento: member chamou get_public_quote';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.expire_due_quotes();
+    raise exception 'FALHA orçamento: member chamou expire_due_quotes';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Owner: vê custo, fecha, a receita aparece; desfazer volta para aprovado. Só ele vê a receita.
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare n int; v_id uuid; v_status text;
+begin
+  select count(*) into n from public.catalog_item_costs;
+  if n <> 1 then raise exception 'FALHA catálogo: owner não leu custo'; end if;
+
+  select id into v_id from public.quotes where status = 'approved' limit 1;
+  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date);
+  select count(*) into n from public.revenues where quote_id = v_id;
+  if n <> 1 then raise exception 'FALHA orçamento: fechar não criou receita'; end if;
+
+  perform public.undo_close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id);
+  select status into v_status from public.quotes where id = v_id;
+  if v_status <> 'approved' then raise exception 'FALHA orçamento: desfazer não voltou a aprovado'; end if;
+  select count(*) into n from public.revenues where quote_id = v_id;
+  if n <> 0 then raise exception 'FALHA orçamento: receita continuou após desfazer'; end if;
+
+  begin
+    perform public.delete_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id);
+    raise exception 'FALHA orçamento: excluiu aprovado';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date);
+end $$;
+
+-- Member não lê receita; técnico não lê nada; outra empresa não lê nem age.
+select set_config('request.jwt.claims',
+  '{"sub":"d3d3d3d3-0000-4000-8000-000000000003","email":"rls-member@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.revenues;
+  if n <> 0 then raise exception 'FALHA orçamento: member leu receita'; end if;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"e4e4e4e4-0000-4000-8000-000000000004","email":"rls-tecnico@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.quotes;
+  if n <> 0 then raise exception 'FALHA orçamento: técnico leu orçamentos'; end if;
+  select count(*) into n from public.catalog_items;
+  if n <> 0 then raise exception 'FALHA catálogo: técnico leu catálogo'; end if;
+  begin
+    perform public.save_quote('c1c1c1c1-0000-4000-8000-000000000001', null, null, null, '', null, 0, '', '[]');
+    raise exception 'FALHA orçamento: técnico criou';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+declare n int; v_alien uuid;
+begin
+  select count(*) into n from public.quotes where company_id = 'c1c1c1c1-0000-4000-8000-000000000001';
+  if n <> 0 then raise exception 'FALHA orçamento: outra empresa leu'; end if;
+  select count(*) into n from public.catalog_items where company_id = 'c1c1c1c1-0000-4000-8000-000000000001';
+  if n <> 0 then raise exception 'FALHA catálogo: outra empresa leu'; end if;
+  begin
+    perform public.save_quote('c1c1c1c1-0000-4000-8000-000000000001', null, null, null, '', null, 0, '', '[]');
+    raise exception 'FALHA orçamento: outra empresa criou';
+  exception when insufficient_privilege then null;
+  end;
+  -- Na própria empresa, não aponta para cliente alheio nem item de catálogo alheio.
+  begin
+    perform public.save_quote('c2c2c2c2-0000-4000-8000-000000000002', null, 'f3f3f3f3-0000-4000-8000-000000000003', null, '', null, 0, '', '[]');
+    raise exception 'FALHA orçamento: usou cliente de outra empresa';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  begin
+    perform public.save_quote('c2c2c2c2-0000-4000-8000-000000000002', null, null, null, '', null, 0, '',
+      '[{"catalog_item_id":"f5f5f5f5-0000-4000-8000-000000000005","description":"x","unit":"un","pricing_mode":"fixed","quantity":1,"unit_price_cents":1}]');
+    raise exception 'FALHA orçamento: usou catálogo de outra empresa';
+  exception when foreign_key_violation then null;
+  end;
+end $$;
+
+-- Link público (service_role): token é a credencial, rascunho não abre, a resposta só vale uma
+-- vez e dentro da validade; o job expira os vencidos.
+reset role;
+do $$
+declare v_token text; v_quote uuid; v_doc jsonb; v_status text; n int;
+begin
+  select id into v_quote from public.quotes
+  where status = 'draft' and company_id = 'c1c1c1c1-0000-4000-8000-000000000001' limit 1;
+  select public_token into v_token from public.quotes where id = v_quote;
+  if public.get_public_quote(v_token) is not null then
+    raise exception 'FALHA link: rascunho abriu pelo link';
+  end if;
+
+  update public.quotes
+  set status = 'sent', client_id = 'f3f3f3f3-0000-4000-8000-000000000003', valid_until = current_date + 5
+  where id = v_quote;
+  v_doc := public.get_public_quote(v_token);
+  if v_doc is null then raise exception 'FALHA link: enviado não abriu'; end if;
+  if v_doc::text like '%cost%' then raise exception 'FALHA link: documento expõe custo'; end if;
+
+  begin
+    perform public.respond_public_quote(v_token, 'refused', 'Ana', '');
+    raise exception 'FALHA link: recusou sem motivo';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+  select status into v_status from public.quotes where id = v_quote;
+  if v_status <> 'approved' then raise exception 'FALHA link: não aprovou'; end if;
+  select count(*) into n from public.quote_responses where quote_id = v_quote;
+  if n <> 1 then raise exception 'FALHA link: resposta não registrada'; end if;
+
+  begin
+    perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+    raise exception 'FALHA link: aceitou segunda resposta';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  update public.quotes set status = 'sent', valid_until = current_date - 2 where id = v_quote;
+  begin
+    perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+    raise exception 'FALHA link: aceitou resposta vencida';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+
+  if public.expire_due_quotes() < 1 then raise exception 'FALHA job: não expirou vencido'; end if;
+  select status into v_status from public.quotes where id = v_quote;
+  if v_status <> 'expired' then raise exception 'FALHA job: status %', v_status; end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Catálogo de planos: quem não é super admin não escreve nem lê o histórico.

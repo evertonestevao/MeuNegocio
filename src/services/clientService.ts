@@ -1,7 +1,7 @@
 import type { ClientInput, ContactInput, LocationInput } from "@/features/clients/schemas";
 import { formatDocument } from "@/features/clients/schemas";
 import { AppError } from "@/lib/errors";
-import type { Client, ClientContact, ClientLocation, ClientListItem } from "@/types/database";
+import type { Client, ClientContact, ClientLocation, ClientListItem, ClientPickerOption } from "@/types/database";
 import { permissionService } from "./permissionService";
 import { normalizePageParams, type PageParams, type Paginated } from "./tenantService";
 
@@ -15,6 +15,8 @@ const CLIENTS_PAGE_SIZE = 20;
 export interface ClientRepository {
   list(companyId: string, params: { offset: number; limit: number; search: string | null }): Promise<Paginated<ClientListItem>>;
   count(companyId: string): Promise<number>;
+  /** Clientes e locais para o seletor do orçamento e da agenda. */
+  listForPicker(companyId: string): Promise<ClientPickerOption[]>;
   get(companyId: string, clientId: string): Promise<Client | null>;
   insert(companyId: string, input: ClientInput): Promise<Client>;
   update(companyId: string, clientId: string, input: ClientInput): Promise<void>;
@@ -95,6 +97,11 @@ export function createClientService({ repo, getClientLimit }: ClientServiceDeps)
         search: params.search?.trim() || null,
       });
       return { ...result, page, pageSize };
+    },
+
+    async listForPicker(actor: ActorContext): Promise<ClientPickerOption[]> {
+      requireManage(actor);
+      return repo.listForPicker(actor.companyId);
     },
 
     async getDetail(actor: ActorContext, clientId: string) {

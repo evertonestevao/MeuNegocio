@@ -15,7 +15,7 @@ import {
   updateClientAction,
 } from "@/server/actions/clients";
 import type { Client, ClientContact, ClientLocation } from "@/types/database";
-import { DialogForm } from "./dialog-form";
+import { DialogForm } from "@/components/dialog-form";
 
 const TEXTAREA_CLASS =
   "border-input min-h-20 w-full rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";

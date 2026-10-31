@@ -11,10 +11,15 @@ import type { MemberWithProfile } from "@/types/tenant";
 export function createSupabaseTenantRepository(client: SupabaseClient): TenantRepository {
   return {
     async listMyCompanies() {
-      // Membership do usuário + empresa embutida (FK company_id -> companies).
+      const { data: userData, error: userError } = await client.auth.getUser();
+      if (userError || !userData.user) return [];
+      // Membership do usuário + empresa embutida (FK company_id -> companies). O filtro por
+      // user_id é obrigatório: a RLS mostra os colegas da empresa, e sem ele o papel viria de
+      // outra linha, normalmente a do owner.
       const { data, error } = await client
         .from("company_members")
         .select("role, company:companies(*)")
+        .eq("user_id", userData.user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
       if (error) {

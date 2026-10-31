@@ -27,7 +27,10 @@ export type Capability =
   | "audit.view"
   | "billing.manage"
   | "clients.manage" // ver, criar e editar clientes
-  | "records.delete"; // apagar registros de negócio
+  | "records.delete" // apagar registros de negócio
+  | "catalog.manage" // editar o catálogo, com custo e margem
+  | "quotes.manage" // ver catálogo; criar, editar e enviar orçamentos
+  | "quotes.close"; // fechar orçamento e desfazer o fechamento
 
 export interface RoleDefinition {
   /** Hierarquia: ações sobre outro membro exigem level maior que o do alvo. */
@@ -47,6 +50,9 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "billing.manage",
         "clients.manage",
         "records.delete",
+        "catalog.manage",
+        "quotes.manage",
+        "quotes.close",
       ]),
     },
   ],
@@ -60,10 +66,13 @@ const roleRegistry = new Map<string, RoleDefinition>([
         "audit.view",
         "clients.manage",
         "records.delete",
+        "catalog.manage",
+        "quotes.manage",
+        "quotes.close",
       ]),
     },
   ],
-  ["member", { level: 1, capabilities: new Set<Capability>(["clients.manage"]) }],
+  ["member", { level: 1, capabilities: new Set<Capability>(["clients.manage", "quotes.manage"]) }],
   // Campo: as próprias visitas e ordens de serviço, decididas por dono do registro.
   ["technician", { level: 1, capabilities: new Set<Capability>() }],
 ]);
@@ -117,6 +126,21 @@ export const permissionService = {
   /** Apagar registros de negócio: só owner e admin. */
   canDeleteRecords(role: RoleCode | string): boolean {
     return hasCapability(role, "records.delete");
+  },
+
+  /** Editar o catálogo e ver custo e margem. */
+  canManageCatalog(role: RoleCode | string): boolean {
+    return hasCapability(role, "catalog.manage");
+  },
+
+  /** Ver o catálogo e criar, editar e enviar orçamentos. */
+  canManageQuotes(role: RoleCode | string): boolean {
+    return hasCapability(role, "quotes.manage");
+  },
+
+  /** Fechar orçamento e desfazer o fechamento. */
+  canCloseQuotes(role: RoleCode | string): boolean {
+    return hasCapability(role, "quotes.close");
   },
 
   /** Alterar papel de um membro: capability + hierarquia sobre o alvo. */

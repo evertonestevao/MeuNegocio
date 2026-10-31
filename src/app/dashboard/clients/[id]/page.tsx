@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft, MapPin } from "lucide-react";
+import { ChevronLeft, MapPin, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ContactFormButton,
@@ -12,7 +13,10 @@ import {
   RemoveContactButton,
   RemoveLocationButton,
 } from "@/features/clients/components/client-forms";
+import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { formatCents } from "@/lib/money";
 import { getClientService } from "@/server/clients";
+import { getQuoteService } from "@/server/quotes";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -29,6 +33,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const detail = await service.getDetail({ companyId: active.id, role: active.role }, id);
   if (!detail) notFound();
   const { client, contacts, locations } = detail;
+  const quotes = await (await getQuoteService()).list(
+    { companyId: active.id, role: active.role },
+    { clientId: client.id, pageSize: 50 },
+  );
   const canDelete = permissionService.canDeleteRecords(active.role);
 
   return (
@@ -45,7 +53,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <h2 className="text-xl font-semibold tracking-tight break-words">{client.name}</h2>
             {client.document ? <p className="text-sm text-muted-foreground">{client.document}</p> : null}
           </div>
-          <EditClientButton client={client} />
+          <div className="flex flex-wrap gap-2">
+            <EditClientButton client={client} />
+            <Button render={<Link href={`/dashboard/quotes/new?client=${client.id}`} />} nativeButton={false}>
+              <Plus className="size-4" /> Novo orçamento
+            </Button>
+          </div>
         </div>
         {client.notes ? (
           <p className="rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-wrap">{client.notes}</p>
@@ -124,6 +137,36 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Orçamentos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {quotes.items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Os orçamentos deste cliente aparecem aqui.</p>
+          ) : (
+            <ul className="flex flex-col divide-y">
+              {quotes.items.map((quote) => (
+                <li key={quote.id}>
+                  <Link
+                    href={`/dashboard/quotes/${quote.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm hover:underline"
+                  >
+                    <span className="min-w-0 break-words">
+                      #{formatQuoteNumber(quote.number)} · {quote.title ?? "Sem título"}
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <Badge variant={quote.status === "closed" ? "default" : "secondary"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+                      <span className="font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {canDelete ? (
         <div className="flex justify-end">

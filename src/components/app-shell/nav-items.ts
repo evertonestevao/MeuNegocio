@@ -1,6 +1,8 @@
 import {
+  BookOpen,
   Building2,
   CreditCard,
+  FileText,
   LayoutDashboard,
   ScrollText,
   Settings,
@@ -30,7 +32,9 @@ export const navItems: NavItem[] = [
     icon: LayoutDashboard,
     roles: ["owner", "admin", "member", "technician"],
   },
+  { title: "Orçamentos", href: "/dashboard/quotes", icon: FileText, roles: ["owner", "admin", "member"] },
   { title: "Clientes", href: "/dashboard/clients", icon: Building2, roles: ["owner", "admin", "member"] },
+  { title: "Catálogo", href: "/dashboard/catalog", icon: BookOpen, roles: ["owner", "admin", "member"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
   { title: "Billing", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
   { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },
