@@ -6,13 +6,12 @@ const FEATURES: PlanInput["features"] = {
   max_members: 5,
   max_clients: null,
   max_quotes_month: null,
-  audit_retention_days: 30,
   public_approval: true,
   work_orders: true,
   hours: false,
 };
 
-const INPUT: PlanInput = { name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES };
+const INPUT: PlanInput = { customText: null, name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES };
 
 function makePlan(overrides: Partial<Plan> = {}): Plan {
   return {
@@ -23,6 +22,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     currency: "BRL",
     billing_interval: "month",
     features: FEATURES,
+    custom_text: null,
     extra_seat_price_cents: 500,
     is_active: true,
     deleted_at: null,

@@ -178,15 +178,16 @@ Código: `src/services/accountService.ts`, `src/server/account.ts`, `src/server/
 
 Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/admin/planos`):
 
-| Plano | Preço/mês | Membros inclusos | Membro extra | Clientes | Orçamentos/mês | Auditoria | Link de aprovação, OS e horas |
-|---|---|---|---|---|---|---|:-:|
-| Free | R$ 0 | 2 | — | 30 | 20 | 7 dias | — |
-| Pro | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | 90 dias | ✅ |
-| Enterprise | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | 365 dias | ✅ |
+| Plano | Preço/mês | Membros inclusos | Membro extra | Clientes | Orçamentos/mês | Link de aprovação, OS e horas |
+|---|---|---|---|---|---|:-:|
+| Free | R$ 0 | 2 | — | 30 | 20 | — |
+| Pro | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | ✅ |
+| Enterprise | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | ✅ |
 
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 
-- Cria planos e edita nome, preço, membro extra, limites e recursos. Ativa e desativa.
+- Cria planos e edita nome, preço, membro extra, limites, recursos e um texto livre de até 2000
+  caracteres, exibido na oferta do plano na página inicial e em `/dashboard/billing`. Ativa e desativa.
 - O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
   oferta e quem já assina continua neles.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
@@ -204,6 +205,7 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 | **Ver plano e uso de seats** (`/dashboard/billing`) | Owner | — |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
 | **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois a empresa passa para o Free. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
+| **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e a empresa passa para o Free. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
 | **Cobrança por seat** | Automático | Ao convidar, revogar ou remover membros, os extras são sincronizados com o gateway: item com quantidade (Stripe) ou novo valor total da assinatura (Asaas). |
 | **Webhook de pagamento** (`POST /api/webhooks/[gateway]`, com `/payment` mantida para webhooks já cadastrados) | Gateway | Autenticidade verificada por cada provedor (HMAC no Stripe, token no Asaas). Os eventos atualizam `subscriptions` de forma idempotente e entram na auditoria. Em uma reassinatura, a assinatura anterior da empresa vai para o histórico e a nova assume. |
 | **Limites por plano** | Código e banco | `canAccessFeature()` e `getFeatureLimit()` são o ponto único de checagem no código. Triggers repetem no banco os limites de membros, clientes e orçamentos e a criação de ordem de serviço e de horas. Quem passou do limite por downgrade não perde nada, só não cria mais. |
@@ -238,7 +240,7 @@ Código: `src/services/featureFlagService.ts`.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Trilha de auditoria** (`/dashboard/audit`) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. |
+| **Trilha de auditoria** (`/dashboard/audit`) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. O histórico completo fica disponível em todos os planos. |
 | **Registro automático** | Sistema | Edição da empresa, mudança de papel, remoção, saída, convites, transferência de propriedade, exclusão de conta, eventos de pagamento. |
 | **Imutável** | — | O client não edita nem apaga registros. |
 | **Dados sensíveis** | — | Chaves como senha, token, secret e card são removidas antes de gravar. |

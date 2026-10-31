@@ -14,7 +14,6 @@ export const PLAN_FEATURES: readonly PlanFeatureDefinition[] = [
   { key: "max_members", label: "Membros inclusos", type: "limit" },
   { key: "max_clients", label: "Clientes", type: "limit" },
   { key: "max_quotes_month", label: "Orçamentos por mês", type: "limit" },
-  { key: "audit_retention_days", label: "Dias de auditoria", type: "limit" },
   { key: "public_approval", label: "Link de aprovação", type: "flag" },
   { key: "work_orders", label: "Ordem de serviço", type: "flag" },
   { key: "hours", label: "Horas", type: "flag" },

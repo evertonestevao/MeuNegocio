@@ -80,6 +80,20 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
         </Field>
       </div>
 
+      <Field
+        id={`${idPrefix}-custom-text`}
+        label="Texto livre"
+        hint="Aparece na oferta do plano, na página inicial e em Billing. Escreva o que quiser; as quebras de linha são mantidas."
+      >
+        <textarea
+          id={`${idPrefix}-custom-text`}
+          name="customText"
+          maxLength={2000}
+          defaultValue={plan?.custom_text ?? ""}
+          className="border-input min-h-20 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        />
+      </Field>
+
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 text-sm font-medium">Limites e recursos</legend>
         <p className="text-xs text-muted-foreground">Deixe um limite vazio para ilimitado.</p>

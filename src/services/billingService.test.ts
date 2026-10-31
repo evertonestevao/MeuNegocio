@@ -4,6 +4,7 @@ import type { Plan, Subscription } from "@/types/database";
 import {
   createBillingService,
   DEFAULT_PLAN_CODE,
+  hasPlanAccess,
   type BillingRepository,
 } from "./billingService";
 
@@ -17,6 +18,7 @@ function makePlan(overrides: Partial<Plan>): Plan {
     billing_interval: "month",
     features: {},
     extra_seat_price_cents: 0,
+    custom_text: null,
     is_active: true,
     deleted_at: null,
     created_at: "",
@@ -446,6 +448,84 @@ describe("applyPaymentEvent", () => {
     await service.applyPaymentEvent(makeEvent({}));
     await service.applyPaymentEvent(makeEvent({}));
     expect(state.subscriptions).toHaveLength(1);
+  });
+
+  describe("estorno", () => {
+    const periodStart = "2026-10-01T00:00:00.000Z";
+    function setup(overrides: Partial<Subscription> = {}) {
+      const state = {
+        plans: [makePlan({})],
+        subscriptions: [
+          makeSubscription({
+            current_period_start: periodStart,
+            current_period_end: "2026-11-01T00:00:00.000Z",
+            ...overrides,
+          }),
+        ],
+      };
+      const canceled: string[] = [];
+      const gateway = {
+        async cancelSubscription(id: string) {
+          canceled.push(id);
+        },
+      };
+      return { state, canceled, gateway, service: createBillingService(makeRepo(state)) };
+    }
+    const refund = (refundedCents: number | null, start: string | null = periodStart) =>
+      makeEvent({
+        type: "payment.refunded",
+        externalSubscriptionId: "ext-1",
+        currentPeriodStart: start,
+        refund: { externalPaymentId: "pay-1", refundedCents },
+      });
+
+    it("integral do período atual encerra na hora e para as cobranças no gateway", async () => {
+      const { state, canceled, gateway, service } = setup();
+      const result = await service.applyPaymentEvent(refund(null), gateway);
+      expect(canceled).toEqual(["ext-1"]);
+      expect(state.subscriptions[0].status).toBe("canceled");
+      expect(hasPlanAccess(state.subscriptions[0], new Date(Date.now() + 1000))).toBe(false);
+      expect(result.endedSubscription?.id).toBe("sub-1");
+    });
+
+    it("parcial não muda a assinatura", async () => {
+      const { state, canceled, gateway, service } = setup();
+      expect(await service.applyPaymentEvent(refund(1000), gateway)).toEqual({});
+      expect(canceled).toEqual([]);
+      expect(state.subscriptions[0].status).toBe("active");
+    });
+
+    it("de cobrança antiga não derruba quem está em dia", async () => {
+      const { state, canceled, gateway, service } = setup();
+      await service.applyPaymentEvent(refund(null, "2026-08-01T00:00:00.000Z"), gateway);
+      expect(canceled).toEqual([]);
+      expect(state.subscriptions[0].status).toBe("active");
+    });
+
+    it("sem período conhecido não muda a assinatura", async () => {
+      const { state, gateway, service } = setup();
+      await service.applyPaymentEvent(refund(null, null), gateway);
+      expect(state.subscriptions[0].status).toBe("active");
+    });
+
+    it("assinatura já cancelada perde o período restante, sem chamar o gateway de novo", async () => {
+      const { state, canceled, gateway, service } = setup({ status: "canceled" });
+      await service.applyPaymentEvent(refund(null), gateway);
+      expect(canceled).toEqual([]);
+      expect(hasPlanAccess(state.subscriptions[0], new Date(Date.now() + 1000))).toBe(false);
+    });
+
+    it("falha no gateway não grava o encerramento, para o webhook tentar de novo", async () => {
+      const { state, service } = setup();
+      await expect(
+        service.applyPaymentEvent(refund(null), {
+          async cancelSubscription() {
+            throw new Error("gateway fora do ar");
+          },
+        }),
+      ).rejects.toThrow("gateway fora do ar");
+      expect(state.subscriptions[0].status).toBe("active");
+    });
   });
 
   it("marca canceled em subscription.canceled", async () => {

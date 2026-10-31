@@ -289,6 +289,9 @@ describe("eventos de comissão (payloads da documentação)", () => {
     const event = await gateway.handleWebhook(webhook(docsPaymentEvent("PAYMENT_REFUNDED")));
     expect(event.type).toBe("payment.refunded");
     expect(event.refund).toEqual({ externalPaymentId: "pay_080225913252", refundedCents: null });
+    // Sem o período, o billing não encerra a assinatura.
+    expect(event.currentPeriodStart).not.toBeNull();
+    expect(event.externalSubscriptionId).not.toBeNull();
     expect(calls).toHaveLength(0);
   });
 

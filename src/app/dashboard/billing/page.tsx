@@ -148,6 +148,7 @@ export default async function BillingPage() {
                     </li>
                   ))}
                 </ul>
+                {plan.custom_text ? <p className="whitespace-pre-line text-sm text-muted-foreground">{plan.custom_text}</p> : null}
                 <div className="mt-auto">
                   {plan.code === "free" ? (
                     isCurrent ? (

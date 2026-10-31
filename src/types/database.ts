@@ -84,6 +84,8 @@ export interface Plan {
   features: Record<string, unknown>;
   /** Preço mensal (centavos) por seat além de features.max_members; 0 = não vende extra. */
   extra_seat_price_cents: number;
+  /** Texto livre do super admin, exibido na oferta do plano. */
+  custom_text: string | null;
   is_active: boolean;
   deleted_at: string | null;
   created_at: string;

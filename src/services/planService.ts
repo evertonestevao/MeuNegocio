@@ -13,6 +13,7 @@ export interface PlanInput {
   priceCents: number;
   extraSeatPriceCents: number;
   features: Record<string, number | boolean | null>;
+  customText: string | null;
 }
 
 export interface PlanRepository {

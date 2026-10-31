@@ -25,9 +25,11 @@ const WATCHED_FIELDS: { key: string; label: string; money?: boolean }[] = [
   { key: "name", label: "Nome" },
   { key: "price_cents", label: "Preço", money: true },
   { key: "extra_seat_price_cents", label: "Membro extra", money: true },
+  { key: "custom_text", label: "Texto livre" },
 ];
 
 function display(value: unknown, money?: boolean): string {
+  if (value === null || value === undefined) return "vazio";
   return money && typeof value === "number" ? formatCents(value) : String(value);
 }
 

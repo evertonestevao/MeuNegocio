@@ -17,6 +17,11 @@ const planFieldsSchema = z.object({
   name: z.string().trim().min(2, "Informe o nome do plano.").max(60, "Use até 60 caracteres."),
   priceCents: moneySchema,
   extraSeatPriceCents: moneySchema,
+  customText: z
+    .string()
+    .trim()
+    .max(2000, "Use até 2000 caracteres no texto livre.")
+    .transform((value) => value || null),
 });
 
 export const planCodeSchema = z
@@ -55,6 +60,7 @@ export interface PlanFormValues {
   priceCents: number;
   extraSeatPriceCents: number;
   features: PlanFeatureValues;
+  customText: string | null;
 }
 
 export function parsePlanForm(formData: FormData): PlanFormValues {
@@ -62,6 +68,7 @@ export function parsePlanForm(formData: FormData): PlanFormValues {
     name: formData.get("name"),
     priceCents: formData.get("price"),
     extraSeatPriceCents: formData.get("extraSeatPrice"),
+    customText: formData.get("customText") ?? "",
   });
   return { ...fields, features: parsePlanFeatures(formData) };
 }

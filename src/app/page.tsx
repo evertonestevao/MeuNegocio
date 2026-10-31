@@ -40,6 +40,7 @@ function PlanCard({ plan, featured }: { plan: Plan; featured: boolean }) {
             </li>
           ))}
         </ul>
+        {plan.custom_text ? <p className="whitespace-pre-line text-sm text-muted-foreground">{plan.custom_text}</p> : null}
         <Button className="mt-auto" variant={featured ? "default" : "outline"} nativeButton={false} render={<Link href="/signup" />}>
           {plan.price_cents === 0 ? "Começar grátis" : `Começar com ${plan.name}`}
         </Button>

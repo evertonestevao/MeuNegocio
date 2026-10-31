@@ -36,6 +36,11 @@ export interface SeatUsage {
   canAddSeat: boolean;
 }
 
+export interface PaymentEventResult {
+  /** Assinatura encerrada por estorno, para o chamador registrar e encerrar vínculos. */
+  endedSubscription?: Subscription;
+}
+
 /** Plano usado quando a empresa não tem assinatura ativa. */
 export const DEFAULT_PLAN_CODE = "free";
 
@@ -112,9 +117,12 @@ export function createBillingService(repo: BillingRepository) {
    * mesmo estado. Chamado apenas no servidor (service_role), pois webhook
    * não tem sessão de usuário.
    */
-  async function applyPaymentEvent(event: NormalizedPaymentEvent): Promise<void> {
-    // Estorno não muda a assinatura: quem trata é a comissão.
-    if (event.type === "ignored" || event.type === "payment.refunded") return;
+  async function applyPaymentEvent(
+    event: NormalizedPaymentEvent,
+    gateway?: Pick<PaymentGateway, "cancelSubscription">,
+  ): Promise<PaymentEventResult> {
+    if (event.type === "ignored") return {};
+    if (event.type === "payment.refunded") return endSubscriptionAfterRefund(event, gateway);
     if (!event.externalSubscriptionId) {
       throw new AppError("payment_error", "Evento de pagamento sem id de assinatura");
     }
@@ -122,7 +130,7 @@ export function createBillingService(repo: BillingRepository) {
     const existing = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
 
     if (!existing) {
-      if (event.type !== "subscription.activated") return; // evento órfão: nada a atualizar
+      if (event.type !== "subscription.activated") return {}; // evento órfão: nada a atualizar
       if (!event.companyId || !event.planId) {
         throw new AppError("payment_error", "Evento de ativação sem company_id/plan_id");
       }
@@ -142,7 +150,7 @@ export function createBillingService(repo: BillingRepository) {
         current_period_end: event.currentPeriodEnd,
         cancel_at_period_end: event.cancelAtPeriodEnd,
       });
-      return;
+      return {};
     }
 
     switch (event.type) {
@@ -163,6 +171,38 @@ export function createBillingService(repo: BillingRepository) {
         await repo.updateSubscription(existing.id, { status: "past_due" });
         break;
     }
+    return {};
+  }
+
+  /**
+   * Estorno integral da cobrança do período atual encerra a assinatura na hora: o
+   * período deixou de estar pago. Parcial ou de cobrança antiga não muda nada, para
+   * uma correção de valor não derrubar quem está em dia. Sem saber a qual período o
+   * estorno se refere, também não muda.
+   */
+  async function endSubscriptionAfterRefund(
+    event: NormalizedPaymentEvent,
+    gateway?: Pick<PaymentGateway, "cancelSubscription">,
+  ): Promise<PaymentEventResult> {
+    if (!event.refund || event.refund.refundedCents !== null) return {};
+    if (!event.externalSubscriptionId || !event.currentPeriodStart) return {};
+
+    const subscription = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
+    if (!subscription?.current_period_start) return {};
+    if (new Date(event.currentPeriodStart) < new Date(subscription.current_period_start)) return {};
+
+    // Antes de gravar: se o gateway falhar, o webhook é reenviado e tenta de novo.
+    // Assinatura já cancelada não tem mais o que parar no gateway.
+    if (subscription.status !== "canceled") {
+      if (!gateway) throw new AppError("payment_error", "Estorno sem gateway para encerrar a assinatura");
+      await gateway.cancelSubscription(event.externalSubscriptionId);
+    }
+    const ended = await repo.updateSubscription(subscription.id, {
+      status: "canceled",
+      cancel_at_period_end: false,
+      current_period_end: new Date().toISOString(),
+    });
+    return { endedSubscription: ended };
   }
 
   /**

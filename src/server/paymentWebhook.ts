@@ -2,7 +2,7 @@ import "server-only";
 import { reportError } from "@/adapters/errorReporting";
 import { getPaymentGateway } from "@/adapters/payment";
 import { toPublicError, isAppError } from "@/lib/errors";
-import { getCommissionService } from "@/modules/resellers/server";
+import { endCompanyResellerLink, getCommissionService } from "@/modules/resellers/server";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
 import { createAuditService } from "@/services/auditService";
@@ -25,7 +25,7 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
 
     const admin = getSupabaseAdminClient();
     const billing = createBillingService(createSupabaseBillingRepository(admin));
-    await billing.applyPaymentEvent(event);
+    const { endedSubscription } = await billing.applyPaymentEvent(event, gateway);
 
     // Depois do pagamento aplicado: falha de comissão vira pendência, não erro.
     await getCommissionService().processEvent(event);
@@ -39,6 +39,18 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
         action: event.type,
         entityType: "subscription",
         metadata: { gateway: event.gateway, plan_id: event.planId },
+      });
+    }
+
+    if (endedSubscription) {
+      await endCompanyResellerLink(endedSubscription.company_id);
+      await createAuditService(createSupabaseAuditRepository(admin)).record({
+        companyId: endedSubscription.company_id,
+        userId: null,
+        action: "subscription.ended_by_refund",
+        entityType: "subscription",
+        entityId: endedSubscription.id,
+        metadata: { gateway: event.gateway, plan_id: endedSubscription.plan_id },
       });
     }
 

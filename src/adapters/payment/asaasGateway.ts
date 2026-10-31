@@ -209,6 +209,8 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         type,
         externalSubscriptionId: event.payment?.subscription ?? null,
         externalCustomerId: event.payment?.customer ?? null,
+        // Identifica a qual período a cobrança estornada pertence.
+        currentPeriodStart: dateToIso(event.payment?.dueDate),
         refund: { externalPaymentId: paymentId, refundedCents },
       };
     }
