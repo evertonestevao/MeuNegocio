@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { E2E_SUPABASE_URL } from "./e2e/supabase-url";
 
 /**
  * E2E dos fluxos críticos (plano §12) contra o Supabase LOCAL.
@@ -6,8 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
  * públicas e fixas do Supabase CLI — não são segredos).
  */
 
-// E2E_SUPABASE_URL: para rodar contra uma stack em outra porta, sem tocar em outro projeto.
-const LOCAL_SUPABASE_URL = process.env.E2E_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const LOCAL_SUPABASE_URL = E2E_SUPABASE_URL;
 const LOCAL_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
 const LOCAL_SERVICE_ROLE_KEY =

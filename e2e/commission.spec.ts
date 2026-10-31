@@ -1,3 +1,4 @@
+import { E2E_SUPABASE_URL } from "./supabase-url";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
@@ -5,7 +6,7 @@ import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
 /** Fluxo link → contratação → pagamento → lançamento, com o gateway fake. */
 
 const admin = createClient(
-  process.env.E2E_SUPABASE_URL ?? "http://127.0.0.1:54321",
+  E2E_SUPABASE_URL,
   // Demo key pública e fixa do Supabase CLI, a mesma de playwright.config.ts.
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
   { auth: { persistSession: false } },

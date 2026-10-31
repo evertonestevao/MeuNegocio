@@ -402,6 +402,18 @@ npm run test:e2e    # fluxos no navegador (sobe o app sozinho)
 | `npx supabase db reset` | **APAGA** o banco local e reaplica migrations |
 | `npx supabase migration new <nome>` | cria arquivo de migration novo |
 
+### Testes E2E em máquina pequena
+
+Em máquinas com pouca memória, rode os testes contra um build de produção, e não contra `npm run dev`: o `next dev` pode passar de 5 GB ao longo da suíte, e a sobrecarga derruba testes sem haver bug.
+
+```bash
+npm run build
+npx next start -p 3000   # em outro terminal
+npm run test:e2e
+```
+
+Os testes acessam o Supabase indicado em `E2E_SUPABASE_URL` ou, sem ela, em `NEXT_PUBLIC_SUPABASE_URL` do `.env.local`. Nunca assumem a porta padrão, porque outro projeto local pode estar nela e a chave de serviço local é a mesma em todos.
+
 ### Problemas comuns
 
 - **"failed to connect to docker"** → Docker Desktop não está aberto.

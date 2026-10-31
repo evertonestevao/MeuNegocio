@@ -1,3 +1,4 @@
+import { E2E_SUPABASE_URL } from "./supabase-url";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
@@ -5,7 +6,7 @@ import { admin, resetModule, setModuleEnabled, setPlansAvailable } from "./resel
 
 /** Área /vendedor: isolamento entre vendedores e em relação aos tenants. */
 
-const SUPABASE_URL = process.env.E2E_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const SUPABASE_URL = E2E_SUPABASE_URL;
 const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
 
