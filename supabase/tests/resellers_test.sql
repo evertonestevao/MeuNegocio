@@ -40,7 +40,7 @@ insert into public.commission_rules (from_sale_number, commission_type, commissi
 insert into public.commission_rules (reseller_id, commission_type, commission_percent)
 values ('b0000000-0000-4000-8000-00000000000b', 'percent', 50);
 insert into public.commission_rules (reseller_id, plan_id, commission_type, commission_fixed_cents)
-select 'b0000000-0000-4000-8000-00000000000b', id, 'fixed', 1000 from public.plans where code = 'enterprise';
+select 'b0000000-0000-4000-8000-00000000000b', id, 'fixed', 1000 from public.plans where code = 'anual';
 
 -- Atalhos de teste, descartados no ROLLBACK.
 create function pg_temp.c(n int) returns uuid language sql as
@@ -70,7 +70,7 @@ begin
     raise exception 'FALHA planos: vinculou plano não liberado';
   end if;
 
-  update public.plans set available_to_resellers = true where code in ('pro', 'enterprise');
+  update public.plans set available_to_resellers = true where code in ('pro', 'anual');
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ begin
   if v is distinct from 50::numeric then raise exception 'FALHA prioridade: vendedor > global, veio %', v; end if;
 
   -- Regra de plano vence a genérica.
-  perform public.link_company_to_reseller(pg_temp.c(6), pg_temp.b(), pg_temp.plan('enterprise'), 'sub-6');
+  perform public.link_company_to_reseller(pg_temp.c(6), pg_temp.b(), pg_temp.plan('anual'), 'sub-6');
   select commission_fixed_cents into n from public.reseller_clients where company_id = pg_temp.c(6);
   if n is distinct from 1000 then raise exception 'FALHA prioridade: plano > genérica, veio %', n; end if;
 
@@ -562,7 +562,7 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 do $$
 begin
-  if not exists (select 1 from public.reseller_my_clients where plan_name = 'Profissional') then
+  if not exists (select 1 from public.reseller_my_clients where plan_name = 'Mensal') then
     raise exception 'FALHA plano escondido: cliente antigo sumiu';
   end if;
 end $$;
@@ -617,7 +617,7 @@ begin
   if public.record_company_referral(pg_temp.c(16), 'vendedor-c', 'a0000000-0000-4000-8000-000000000004') is not null then
     raise exception 'FALHA auto-indicação: mesmo e-mail gravou';
   end if;
-  if public.link_company_to_reseller(pg_temp.c(16), 'b0000000-0000-4000-8000-00000000000c', pg_temp.plan('enterprise'), 'sub-16') is not null then
+  if public.link_company_to_reseller(pg_temp.c(16), 'b0000000-0000-4000-8000-00000000000c', pg_temp.plan('anual'), 'sub-16') is not null then
     raise exception 'FALHA auto-indicação: mesmo e-mail vinculou';
   end if;
 
@@ -669,17 +669,17 @@ declare
   v_failure uuid;
 begin
   -- Cookie válido + plano liberado: grava indicação e vincula antes do pagamento.
-  v_client := public.link_company_at_checkout(pg_temp.c(17), 'vendedor-a', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('enterprise'));
+  v_client := public.link_company_at_checkout(pg_temp.c(17), 'vendedor-a', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('anual'));
   if v_client is null then raise exception 'FALHA checkout: não vinculou'; end if;
   if not exists (select 1 from public.reseller_referrals where company_id = pg_temp.c(17)) then
     raise exception 'FALHA checkout: não gravou indicação';
   end if;
-  if public.link_company_at_checkout(pg_temp.c(17), 'vendedor-c', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('enterprise')) <> v_client then
+  if public.link_company_at_checkout(pg_temp.c(17), 'vendedor-c', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('anual')) <> v_client then
     raise exception 'FALHA checkout: trocou de vendedor';
   end if;
 
   -- Sem cookie, vale a indicação gravada no cadastro (empresa 15, do vendedor A).
-  if public.link_company_at_checkout(pg_temp.c(15), null, 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('enterprise')) is null then
+  if public.link_company_at_checkout(pg_temp.c(15), null, 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('anual')) is null then
     raise exception 'FALHA checkout: ignorou indicação do cadastro';
   end if;
 
@@ -691,7 +691,7 @@ begin
   -- Quem já pagou não é venda nova.
   insert into public.subscriptions (company_id, plan_id, status, external_subscription_id)
   values (pg_temp.c(19), pg_temp.plan('pro'), 'active', 'sub-ja-pagou');
-  if public.link_company_at_checkout(pg_temp.c(19), 'vendedor-a', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('enterprise')) is not null then
+  if public.link_company_at_checkout(pg_temp.c(19), 'vendedor-a', 'a0000000-0000-4000-8000-000000000004', pg_temp.plan('anual')) is not null then
     raise exception 'FALHA checkout: vinculou quem já pagou';
   end if;
   if exists (select 1 from public.reseller_referrals where company_id = pg_temp.c(19)) then
@@ -699,7 +699,7 @@ begin
   end if;
 
   -- Auto-indicação continua bloqueada (vendedor A é membro da empresa 20).
-  if public.link_company_at_checkout(pg_temp.c(20), 'vendedor-a', 'a0000000-0000-4000-8000-000000000001', pg_temp.plan('enterprise')) is not null then
+  if public.link_company_at_checkout(pg_temp.c(20), 'vendedor-a', 'a0000000-0000-4000-8000-000000000001', pg_temp.plan('anual')) is not null then
     raise exception 'FALHA checkout: auto-indicação vinculou';
   end if;
 
@@ -767,11 +767,11 @@ declare
 begin
   -- 3 checkouts abandonados.
   foreach n in array array[30, 31, 32] loop
-    perform public.link_company_to_reseller(pg_temp.c(n), pg_temp.d(), pg_temp.plan('enterprise'), null);
+    perform public.link_company_to_reseller(pg_temp.c(n), pg_temp.d(), pg_temp.plan('anual'), null);
   end loop;
 
   -- O 4º checkout, pago, continua sendo a venda nº 1, com 30%.
-  perform public.link_company_to_reseller(pg_temp.c(33), pg_temp.d(), pg_temp.plan('enterprise'), null);
+  perform public.link_company_to_reseller(pg_temp.c(33), pg_temp.d(), pg_temp.plan('anual'), null);
   perform public.register_commission(pg_temp.c(33), 'asaas', 'num-33', 10000);
   if pg_temp.sale(33) <> 1 or pg_temp.pct(33) <> 30 then
     raise exception 'FALHA numeração: esperado venda 1 a 30%%, veio % a %', pg_temp.sale(33), pg_temp.pct(33);
@@ -783,7 +783,7 @@ begin
 
   -- Vendas pagas 2 e 3 a 30%; a 4ª paga pega a faixa de 40%.
   foreach n in array array[34, 35, 36] loop
-    perform public.link_company_to_reseller(pg_temp.c(n), pg_temp.d(), pg_temp.plan('enterprise'), null);
+    perform public.link_company_to_reseller(pg_temp.c(n), pg_temp.d(), pg_temp.plan('anual'), null);
     perform public.register_commission(pg_temp.c(n), 'asaas', 'num-' || n, 10000);
   end loop;
   if pg_temp.sale(35) <> 3 or pg_temp.pct(35) <> 30 then raise exception 'FALHA numeração: 3ª venda'; end if;
@@ -808,8 +808,8 @@ begin
   -- Sem regra: alerta, e nada de vínculo. Pagamento feito nesse meio-tempo não gera nada.
   update public.commission_rules set active = false;
   insert into public.subscriptions (company_id, plan_id, status, external_subscription_id)
-  values (pg_temp.c(40), pg_temp.plan('enterprise'), 'active', 'sub-alerta');
-  if public.link_company_to_reseller(pg_temp.c(40), pg_temp.d(), pg_temp.plan('enterprise'), 'sub-alerta') is not null then
+  values (pg_temp.c(40), pg_temp.plan('anual'), 'active', 'sub-alerta');
+  if public.link_company_to_reseller(pg_temp.c(40), pg_temp.d(), pg_temp.plan('anual'), 'sub-alerta') is not null then
     raise exception 'FALHA alerta: vinculou sem regra';
   end if;
   if public.register_commission(pg_temp.c(40), 'asaas', 'alerta-antes', 10000) is not null then
@@ -818,10 +818,10 @@ begin
 
   -- Quem só tem assinatura arquivada de antes continua fora, mesmo pelo alerta.
   insert into public.subscriptions (company_id, plan_id, status, external_subscription_id, deleted_at)
-  values (pg_temp.c(41), pg_temp.plan('enterprise'), 'canceled', 'sub-velha', now());
+  values (pg_temp.c(41), pg_temp.plan('anual'), 'canceled', 'sub-velha', now());
   insert into public.reseller_audit_log (table_name, record_id, action, new_values)
   values ('reseller_clients', pg_temp.c(41), 'LINK_NO_RULE',
-    jsonb_build_object('reseller_id', pg_temp.d(), 'plan_id', pg_temp.plan('enterprise')));
+    jsonb_build_object('reseller_id', pg_temp.d(), 'plan_id', pg_temp.plan('anual')));
   update public.commission_rules set active = true where reseller_id = pg_temp.d();
 end $$;
 
@@ -907,16 +907,16 @@ begin
     (pg_temp.a(), pg_temp.plan('pro'), 2, 'percent', 40);
 
   -- Global genérica é o último recurso (vendedor B, plano sem regra de plano).
-  select commission_percent into v from public.resolve_commission(pg_temp.b(), pg_temp.plan('enterprise'), 1);
+  select commission_percent into v from public.resolve_commission(pg_temp.b(), pg_temp.plan('anual'), 1);
   if v <> 10 then raise exception 'FALHA regra: global genérica, veio %', v; end if;
   -- Global de plano vence a global genérica.
   select commission_percent into v from public.resolve_commission(pg_temp.b(), pg_temp.plan('pro'), 1);
   if v <> 20 then raise exception 'FALHA regra: global de plano, veio %', v; end if;
   -- Vendedor genérica vence global de plano.
-  select commission_percent into v from public.resolve_commission(pg_temp.a(), pg_temp.plan('enterprise'), 1);
+  select commission_percent into v from public.resolve_commission(pg_temp.a(), pg_temp.plan('anual'), 1);
   if v <> 30 then raise exception 'FALHA regra: vendedor > global, veio %', v; end if;
   -- Faixa do vendedor: a maior alcançada.
-  select commission_percent into v from public.resolve_commission(pg_temp.a(), pg_temp.plan('enterprise'), 3);
+  select commission_percent into v from public.resolve_commission(pg_temp.a(), pg_temp.plan('anual'), 3);
   if v <> 35 then raise exception 'FALHA regra: faixa, veio %', v; end if;
   -- Regra de plano do vendedor ainda não alcançada cai para a genérica dele.
   select commission_percent into v from public.resolve_commission(pg_temp.a(), pg_temp.plan('pro'), 1);
@@ -930,7 +930,7 @@ begin
   if v <> 35 then raise exception 'FALHA regra: removida valeu, veio %', v; end if;
 
   -- Dados para as views do painel.
-  perform public.link_company_to_reseller(pg_temp.c(1), pg_temp.a(), pg_temp.plan('enterprise'), 'sub-painel');
+  perform public.link_company_to_reseller(pg_temp.c(1), pg_temp.a(), pg_temp.plan('anual'), 'sub-painel');
   perform public.register_commission(pg_temp.c(1), 'asaas', 'painel-1', 10000);
 end $$;
 

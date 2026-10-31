@@ -124,7 +124,7 @@ test("ações destrutivas pedem confirmação, e cancelar não muda nada", async
 test("plano grátis não aparece para liberar; falha usa texto claro; rótulo acompanha o tipo", async ({ page }) => {
   await page.goto("/admin/revendedores/regras");
   await expect(page.getByRole("button", { name: "Liberar Free" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Esconder Profissional" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Esconder Mensal" })).toBeVisible();
 
   await expect(page.getByLabel("Valor (%)")).toBeVisible();
   await page.getByLabel("Tipo").selectOption("fixed");

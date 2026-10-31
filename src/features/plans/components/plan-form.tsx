@@ -61,7 +61,7 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
         <Field id={`${idPrefix}-name`} label="Nome">
           <Input id={`${idPrefix}-name`} name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
-        <Field id={`${idPrefix}-price`} label="Preço por mês">
+        <Field id={`${idPrefix}-price`} label={plan?.billing_interval === "year" ? "Preço por ano" : "Preço por mês"}>
           <MaskedInput mask="money"
             id={`${idPrefix}-price`}
             name="price"
@@ -69,7 +69,7 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
             required
           />
         </Field>
-        <Field id={`${idPrefix}-extra`} label="Membro extra" hint="Use 0 se o plano não vende membro extra.">
+        <Field id={`${idPrefix}-extra`} label={plan?.billing_interval === "year" ? "Membro extra por ano" : "Membro extra"} hint="Use 0 se o plano não vende membro extra.">
           <MaskedInput mask="money"
             id={`${idPrefix}-extra`}
             name="extraSeatPrice"

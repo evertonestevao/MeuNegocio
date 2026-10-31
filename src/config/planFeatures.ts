@@ -41,3 +41,25 @@ export function planOfferLines(features: Record<string, unknown>): string[] {
     return [typeof value === "number" ? offer.limited(value) : offer.unlimited];
   });
 }
+
+type PricedPlan = { price_cents: number; billing_interval: "month" | "year" };
+
+/** Quanto o plano custa por mês. O preço do anual vale pelo ano inteiro. */
+export function planMonthlyCents(plan: PricedPlan, cents: number = plan.price_cents): number {
+  return plan.billing_interval === "year" ? Math.round(cents / 12) : cents;
+}
+
+/** Economia do plano anual em um ano, comparada a pagar o mensal por 12 meses. */
+export function annualSavingsCents(plans: PricedPlan[]): number {
+  const annual = plans.find((plan) => plan.billing_interval === "year" && plan.price_cents > 0);
+  const monthly = plans.find((plan) => plan.billing_interval === "month" && plan.price_cents > 0);
+  if (!annual || !monthly) return 0;
+  return Math.max(0, monthly.price_cents * 12 - annual.price_cents);
+}
+
+/** Planos à venda: sem o padrão gratuito e com o anual primeiro, que é o destaque da oferta. */
+export function plansForSale<T extends PricedPlan>(plans: T[]): T[] {
+  return plans
+    .filter((plan) => plan.price_cents > 0)
+    .toSorted((a, b) => Number(b.billing_interval === "year") - Number(a.billing_interval === "year"));
+}

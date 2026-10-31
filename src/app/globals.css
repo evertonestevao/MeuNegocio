@@ -28,6 +28,8 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-info: var(--info);
+  --color-chart-revenue: var(--chart-revenue);
+  --color-chart-expense: var(--chart-expense);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
@@ -74,6 +76,8 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --info: oklch(0.5 0.15 250);
+  --chart-revenue: #4a50d8;
+  --chart-expense: #e0900b;
   --success: oklch(0.48 0.13 155);
   --warning: oklch(0.52 0.12 70);
   --border: oklch(0.922 0 0);
@@ -112,6 +116,8 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --info: oklch(0.78 0.11 250);
+  --chart-revenue: #7379ee;
+  --chart-expense: #c4860f;
   --success: oklch(0.78 0.14 155);
   --warning: oklch(0.82 0.14 80);
   --border: oklch(1 0 0 / 10%);
@@ -143,5 +149,78 @@
   }
   html {
     @apply font-sans;
+  }
+}
+/* Animações da página inicial. Só com movimento permitido; sem suporte, o conteúdo aparece parado. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes lp-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes lp-grow-y {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes lp-grow-x {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes lp-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Só opacidade: botão de ação nunca muda de lugar enquanto a pessoa clica. */
+  .lp-fade {
+    animation: lp-fade 0.6s ease-out both;
+    animation-delay: var(--lp-delay, 0ms);
+  }
+
+  .lp-enter {
+    animation: lp-rise 0.6s ease-out both;
+    animation-delay: var(--lp-delay, 0ms);
+  }
+
+  @supports (animation-timeline: view()) {
+    .lp-reveal {
+      animation: lp-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+
+    .lp-grow-y {
+      transform-origin: bottom;
+      animation: lp-grow-y linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+
+    .lp-grow-x {
+      transform-origin: left;
+      animation: lp-grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
   }
 }

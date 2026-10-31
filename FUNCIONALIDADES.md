@@ -178,11 +178,14 @@ Código: `src/services/accountService.ts`, `src/server/account.ts`, `src/server/
 
 Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/admin/planos`):
 
-| Plano | Preço/mês | Membros inclusos | Membro extra | Clientes | Orçamentos/mês | Link de aprovação, OS e horas |
+| Plano | Preço | Cobrança | Membros inclusos | Membro extra | Clientes e orçamentos | Link de aprovação, OS e horas |
 |---|---|---|---|---|---|:-:|
-| Gratuito | R$ 0 | 2 | — | 30 | 20 | — |
-| Profissional | R$ 149 | 10 | R$ 19,90 | Ilimitados | Ilimitados | ✅ |
-| Empresarial | R$ 599 | 50 | R$ 29,90 | Ilimitados | Ilimitados | ✅ |
+| Anual | R$ 329,90/mês | R$ 3.958,80 uma vez por ano | 10 | R$ 19,90/mês | Ilimitados | ✅ |
+| Mensal | R$ 379,90/mês | Todo mês | 10 | R$ 19,90/mês | Ilimitados | ✅ |
+
+Só os dois acima estão à venda, com o Anual em destaque e a economia calculada sobre o Mensal. O
+plano gratuito (`free`) não aparece na oferta, mas continua valendo para a empresa sem assinatura. O
+Empresarial foi desativado. No plano anual, preço e membro extra são cadastrados por ano.
 
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 
@@ -277,7 +280,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 | Página | Conteúdo |
 |---|---|
-| `/` | Landing page: proposta, dores, funções, planos ativos lidos do banco, dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. Editar ou desativar um plano no painel reflete aqui. |
+| `/` | Landing page: proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, funções, planos ativos lidos do banco, dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. Editar ou desativar um plano no painel reflete aqui. |
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, passagem para o Free, membros extras e como pedir. |

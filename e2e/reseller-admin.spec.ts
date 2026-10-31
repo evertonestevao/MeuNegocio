@@ -87,8 +87,8 @@ test("cadastrar vendedor, criar regra, liberar plano, ajustar cliente e pagar", 
   // Liberar plano.
   await admin.from("plans").update({ available_to_resellers: false }).neq("code", "free");
   await page.reload();
-  await page.getByRole("button", { name: "Liberar Profissional" }).click();
-  await expect(page.getByRole("button", { name: "Esconder Profissional" })).toBeVisible();
+  await page.getByRole("button", { name: "Liberar Mensal" }).click();
+  await expect(page.getByRole("button", { name: "Esconder Mensal" })).toBeVisible();
   const { data: plan } = await admin.from("plans").select("available_to_resellers").eq("code", "pro").single();
   expect(plan!.available_to_resellers).toBe(true);
 

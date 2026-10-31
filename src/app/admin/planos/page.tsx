@@ -88,7 +88,7 @@ export default async function PlansPage() {
                 <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
               </div>
               <CardDescription>
-                Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por mês
+                Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {plan.billing_interval === "year" ? "ano" : "mês"}
               </CardDescription>
             </CardHeader>
             <CardContent>

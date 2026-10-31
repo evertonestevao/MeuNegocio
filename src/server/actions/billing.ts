@@ -122,7 +122,7 @@ export async function activateFakePlanAction(
       companyId,
       planId,
       currentPeriodStart: new Date().toISOString(),
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      currentPeriodEnd: new Date(Date.now() + (plan.billing_interval === "year" ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
       cancelAtPeriodEnd: false,
       payment: { externalId: `fake_pay_${randomUUID()}`, grossAmountCents: plan.price_cents },
     };

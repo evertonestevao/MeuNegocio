@@ -89,7 +89,8 @@ test("link, contratação, pagamento e lançamento, com repetição, estorno e m
   });
 
   await page.goto("/dashboard/billing");
-  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  // O último é o plano mensal: o anual é o primeiro da lista e cobriria 12 meses.
+  await page.getByRole("button", { name: "Ativar (teste)" }).last().click();
   await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   // Vínculo criado na contratação e o primeiro pagamento já gerou lançamento.

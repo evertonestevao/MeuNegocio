@@ -14,10 +14,84 @@ import {
  */
 
 export const hero = {
-  title: "Da visita técnica ao caixa, tudo no mesmo lugar",
+  eyebrow: "Para empresas de serviços com equipe em campo",
+  title: "Da visita técnica ao caixa, sem nada se perder no caminho",
   description:
-    "Para empresas de serviços com equipe em campo: orçamento que o cliente aprova pelo celular, agenda sem choque de horário, ordem de serviço assinada e o saldo do mês à vista.",
+    "Orçamento que o cliente aprova pelo celular, agenda sem choque de horário, ordem de serviço assinada e o saldo do mês à vista. Tudo em um só lugar, no computador e no celular.",
+  highlights: ["Nada para instalar", "Aprovação sem criar conta", "PIX, boleto ou cartão"],
 };
+
+/** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
+export const showcases: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  points: string[];
+  image: string;
+  alt: string;
+  device: "browser" | "phone";
+}[] = [
+  {
+    eyebrow: "Orçamentos",
+    title: "Saiba o que está parado e o que falta fechar",
+    description: "Cada orçamento mostra em que etapa está, do rascunho ao fechamento. Nada fica perdido em uma conversa antiga.",
+    points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar sem criar conta", "Margem visível só para quem pode ver"],
+    image: "/landing/orcamentos.jpg",
+    alt: "Tela de orçamentos com a lista por situação: rascunho, enviado, aprovado e fechado.",
+    device: "browser",
+  },
+  {
+    eyebrow: "Agenda",
+    title: "Sua equipe nunca em dois lugares ao mesmo tempo",
+    description: "Veja o mês e a semana de toda a equipe. O sistema avisa do conflito enquanto você agenda e impede o choque de horário ao salvar.",
+    points: ["Visitas técnicas e execuções", "Filtros por pessoa e por tipo", "Agende direto do cliente ou do orçamento"],
+    image: "/landing/agenda.jpg",
+    alt: "Agenda do mês com as visitas distribuídas pelos dias e a lista de visitas do dia escolhido.",
+    device: "browser",
+  },
+  {
+    eyebrow: "Ordem de serviço",
+    title: "O técnico resolve tudo pelo celular",
+    description: "Ele chega, marca o checklist, fotografa e colhe a assinatura do cliente. O escritório acompanha sem precisar ligar.",
+    points: ["Fotos com legenda e relatório", "Assinatura do cliente na tela", "PDF pronto ao concluir"],
+    image: "/landing/ordem-servico.jpg",
+    alt: "Ordem de serviço no celular com endereço, contato, equipe e checklist.",
+    device: "phone",
+  },
+  {
+    eyebrow: "Financeiro",
+    title: "O saldo do mês sem precisar montar planilha",
+    description: "Serviços fechados, gastos, salários e pagamento de prestadores entram no mesmo lugar. A previsão fica separada do saldo, para você não contar com o que ainda não fechou.",
+    points: ["Faturamento contra gastos em 6 meses", "Gastos por categoria", "Recorrências lançadas todo mês"],
+    image: "/landing/financeiro.jpg",
+    alt: "Tela do financeiro com faturamento, gastos, saldo, gráfico de 6 meses e gastos por categoria.",
+    device: "browser",
+  },
+];
+
+/** Dados fictícios dos gráficos de exemplo. A página sempre avisa que são um exemplo. */
+export const sampleFinance = {
+  months: [
+    { label: "Maio", revenue: 8200, expense: 4800 },
+    { label: "Junho", revenue: 9600, expense: 5100 },
+    { label: "Julho", revenue: 8900, expense: 4950 },
+    { label: "Agosto", revenue: 11400, expense: 5600 },
+    { label: "Setembro", revenue: 13700, expense: 5300 },
+    { label: "Outubro", revenue: 16100, expense: 6100 },
+  ],
+  categories: [
+    { label: "Funcionários", value: 3200 },
+    { label: "Aluguel", value: 1800 },
+    { label: "Material", value: 620 },
+    { label: "Veículos e combustível", value: 480 },
+  ],
+};
+
+export const sampleFunnel = [
+  { label: "Enviados", value: 24 },
+  { label: "Aprovados", value: 15 },
+  { label: "Fechados", value: 11 },
+];
 
 export const pains = [
   {
@@ -112,6 +186,6 @@ export const faq = [
   },
   {
     question: "Como funciona o pagamento e o cancelamento?",
-    answer: "O plano pago é cobrado por assinatura mensal. Ao cancelar, o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
+    answer: "Você escolhe entre o plano anual, cobrado uma vez por ano, e o mensal, cobrado todo mês. Ao cancelar, o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
   },
 ];

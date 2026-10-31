@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, plansForSale } from "@/config/planFeatures";
 import {
   CancelSubscriptionButton,
   SubscribeButton,
@@ -12,6 +12,7 @@ import {
 import { AppError } from "@/lib/errors";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
 import { getSupabaseServerClient } from "@/server/supabase-server";
+import { formatCents } from "@/lib/money";
 import { getActiveTenant } from "@/server/tenant";
 import { createBillingService, hasPlanAccess } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
@@ -29,11 +30,7 @@ export const metadata: Metadata = { title: "Assinatura" };
 
 function formatPrice(plan: Plan): string {
   if (plan.price_cents === 0) return "Grátis";
-  const value = (plan.price_cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: plan.currency,
-  });
-  return `${value}/${plan.billing_interval === "month" ? "mês" : "ano"}`;
+  return `${formatCents(planMonthlyCents(plan), plan.currency)}/mês`;
 }
 
 function featureList(plan: Plan): string[] {
@@ -120,10 +117,7 @@ export default async function BillingPage() {
               plano + <span className="font-medium text-foreground">{seats.extraSeats}</span>{" "}
               extras ={" "}
               <span className="font-medium text-foreground">
-                {(seats.extraCostCents / 100).toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: currentPlan?.currency ?? "BRL",
-                })}
+                {formatCents(currentPlan ? planMonthlyCents(currentPlan, seats.extraCostCents) : seats.extraCostCents, currentPlan?.currency)}
                 /mês
               </span>{" "}
               em vagas extras ({seats.used} em uso no total)
@@ -132,8 +126,8 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {plans.map((plan) => {
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {plansForSale(plans).map((plan) => {
           const isCurrent = currentPlan?.id === plan.id;
           return (
             <Card key={plan.id} className={isCurrent ? "border-primary" : undefined}>
@@ -144,6 +138,11 @@ export default async function BillingPage() {
                 </CardTitle>
                 <CardDescription className="text-lg font-semibold text-foreground">
                   {formatPrice(plan)}
+                  {plan.billing_interval === "year" ? (
+                    <span className="block text-sm font-normal text-muted-foreground">
+                      {formatCents(plan.price_cents, plan.currency)} cobrados uma vez por ano
+                    </span>
+                  ) : null}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">

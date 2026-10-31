@@ -182,7 +182,7 @@ test("módulo desligado bloqueia só o Meu link; suspensão tira o acesso", asyn
   await login(page, seller.email);
   await expect(page).toHaveURL(/\/vendedor$/);
   await expect(page.getByRole("button", { name: "Copiar link geral" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copiar link do plano Profissional" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copiar link do plano Mensal" })).toBeVisible();
 
   await setModuleEnabled(false);
   await page.reload();
