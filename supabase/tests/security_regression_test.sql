@@ -351,6 +351,26 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Compra parcelada: não renova. Mesmo ativa, o plano acaba com o período.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_max text;
+  v_paid text;
+begin
+  select features ->> 'max_members' into v_paid from public.plans where code = 'enterprise';
+  update public.subscriptions set status = 'active', renews = false, current_period_end = now() + interval '10 days'
+  where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null;
+  select features ->> 'max_members' into v_max from public.company_plan_terms('5ec0c000-0000-4000-8000-000000000001');
+  if v_max is distinct from v_paid then raise exception 'FALHA parcelado: perdeu o plano antes do fim'; end if;
+
+  update public.subscriptions set current_period_end = now() - interval '1 day'
+  where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null;
+  select features ->> 'max_members' into v_max from public.company_plan_terms('5ec0c000-0000-4000-8000-000000000001');
+  if v_max is not distinct from v_paid then raise exception 'FALHA parcelado: manteve o plano depois do fim'; end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

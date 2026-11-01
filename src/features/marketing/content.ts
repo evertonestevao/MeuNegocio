@@ -18,7 +18,7 @@ export const hero = {
   title: "Da visita técnica ao caixa, sem nada se perder no caminho",
   description:
     "Orçamento que o cliente aprova pelo celular, agenda sem choque de horário, ordem de serviço assinada e o saldo do mês à vista. Tudo em um só lugar, no computador e no celular.",
-  highlights: ["Nada para instalar", "Aprovação sem criar conta", "PIX, boleto ou cartão"],
+  highlights: ["Nada para instalar", "Aprovação sem criar conta", "Até 12x no cartão"],
 };
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
@@ -186,6 +186,6 @@ export const faq = [
   },
   {
     question: "Como funciona o pagamento e o cancelamento?",
-    answer: "Você escolhe entre o plano anual, cobrado uma vez por ano, e o mensal, cobrado todo mês. Ao cancelar, o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
+    answer: "No plano anual, você paga em até 12x no cartão e tem 12 meses de acesso, sem renovação automática. No mensal, a cobrança é todo mês, por PIX, boleto ou cartão, e ao cancelar o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
   },
 ];

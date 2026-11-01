@@ -326,6 +326,8 @@ export interface Subscription {
   /** Preços do plano na contratação, gravados pelo banco: editar o plano não os altera. */
   contracted_price_cents: number;
   contracted_extra_seat_price_cents: number;
+  /** false: compra parcelada, sem renovação. Vale até current_period_end. */
+  renews: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

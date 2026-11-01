@@ -90,7 +90,7 @@ describe("createCheckout", () => {
     });
   });
 
-  it("plano anual vira ciclo YEARLY", async () => {
+  it("plano anual vira link parcelado em até 12x no cartão, pelo total do ano", async () => {
     const { gateway, calls } = makeGateway({
       "POST /paymentLinks": () => ({ id: "l", url: "u" }),
     });
@@ -98,7 +98,7 @@ describe("createCheckout", () => {
       ...checkoutParams,
       plan: { ...checkoutParams.plan, billingInterval: "year" },
     });
-    expect(calls[0].body).toMatchObject({ subscriptionCycle: "YEARLY" });
+    expect(calls[0].body).toMatchObject({ chargeType: "INSTALLMENT", billingType: "CREDIT_CARD", maxInstallmentCount: 12 });
   });
 
   it("erro da API vira payment_error sem vazar o detalhe", async () => {
@@ -325,5 +325,49 @@ describe("eventos de comissão (payloads da documentação)", () => {
       webhook({ ...docsPaymentEvent("PAYMENT_CHARGEBACK_REQUESTED"), campoNovo: { x: 1 } }),
     );
     expect(chargeback.type).toBe("ignored");
+  });
+
+  describe("plano anual em 12x", () => {
+    const linkRoute = {
+      "GET /paymentLinks/lnk_1": () => ({ externalReference: "company-1:plan-1" }),
+    };
+    const parcel = (name: string, overrides: Record<string, unknown> = {}) =>
+      docsPaymentEvent(name, { subscription: null, installment: "ins_1", paymentLink: "lnk_1", value: 329.9, ...overrides });
+
+    it("parcela vira compra sem renovação, com 12 meses e valor da parcela", async () => {
+      const { gateway } = makeGateway(linkRoute);
+      const event = await gateway.handleWebhook(webhook(parcel("PAYMENT_CONFIRMED")));
+      expect(event).toMatchObject({
+        type: "subscription.activated",
+        externalSubscriptionId: "ins_1",
+        companyId: "company-1",
+        planId: "plan-1",
+        nonRenewing: true,
+        installmentPayment: true,
+        payment: { externalId: "pay_080225913252", grossAmountCents: 32990 },
+      });
+      const months = (Date.parse(event.currentPeriodEnd!) - Date.parse(event.currentPeriodStart!)) / 86_400_000;
+      expect(months).toBeGreaterThanOrEqual(365);
+    });
+
+    it("aceita o parcelamento como objeto e pagamento à vista no mesmo link", async () => {
+      const { gateway } = makeGateway(linkRoute);
+      const asObject = await gateway.handleWebhook(webhook(parcel("PAYMENT_RECEIVED", { installment: { id: "ins_2" } })));
+      expect(asObject.externalSubscriptionId).toBe("ins_2");
+      const once = await gateway.handleWebhook(webhook(parcel("PAYMENT_RECEIVED", { installment: null })));
+      expect(once).toMatchObject({ externalSubscriptionId: "pay_080225913252", nonRenewing: true, installmentPayment: false });
+    });
+
+    it("cobrança avulsa, fora dos nossos links, continua ignorada", async () => {
+      const { gateway } = makeGateway({});
+      const event = await gateway.handleWebhook(webhook(docsPaymentEvent("PAYMENT_CONFIRMED", { subscription: null, paymentLink: null })));
+      expect(event.type).toBe("ignored");
+    });
+
+    it("estorno aponta para o parcelamento", async () => {
+      const { gateway } = makeGateway({});
+      const event = await gateway.handleWebhook(webhook(parcel("PAYMENT_REFUNDED")));
+      expect(event).toMatchObject({ type: "payment.refunded", externalSubscriptionId: "ins_1" });
+    });
   });
 });

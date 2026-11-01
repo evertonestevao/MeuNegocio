@@ -40,6 +40,7 @@ function makeSubscription(overrides: Partial<Subscription>): Subscription {
     external_customer_id: "cus-1",
     contracted_price_cents: 9900,
     contracted_extra_seat_price_cents: 1990,
+    renews: true,
     deleted_at: null,
     created_at: "",
     updated_at: "",
@@ -296,6 +297,7 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
             plan_id: "plan-3seats",
             contracted_price_cents: 14900,
             contracted_extra_seat_price_cents: 1990,
+    renews: true,
           }),
         ],
         members: 5,
@@ -448,6 +450,70 @@ describe("applyPaymentEvent", () => {
     await service.applyPaymentEvent(makeEvent({}));
     await service.applyPaymentEvent(makeEvent({}));
     expect(state.subscriptions).toHaveLength(1);
+  });
+
+  describe("compra parcelada, sem renovação", () => {
+    const end = "2027-10-31T00:00:00.000Z";
+    const activation = {
+      type: "subscription.activated" as const,
+      externalSubscriptionId: "ins_1",
+      companyId: "company-1",
+      planId: "plan-1",
+      currentPeriodStart: "2026-10-31T00:00:00.000Z",
+      currentPeriodEnd: end,
+      nonRenewing: true,
+      installmentPayment: true,
+    };
+
+    it("vale até o fim do período, mesmo com a situação ativa", () => {
+      const subscription = makeSubscription({ renews: false, current_period_end: end });
+      expect(hasPlanAccess(subscription, new Date("2027-10-30T00:00:00Z"))).toBe(true);
+      expect(hasPlanAccess(subscription, new Date("2027-11-01T00:00:00Z"))).toBe(false);
+      expect(hasPlanAccess(makeSubscription({ renews: false, current_period_end: null }))).toBe(false);
+    });
+
+    it("a primeira parcela cria a assinatura; as outras não mudam o período", async () => {
+      const state = { plans: [makePlan({})], subscriptions: [] as Subscription[] };
+      const service = createBillingService(makeRepo(state));
+      await service.applyPaymentEvent(makeEvent(activation));
+      expect(state.subscriptions[0]).toMatchObject({ renews: false, current_period_end: end, external_subscription_id: "ins_1" });
+      await service.applyPaymentEvent(makeEvent({ ...activation, currentPeriodEnd: "2028-01-01T00:00:00.000Z" }));
+      expect(state.subscriptions).toHaveLength(1);
+      expect(state.subscriptions[0].current_period_end).toBe(end);
+    });
+
+    it("parcela paga depois do atraso reativa, mas não reabre o que foi estornado", async () => {
+      const late = { plans: [makePlan({})], subscriptions: [makeSubscription({ renews: false, status: "past_due", external_subscription_id: "ins_1" })] };
+      await createBillingService(makeRepo(late)).applyPaymentEvent(makeEvent(activation));
+      expect(late.subscriptions[0].status).toBe("active");
+      const refunded = { plans: [makePlan({})], subscriptions: [makeSubscription({ renews: false, status: "canceled", external_subscription_id: "ins_1" })] };
+      await createBillingService(makeRepo(refunded)).applyPaymentEvent(makeEvent(activation));
+      expect(refunded.subscriptions[0].status).toBe("canceled");
+    });
+
+    it("estorno integral encerra sem chamar o gateway; parcial não muda", async () => {
+      const state = { plans: [makePlan({})], subscriptions: [makeSubscription({ renews: false, current_period_end: end, external_subscription_id: "ins_1" })] };
+      const canceled: string[] = [];
+      const gateway = { cancelSubscription: async (id: string) => void canceled.push(id) };
+      const service = createBillingService(makeRepo(state));
+      const refund = (refundedCents: number | null) =>
+        makeEvent({ type: "payment.refunded", externalSubscriptionId: "ins_1", currentPeriodStart: null, refund: { externalPaymentId: "pay", refundedCents } });
+      await service.applyPaymentEvent(refund(100), gateway);
+      expect(state.subscriptions[0].status).toBe("active");
+      await service.applyPaymentEvent(refund(null), gateway);
+      expect(state.subscriptions[0].status).toBe("canceled");
+      expect(canceled).toEqual([]);
+      expect(hasPlanAccess(state.subscriptions[0], new Date(Date.now() + 1000))).toBe(false);
+    });
+
+    it("não tenta alterar valor no gateway", async () => {
+      const calls: unknown[] = [];
+      const gateway = { syncExtraSeats: async (update: unknown) => void calls.push(update) } as unknown as Parameters<ReturnType<typeof createBillingService>["syncSeatsWithGateway"]>[1];
+      await createBillingService(
+        makeRepo({ plans: [makePlan({})], subscriptions: [makeSubscription({ renews: false, current_period_end: end })], members: 5 }),
+      ).syncSeatsWithGateway("company-1", gateway, null);
+      expect(calls).toEqual([]);
+    });
   });
 
   describe("estorno", () => {

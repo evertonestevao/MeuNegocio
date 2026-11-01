@@ -180,12 +180,14 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 
 | Plano | Preço | Cobrança | Membros inclusos | Membro extra | Clientes e orçamentos | Link de aprovação, OS e horas |
 |---|---|---|---|---|---|:-:|
-| Anual | R$ 329,90/mês | R$ 3.958,80 uma vez por ano | 10 | R$ 19,90/mês | Ilimitados | ✅ |
-| Mensal | R$ 379,90/mês | Todo mês | 10 | R$ 19,90/mês | Ilimitados | ✅ |
+| Anual | 12x de R$ 329,90 | Até 12x no cartão, total de R$ 3.958,80, sem renovação automática | 10 | Não vende | Ilimitados | ✅ |
+| Mensal | R$ 379,90/mês | Assinatura mensal por PIX, boleto ou cartão | 10 | R$ 19,90/mês | Ilimitados | ✅ |
+
+**Anual parcelado:** no Asaas é um link parcelado, ou seja, uma compra única. Dá 12 meses de acesso desde a confirmação do primeiro pagamento e depois volta ao plano padrão, até contratar de novo. Cada parcela confirmada gera sua comissão, cobrindo 1 mês. Não há cancelamento pela tela: a desistência passa pelo suporte, e o estorno integral de qualquer parcela encerra o plano na hora. Como o valor não muda depois de contratado, o Anual não vende membro extra, e o convite é recusado quando as 10 vagas acabam. No Stripe, o parcelamento não existe: o plano anual seria cobrado de uma vez e renovaria.
 
 Só os dois acima estão à venda, com o Anual em destaque e a economia calculada sobre o Mensal. O
 plano gratuito (`free`) não aparece na oferta, mas continua valendo para a empresa sem assinatura. O
-Empresarial foi desativado. No plano anual, preço e membro extra são cadastrados por ano.
+Empresarial foi desativado.
 
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 

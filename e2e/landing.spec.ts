@@ -9,9 +9,9 @@ test("landing mostra o produto, os planos ativos e os dados legais", async ({ pa
   expect(body).not.toMatch(/starter|template|supabase|next\.js/i);
 
   const plans = page.locator("#planos");
-  await expect(plans.getByText("R$ 329,90")).toBeVisible();
+  await expect(plans.getByText("12x de R$ 329,90")).toBeVisible();
   await expect(plans.getByText("R$ 379,90")).toBeVisible();
-  await expect(plans.getByText("R$ 3.958,80 cobrados uma vez por ano")).toBeVisible();
+  await expect(plans.getByText(/No cartão, total de R\$\s3\.958,80/)).toBeVisible();
   await expect(plans.getByText("Economize R$ 600,00 por ano")).toBeVisible();
   await expect(plans.getByText("Grátis", { exact: true })).toHaveCount(0);
   await expect(plans.getByRole("heading", { name: "Anual" }).or(plans.getByText("Anual", { exact: true }))).toBeVisible();

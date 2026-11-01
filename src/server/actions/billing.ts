@@ -114,16 +114,19 @@ export async function activateFakePlanAction(
       throw new AppError("not_found", "Plano não encontrado");
     }
     await linkCompanyAtCheckout(companyId, planId);
+    const annual = plan.billing_interval === "year";
     const event: NormalizedPaymentEvent = {
       type: "subscription.activated",
       gateway: "fake",
-      externalSubscriptionId: `fake_${companyId}`,
+      // Cada compra anual é uma nova, como no parcelamento real.
+      externalSubscriptionId: annual ? `fake_ins_${randomUUID()}` : `fake_${companyId}`,
       externalCustomerId: `fake_cus_${companyId}`,
       companyId,
       planId,
       currentPeriodStart: new Date().toISOString(),
       currentPeriodEnd: new Date(Date.now() + (plan.billing_interval === "year" ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
       cancelAtPeriodEnd: false,
+      nonRenewing: annual,
       payment: { externalId: `fake_pay_${randomUUID()}`, grossAmountCents: plan.price_cents },
     };
     await billing.applyPaymentEvent(event);
@@ -154,6 +157,10 @@ export async function cancelSubscriptionAction(
     const subscription = await repo.getActiveSubscription(companyId);
     if (!subscription) {
       throw new AppError("not_found", "Nenhuma assinatura ativa");
+    }
+
+    if (!subscription.renews) {
+      throw new AppError("conflict", "Esta compra é parcelada e não renova sozinha. Para desistir, fale com o suporte.");
     }
 
     if (subscription.external_subscription_id) {

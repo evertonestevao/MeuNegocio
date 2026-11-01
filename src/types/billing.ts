@@ -73,6 +73,10 @@ export interface NormalizedPaymentEvent {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  /** Compra parcelada: não renova e vale até currentPeriodEnd. */
+  nonRenewing?: boolean;
+  /** Parcela de uma compra: cobre 1 mês, mesmo em plano anual. */
+  installmentPayment?: boolean;
   /** Pagamento confirmado que gerou o evento. Sem isto, não há comissão (ex.: Stripe). */
   payment?: { externalId: string; grossAmountCents: number };
   /** Estorno: total estornado até agora; null = integral. */

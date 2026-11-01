@@ -11,7 +11,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "2. Cancelamento",
-    body: "O proprietário da empresa pode cancelar a assinatura a qualquer momento na página de Assinatura do painel. Não há novas cobranças, e o plano continua até o fim do período já pago, informado nessa página. Depois disso, a empresa passa para o plano gratuito.\nNo plano anual, o período pago vai até o fim do ano contratado. Assinar de novo nesse intervalo inicia uma nova cobrança.",
+    body: "O proprietário da empresa pode cancelar a assinatura a qualquer momento na página de Assinatura do painel. Não há novas cobranças, e o plano continua até o fim do período já pago, informado nessa página. Depois disso, a empresa passa para o plano gratuito.\nO plano anual é uma compra de 12 meses em até 12x no cartão: não renova sozinho, e as parcelas continuam até o fim, mesmo sem uso. Para desistir, use o canal da seção 6. Assinar de novo nesse intervalo inicia uma nova cobrança.",
   },
   {
     title: "3. O que acontece com seus dados no plano gratuito",

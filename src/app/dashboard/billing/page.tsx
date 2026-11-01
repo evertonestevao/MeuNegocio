@@ -67,8 +67,10 @@ export default async function BillingPage() {
   }
 
   const isFakeGateway = getServerEnv().PAYMENT_GATEWAY === "fake";
+  // Compra parcelada não tem o que cancelar aqui: desistência passa pelo suporte.
   const hasActiveSubscription =
-    subscription != null && ["trialing", "active", "past_due"].includes(subscription.status);
+    subscription != null && subscription.renews && ["trialing", "active", "past_due"].includes(subscription.status);
+  const prepaidWithAccess = subscription != null && !subscription.renews && subscription.status !== "canceled" && hasPlanAccess(subscription);
   const canceledWithAccess =
     subscription != null && subscription.status === "canceled" && hasPlanAccess(subscription);
 
@@ -80,6 +82,12 @@ export default async function BillingPage() {
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
           {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}
         </p>
+        {prepaidWithAccess ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Plano pago até {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}, sem renovação automática.
+            Depois disso, contrate de novo para continuar.
+          </p>
+        ) : null}
         {canceledWithAccess ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Assinatura cancelada. Acesso ao plano até{" "}
@@ -140,7 +148,7 @@ export default async function BillingPage() {
                   {formatPrice(plan)}
                   {plan.billing_interval === "year" ? (
                     <span className="block text-sm font-normal text-muted-foreground">
-                      {formatCents(plan.price_cents, plan.currency)} cobrados uma vez por ano
+                      12x no cartão, total de {formatCents(plan.price_cents, plan.currency)}. Vale por 12 meses, sem renovação automática.
                     </span>
                   ) : null}
                 </CardDescription>

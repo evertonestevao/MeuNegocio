@@ -36,11 +36,14 @@ function PlanCard({ plan, savingsCents }: { plan: Plan; savingsCents: number }) 
         ) : null}
         <CardTitle>{plan.name}</CardTitle>
         <p className={cn("font-semibold tracking-tight tabular-nums", annual ? "text-4xl" : "text-3xl")}>
+          {annual ? <span className="text-lg font-medium">12x de </span> : null}
           {formatCents(planMonthlyCents(plan), plan.currency)}
-          <span className="text-sm font-normal text-muted-foreground"> /mês</span>
+          {annual ? null : <span className="text-sm font-normal text-muted-foreground"> /mês</span>}
         </p>
         <p className="text-sm text-muted-foreground">
-          {annual ? `${formatCents(plan.price_cents, plan.currency)} cobrados uma vez por ano` : "Cobrado todo mês"}
+          {annual
+            ? `No cartão, total de ${formatCents(plan.price_cents, plan.currency)}. Vale por 12 meses, sem renovação automática.`
+            : "Cobrado todo mês, por PIX, boleto ou cartão"}
         </p>
         {annual && savingsCents > 0 ? (
           <p className="w-fit rounded-full bg-success/12 px-2.5 py-0.5 text-sm font-medium text-success dark:bg-success/20">
@@ -251,7 +254,7 @@ export default async function LandingPage() {
         <section id="planos" className="scroll-mt-14 border-t bg-muted/40">
           <div className="mx-auto w-full max-w-6xl px-4 py-16 lg:py-24">
             <h2 className="text-3xl font-semibold tracking-tight">Planos</h2>
-            <p className="mt-2 text-muted-foreground">Pagamento por PIX, boleto ou cartão. Técnico com acesso conta como membro; pessoa da equipe sem acesso, não.</p>
+            <p className="mt-2 text-muted-foreground">Técnico com acesso conta como membro; pessoa da equipe sem acesso, não.</p>
             {plans.length === 0 ? (
               <p className="mt-8 text-sm text-muted-foreground">
                 Não foi possível mostrar os planos agora. Fale com {brand.legal.supportEmail}.

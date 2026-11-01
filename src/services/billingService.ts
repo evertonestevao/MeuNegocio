@@ -52,16 +52,14 @@ const ACCESS_STATUSES: ReadonlySet<Subscription["status"]> = new Set([
 ]);
 
 /**
- * A assinatura dá acesso ao plano agora? Cancelada mantém o plano até o fim do
- * período já pago. Mesma regra de public.company_plan_terms, no banco.
+ * A assinatura dá acesso ao plano agora? Cancelada ou parcelada, que não renova,
+ * mantém o plano até o fim do período. Mesma regra de public.company_plan_terms, no banco.
  */
 export function hasPlanAccess(subscription: Subscription, now: Date = new Date()): boolean {
-  if (ACCESS_STATUSES.has(subscription.status)) return true;
-  return (
-    subscription.status === "canceled" &&
-    subscription.current_period_end !== null &&
-    new Date(subscription.current_period_end) > now
-  );
+  const withinPeriod = subscription.current_period_end !== null && new Date(subscription.current_period_end) > now;
+  if (subscription.status === "canceled") return withinPeriod;
+  if (!ACCESS_STATUSES.has(subscription.status)) return false;
+  return subscription.renews || withinPeriod;
 }
 
 export function createBillingService(repo: BillingRepository) {
@@ -149,7 +147,15 @@ export function createBillingService(repo: BillingRepository) {
         current_period_start: event.currentPeriodStart,
         current_period_end: event.currentPeriodEnd,
         cancel_at_period_end: event.cancelAtPeriodEnd,
+        renews: !event.nonRenewing,
       });
+      return {};
+    }
+
+    // Cada parcela confirmada chega como um evento: o período é o da compra e não muda, e
+    // parcela atrasada que chega depois de um estorno não reabre o acesso.
+    if (!existing.renews && (event.type === "subscription.activated" || event.type === "subscription.updated")) {
+      if (existing.status === "past_due") await repo.updateSubscription(existing.id, { status: "active" });
       return {};
     }
 
@@ -178,22 +184,26 @@ export function createBillingService(repo: BillingRepository) {
    * Estorno integral da cobrança do período atual encerra a assinatura na hora: o
    * período deixou de estar pago. Parcial ou de cobrança antiga não muda nada, para
    * uma correção de valor não derrubar quem está em dia. Sem saber a qual período o
-   * estorno se refere, também não muda.
+   * estorno se refere, também não muda. Na compra parcelada, todas as parcelas são do
+   * mesmo período, então qualquer estorno integral encerra.
    */
   async function endSubscriptionAfterRefund(
     event: NormalizedPaymentEvent,
     gateway?: Pick<PaymentGateway, "cancelSubscription">,
   ): Promise<PaymentEventResult> {
     if (!event.refund || event.refund.refundedCents !== null) return {};
-    if (!event.externalSubscriptionId || !event.currentPeriodStart) return {};
+    if (!event.externalSubscriptionId) return {};
 
     const subscription = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
-    if (!subscription?.current_period_start) return {};
-    if (new Date(event.currentPeriodStart) < new Date(subscription.current_period_start)) return {};
+    if (!subscription) return {};
+    if (subscription.renews) {
+      if (!event.currentPeriodStart || !subscription.current_period_start) return {};
+      if (new Date(event.currentPeriodStart) < new Date(subscription.current_period_start)) return {};
+    }
 
     // Antes de gravar: se o gateway falhar, o webhook é reenviado e tenta de novo.
     // Assinatura já cancelada não tem mais o que parar no gateway.
-    if (subscription.status !== "canceled") {
+    if (subscription.renews && subscription.status !== "canceled") {
       if (!gateway) throw new AppError("payment_error", "Estorno sem gateway para encerrar a assinatura");
       await gateway.cancelSubscription(event.externalSubscriptionId);
     }
@@ -244,6 +254,7 @@ export function createBillingService(repo: BillingRepository) {
     const subscription = await repo.getActiveSubscription(companyId);
     if (
       subscription &&
+      subscription.renews &&
       ACCESS_STATUSES.has(subscription.status) &&
       subscription.external_subscription_id
     ) {

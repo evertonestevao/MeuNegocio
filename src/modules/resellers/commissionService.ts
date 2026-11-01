@@ -65,7 +65,8 @@ export function createCommissionService(repo: CommissionRepository) {
         gateway: event.gateway,
         externalPaymentId: event.payment.externalId,
         grossAmountCents: event.payment.grossAmountCents,
-        monthsCovered: MONTHS_BY_INTERVAL[interval],
+        // Cada parcela é um pagamento de 1 mês; à vista, o anual cobre os 12.
+        monthsCovered: event.installmentPayment ? 1 : MONTHS_BY_INTERVAL[interval],
       });
     } else if (event.type === "payment.refunded" && event.refund) {
       await repo.reverseCommission(event.gateway, event.refund.externalPaymentId, event.refund.refundedCents);

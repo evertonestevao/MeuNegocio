@@ -18,7 +18,7 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
   await page.goto("/dashboard/billing");
   await expect(page.getByText("Plano atual:")).toBeVisible();
 
-  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await page.getByRole("button", { name: "Ativar (teste)" }).last().click();
   await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   await page.getByRole("button", { name: "Cancelar assinatura" }).click();
@@ -27,7 +27,7 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
   await expect(page.getByText(/Acesso ao plano até/)).toBeVisible();
   await expect(page.getByText("Plano atual:")).not.toContainText("Gratuito");
 
-  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await page.getByRole("button", { name: "Ativar (teste)" }).last().click();
   await expect(page.getByText("assinatura ativa")).toBeVisible();
 
   await page.getByRole("button", { name: "Cancelar assinatura" }).click();
@@ -53,4 +53,19 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
 test("health check responde sem sessão, lendo o banco como anon", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.status()).toBe(200);
+});
+
+test("plano anual vale 12 meses, sem renovação e sem botão de cancelar", async ({ page }) => {
+  await signupAndOnboard(page, {
+    email: uniqueEmail("anual"),
+    password: PASSWORD,
+    name: "Dono Anual",
+    company: "Empresa Anual E2E",
+  });
+  await page.goto("/dashboard/billing");
+  await expect(page.getByText(/12x no cartão, total de R\$\s3\.958,80/)).toBeVisible();
+  await page.getByRole("button", { name: "Ativar (teste)" }).first().click();
+  await expect(page.getByText("Plano atual:")).toContainText("Anual");
+  await expect(page.getByText(/Plano pago até .*sem renovação automática/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancelar assinatura" })).toHaveCount(0);
 });

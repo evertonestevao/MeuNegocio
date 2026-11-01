@@ -17,6 +17,8 @@ import type { PaymentGateway } from "./PaymentGateway";
  *    página do Asaas coleta nome, CPF/CNPJ e a forma de pagamento (PIX, boleto
  *    ou cartão) e cria cliente + assinatura. `externalReference` leva
  *    "<companyId>:<planId>" para o webhook achar a empresa.
+ *    No plano anual, o link é PARCELADO, em até 12x no cartão: uma compra única, sem
+ *    assinatura no Asaas, que dá 12 meses de acesso e não renova.
  *  - Webhook: autenticado pelo header `asaas-access-token` (token definido
  *    ao cadastrar o webhook no painel). Pagamento confirmado de uma
  *    assinatura ativa ou renova o plano; vencido vira past_due; estorno vira
@@ -25,6 +27,8 @@ import type { PaymentGateway } from "./PaymentGateway";
  *    total da assinatura (plano + extras × preço unitário).
  *  - Portal: o Asaas não tem portal de autogestão — getPortalUrl devolve null.
  */
+
+const ANNUAL_MAX_INSTALLMENTS = 12;
 
 const API_URLS = {
   sandbox: "https://api-sandbox.asaas.com/v3",
@@ -81,6 +85,8 @@ interface AsaasWebhookEvent {
     value?: number;
     customer?: string;
     subscription?: string | null;
+    /** Só em cobrança de parcelamento: o id, ou o objeto com o id. */
+    installment?: string | { id?: string } | null;
     paymentLink?: string | null;
     externalReference?: string | null;
     dueDate?: string;
@@ -113,6 +119,11 @@ function toCents(reais: number): number {
 /** "2026-10-26" -> ISO em UTC; null se ausente. */
 function dateToIso(date: string | undefined | null): string | null {
   return date ? new Date(`${date}T00:00:00Z`).toISOString() : null;
+}
+
+function installmentId(installment: string | { id?: string } | null | undefined): string | null {
+  if (!installment) return null;
+  return typeof installment === "string" ? installment : (installment.id ?? null);
 }
 
 export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
@@ -207,7 +218,9 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       return {
         ...base,
         type,
-        externalSubscriptionId: event.payment?.subscription ?? null,
+        // Compra parcelada não tem assinatura no Asaas: o id é o do parcelamento.
+        externalSubscriptionId:
+          event.payment?.subscription ?? installmentId(event.payment?.installment) ?? (event.payment?.paymentLink ? (paymentId ?? null) : null),
         externalCustomerId: event.payment?.customer ?? null,
         // Identifica a qual período a cobrança estornada pertence.
         currentPeriodStart: dateToIso(event.payment?.dueDate),
@@ -215,8 +228,32 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       };
     }
 
-    // Eventos de pagamento: só interessam os de assinatura (avulsos são ignorados).
     const payment = event.payment;
+    // Compra do plano anual: vem de um link nosso e não tem assinatura. Cobrança avulsa é ignorada.
+    if (payment && !payment.subscription) {
+      const reference = await resolveReference(null, payment.paymentLink);
+      if (!reference || !payment.id) return base;
+      const parcel = installmentId(payment.installment);
+      const start = new Date();
+      const end = new Date(start);
+      end.setFullYear(end.getFullYear() + 1);
+      return {
+        ...base,
+        type,
+        externalSubscriptionId: parcel ?? payment.id,
+        externalCustomerId: payment.customer ?? null,
+        companyId: reference.companyId,
+        planId: reference.planId,
+        currentPeriodStart: start.toISOString(),
+        currentPeriodEnd: end.toISOString(),
+        nonRenewing: true,
+        installmentPayment: parcel !== null,
+        payment:
+          type === "subscription.activated" && payment.value
+            ? { externalId: payment.id, grossAmountCents: toCents(payment.value) }
+            : undefined,
+      };
+    }
     if (!payment?.subscription) return base;
     const subscription = await asaasRequest<AsaasSubscription>(
       `/subscriptions/${payment.subscription}`,
@@ -245,14 +282,15 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     name: "asaas",
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
+      const annual = params.plan.billingInterval === "year";
       const link = await asaasRequest<{ id: string; url: string }>("/paymentLinks", "POST", {
         name: params.plan.name,
         description: `Assinatura do plano ${params.plan.name}`,
         value: toReais(params.plan.priceCents),
-        // UNDEFINED: o cliente escolhe PIX, boleto ou cartão na página do Asaas.
-        billingType: "UNDEFINED",
-        chargeType: "RECURRENT",
-        subscriptionCycle: params.plan.billingInterval === "year" ? "YEARLY" : "MONTHLY",
+        // Anual: valor do ano em até 12x no cartão. Mensal: o cliente escolhe PIX, boleto ou cartão.
+        ...(annual
+          ? { billingType: "CREDIT_CARD", chargeType: "INSTALLMENT", maxInstallmentCount: ANNUAL_MAX_INSTALLMENTS }
+          : { billingType: "UNDEFINED", chargeType: "RECURRENT", subscriptionCycle: "MONTHLY" }),
         dueDateLimitDays: 3,
         externalReference: `${params.companyId}:${params.plan.id}`,
         // O domínio de successUrl precisa estar cadastrado nas informações
