@@ -20,6 +20,8 @@ export const SIDEBAR_COOKIE = "sidebar-collapsed";
 
 export interface AppShellProps extends UserMenuProps {
   initialCollapsed: boolean;
+  /** Mostra "Nova empresa" no seletor. Fechado para quem não é super admin. */
+  canCreateCompany?: boolean;
   /** Área fora dos tenants (painel, vendedor): sem seletor de empresa, com menu próprio. */
   area?: { home: ShellNavItem; items: ShellNavItem[] };
   /** Convites pendentes PARA o usuário — badge de atenção em Configurações. */
@@ -35,6 +37,7 @@ export interface AppShellProps extends UserMenuProps {
  */
 export function AppShell({
   initialCollapsed,
+  canCreateCompany = false,
   area,
   pendingInvitesCount = 0,
   children,
@@ -127,7 +130,7 @@ export function AppShell({
           </div>
           <h1 className="truncate text-sm font-medium lg:hidden">{titleForPath(pathname, area?.items)}</h1>
           <div className="ml-auto flex items-center gap-2">
-            {area ? null : <CompanySwitcher />}
+            {area ? null : <CompanySwitcher canCreate={canCreateCompany} />}
             <UserMenu {...user} />
           </div>
         </header>

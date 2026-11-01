@@ -80,6 +80,7 @@ mas não outros admins nem o owner.
 | Função | Como funciona | Regras |
 |---|---|---|
 | **Telas de acesso** | Login, cadastro e recuperação de senha têm painel com a marca no computador e cabeçalho compacto no celular. A senha pode ser exibida, e o login oferece a demonstração. | — |
+| **Cadastro fechado** | Padrão (`SIGNUP_ENABLED=false`). A página inicial e o login não oferecem criar conta: "Quero contratar" abre o WhatsApp comercial (`brand.salesWhatsapp`) com a mensagem pronta, e o servidor recusa o cadastro, salvo para e-mail com convite pendente. Para abrir, `SIGNUP_ENABLED=true`. | — |
 | **Cadastro** (`/signup`) | Nome completo, email e senha. Mostra links para Termos e Privacidade. | Senha com no mínimo 8 caracteres. Rate limit por email. |
 | **Login** (`/login`) | Email e senha. Respeita `?next=` para voltar à página de origem. | 10 tentativas por minuto por email. |
 | **Logout** | Menu do usuário, no topo do painel. | — |
@@ -108,7 +109,8 @@ Código: `src/services/termsService.ts`, `src/server/actions/terms.ts`.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Criar empresa** (`/onboarding`) | Qualquer usuário logado | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
+| **Criar empresa e acesso** (`/admin/empresas`) | Super admin | Cria a empresa, o proprietário e, se escolhido, libera um plano sem cobrança, pelo período dele e sem renovar. Mostra uma senha temporária uma única vez; no primeiro acesso, a pessoa precisa trocá-la. Falhou no meio, nada fica para trás. |
+| **Criar empresa** (`/onboarding`) | Com o cadastro aberto, qualquer usuário logado; fechado, só o super admin | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
 | **Várias empresas por usuário** | Todos | O seletor no topo do painel troca a **empresa ativa**. |
 | **Empresa ativa** | Todos | Guardada em cookie só como preferência. A cada request o servidor confere se o usuário ainda é membro. |
 | **Editar nome** (Configurações) | Owner, admin | — |

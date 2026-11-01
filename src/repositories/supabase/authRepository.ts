@@ -41,7 +41,7 @@ export function createSupabaseAuthRepository(client: SupabaseClient): AuthReposi
     },
 
     async updatePassword(newPassword) {
-      const { error } = await client.auth.updateUser({ password: newPassword });
+      const { error } = await client.auth.updateUser({ password: newPassword, data: { must_change_password: false } });
       if (error) {
         throw new AppError("unauthorized", "Não foi possível alterar a senha", error);
       }

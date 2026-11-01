@@ -16,7 +16,7 @@ const LOCAL_SERVICE_ROLE_KEY =
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
-  // next dev compila sob demanda: vários workers no mesmo servidor frio geram timeout falso.
+  // Banco e servidores compartilhados: uma spec por vez.
   workers: 1,
   // Dev server frio (Turbopack compila rota na 1ª visita) estoura os 5s
   // default de expect com specs paralelas — 15s dá folga sem mascarar bug.
@@ -26,14 +26,21 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3100",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: /closed-signup/ },
+    { name: "cadastro-fechado", use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3101" }, testMatch: /closed-signup/ },
+  ],
+  // Build de produção (npm run build antes), em portas próprias: não encosta no app da porta 3000.
+  webServer: [
+    { port: 3100, signup: "true" },
+    { port: 3101, signup: "false" },
+  ].map(({ port, signup }) => ({
+    command: `npx next start -p ${port}`,
+    url: `http://localhost:${port}`,
+    reuseExistingServer: false,
     timeout: 120_000,
     env: {
       NEXT_PUBLIC_SUPABASE_URL: LOCAL_SUPABASE_URL,
@@ -43,7 +50,8 @@ export default defineConfig({
       PAYMENT_GATEWAY: "fake",
       EMAIL_PROVIDER: "console",
       RATE_LIMIT_STORE: "memory",
-      APP_URL: "http://localhost:3000",
+      APP_URL: `http://localhost:${port}`,
+      SIGNUP_ENABLED: signup,
     },
-  },
+  })),
 });

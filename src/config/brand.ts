@@ -7,6 +7,8 @@ export const brand = {
   name: "MeuNegócio",
   /** Descrição curta usada em metadata e na LP. */
   tagline: "Visitas, orçamentos e caixa da sua empresa de serviços",
+  /** WhatsApp comercial, só dígitos e com DDI: destino de "Quero contratar". */
+  salesWhatsapp: "5514997122258",
   /** Domínio público (links de email usam APP_URL do servidor). */
   url: "https://meuproduto.com.br",
   /**
@@ -22,3 +24,8 @@ export const brand = {
     dpoEmail: "privacidade@meuproduto.com.br",
   },
 } as const;
+
+/** Link do WhatsApp comercial, com a mensagem já escrita. */
+export function salesWhatsappHref(message: string): string {
+  return `https://wa.me/${brand.salesWhatsapp}?text=${encodeURIComponent(message)}`;
+}

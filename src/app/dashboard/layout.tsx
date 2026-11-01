@@ -9,6 +9,7 @@ import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
 import { DemoBanner } from "@/features/demo/components/demo-banner";
 import { getDemoProfile } from "@/server/demo/mode";
+import { isSignupOpen } from "@/server/signup";
 import { getTermsService } from "@/server/terms";
 import { createUserService } from "@/services/userService";
 import { getAreaLinks, getNoCompanyDestination } from "@/modules/resellers/areaAccess";
@@ -25,6 +26,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: userData } = await client.auth.getUser();
   if (!userData.user) {
     redirect("/login");
+  }
+
+  // Senha temporária, criada pelo super admin: precisa ser trocada antes de qualquer tela.
+  if (userData.user.user_metadata?.must_change_password === true) {
+    redirect("/reset-password");
   }
 
   // Termos primeiro: versão nova publicada força reaceite antes de qualquer
@@ -50,6 +56,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]);
 
   const demoProfile = await getDemoProfile();
+  const canCreateCompany = isSignupOpen() || areaLinks.some((link) => link.href === "/admin/planos");
   const cookieStore = await cookies();
   const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "true";
 
@@ -62,8 +69,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         avatarUrl={profile?.avatar_url ?? null}
         pendingInvitesCount={myInvites.length}
         areaLinks={areaLinks}
+        canCreateCompany={canCreateCompany}
       >
-        {demoProfile ? <DemoBanner profile={demoProfile} /> : null}
+        {demoProfile ? <DemoBanner profile={demoProfile} signupOpen={isSignupOpen()} /> : null}
         {children}
       </AppShell>
     </TenantProvider>

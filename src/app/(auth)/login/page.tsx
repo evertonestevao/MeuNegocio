@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/password-input";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { signInAction } from "@/server/actions/auth";
+import { isSignupOpen } from "@/server/signup";
 
 export const metadata: Metadata = { title: "Entrar" };
 
@@ -16,6 +17,8 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next, error } = await searchParams;
+  // Cadastro fechado: "Criar conta" só para quem veio pelo link de um convite.
+  const showSignup = isSignupOpen() || Boolean(next?.startsWith("/invites/accept"));
 
   return (
     <Card>
@@ -51,16 +54,18 @@ export default async function LoginPage({
             />
           </div>
         </AuthForm>
-        <p className="text-center text-sm text-muted-foreground">
-          Não tem conta?{" "}
-          <Link
-            // preserva o destino (ex.: link de convite) através do cadastro
-            href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
-            className="text-foreground underline underline-offset-4"
-          >
-            Criar conta
-          </Link>
-        </p>
+        {showSignup ? (
+          <p className="text-center text-sm text-muted-foreground">
+            Não tem conta?{" "}
+            <Link
+              // preserva o destino (ex.: link de convite) através do cadastro
+              href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+              className="text-foreground underline underline-offset-4"
+            >
+              Criar conta
+            </Link>
+          </p>
+        ) : null}
         <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
           <span className="h-px flex-1 bg-border" />
           ou

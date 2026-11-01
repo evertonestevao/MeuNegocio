@@ -40,6 +40,7 @@ export async function getAreaLinks(): Promise<AreaLink[]> {
     ...(isSuperAdmin
       ? [
           { href: "/admin/revendedores", label: "Revendedores" },
+          { href: "/admin/empresas", label: "Empresas" },
           { href: "/admin/planos", label: "Planos" },
         ]
       : []),

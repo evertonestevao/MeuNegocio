@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { brand } from "@/config/brand";
+import { brand, salesWhatsappHref } from "@/config/brand";
 import { annualSavingsCents, planMonthlyCents, planOfferLines, plansForSale } from "@/config/planFeatures";
 import { BrowserFrame, PhoneFrame } from "@/features/marketing/components/device-frames";
 import { SampleCharts } from "@/features/marketing/components/sample-charts";
@@ -11,6 +11,7 @@ import { benefits, faq, hero, journey, pains, showcases } from "@/features/marke
 import { formatCents } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { getPublicPlans } from "@/server/plans";
+import { isSignupOpen } from "@/server/signup";
 import type { Plan } from "@/types/database";
 
 // Preço e oferta mudam pelo painel, sem deploy: a página não pode ficar presa ao build.
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 
 const YELLOW_BUTTON = "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90";
 
-function PlanCard({ plan, savingsCents }: { plan: Plan; savingsCents: number }) {
+function PlanCard({ plan, savingsCents, signupOpen }: { plan: Plan; savingsCents: number; signupOpen: boolean }) {
   const annual = plan.billing_interval === "year";
   // O card não se move: animar aqui pode tirar o botão de compra de baixo do clique.
   return (
@@ -70,9 +71,9 @@ function PlanCard({ plan, savingsCents }: { plan: Plan; savingsCents: number }) 
           className={cn("mt-auto", annual && YELLOW_BUTTON)}
           variant={annual ? "default" : "outline"}
           nativeButton={false}
-          render={<Link href="/signup" />}
+          render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o plano ${plan.name} do ${brand.name}.`)} target="_blank" rel="noreferrer" />}
         >
-          Começar com o plano {plan.name}
+          {signupOpen ? `Começar com o plano ${plan.name}` : `Quero o plano ${plan.name}`}
         </Button>
       </CardContent>
     </Card>
@@ -82,6 +83,7 @@ function PlanCard({ plan, savingsCents }: { plan: Plan; savingsCents: number }) 
 export default async function LandingPage() {
   const plans = plansForSale(await getPublicPlans());
   const savingsCents = annualSavingsCents(plans);
+  const signupOpen = isSignupOpen();
 
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
@@ -107,8 +109,8 @@ export default async function LandingPage() {
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/login" />}>
               Entrar
             </Button>
-            <Button size="sm" nativeButton={false} render={<Link href="/signup" />}>
-              Criar conta
+            <Button size="sm" nativeButton={false} render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
+              {signupOpen ? "Criar conta" : "Quero contratar"}
             </Button>
           </nav>
         </div>
@@ -265,7 +267,7 @@ export default async function LandingPage() {
             ) : (
               <div className="mx-auto mt-10 grid max-w-3xl items-stretch gap-6 md:grid-cols-2">
                 {plans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} savingsCents={savingsCents} />
+                  <PlanCard key={plan.id} plan={plan} savingsCents={savingsCents} signupOpen={signupOpen} />
                 ))}
               </div>
             )}
@@ -304,10 +306,10 @@ export default async function LandingPage() {
           />
           <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-4 py-20 text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Tire sua empresa do caderno</h2>
-            <p className="max-w-xl text-pretty text-sidebar-foreground/80">Crie sua conta, cadastre a empresa e monte o primeiro orçamento.</p>
+            <p className="max-w-xl text-pretty text-sidebar-foreground/80">Veja o sistema funcionando e monte o primeiro orçamento da sua empresa.</p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<Link href="/signup" />}>
-                Criar conta <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
+                {signupOpen ? "Criar conta" : "Quero contratar"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
               </Button>
               <Button
                 size="lg"

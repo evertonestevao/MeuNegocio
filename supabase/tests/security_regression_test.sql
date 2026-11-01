@@ -412,6 +412,11 @@ begin
     );
   if v_list is not null then raise exception 'FALHA invariante: escrita aberta: %', v_list; end if;
 
+  -- Criar empresa para outra pessoa é só do servidor.
+  if has_function_privilege('authenticated', 'public.admin_create_company(text, text, uuid, uuid, uuid)', 'execute') then
+    raise exception 'FALHA invariante: usuário comum cria empresa para outra pessoa';
+  end if;
+
   -- Travas que não podem sumir em uma migration futura.
   select string_agg(expected.name, ', ') into v_list
   from unnest(array[

@@ -10,6 +10,8 @@ import { reportError } from "@/adapters/errorReporting";
 import { AppError } from "@/lib/errors";
 import { recordCompanyReferralFromCookie } from "@/modules/resellers/server";
 import { recordAudit } from "@/server/audit";
+import { getPlatformAdminId } from "@/server/plans";
+import { isSignupOpen } from "@/server/signup";
 import { getServerBillingService, syncCompanySeats } from "@/server/billing";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getRequestEvidence, getTermsService } from "@/server/terms";
@@ -48,6 +50,11 @@ export async function createCompanyAction(
   let companyId: string;
   let destination = "/dashboard";
   try {
+    // Cadastro fechado: empresa nova só pelo super admin. Quem tem convite entra em uma existente.
+    if (!isSignupOpen() && !(await getPlatformAdminId())) {
+      throw new AppError("forbidden", "A criação de empresas é feita pelo administrador.");
+    }
+
     // Onboarding envia os dados da empresa. Valida antes de tudo: dado inválido não deixa
     // termos aceitos nem empresa criada pela metade.
     const profile = formData.has("timezone")

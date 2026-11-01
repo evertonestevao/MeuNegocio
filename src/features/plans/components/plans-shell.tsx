@@ -1,10 +1,13 @@
 "use client";
 
-import { CreditCard } from "lucide-react";
+import { Building2, CreditCard } from "lucide-react";
 import { AppShell, type AppShellProps } from "@/components/app-shell/app-shell";
 import type { ShellNavItem } from "@/components/app-shell/nav-items";
 
-const NAV: ShellNavItem[] = [{ title: "Planos", href: "/admin/planos", icon: CreditCard }];
+const NAV: ShellNavItem[] = [
+  { title: "Empresas", href: "/admin/empresas", icon: Building2 },
+  { title: "Planos", href: "/admin/planos", icon: CreditCard },
+];
 
 // Ícones são funções: a lista precisa nascer no client, não vir do layout de servidor.
 export function PlansShell(props: Omit<AppShellProps, "area">) {

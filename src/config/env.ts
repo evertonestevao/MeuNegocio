@@ -40,6 +40,8 @@ const serverEnvSchema = z.object({
   EMAIL_PROVIDER: z.enum(["resend", "console"]).default("console"),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.email().optional(),
+  /** Cadastro público. Fechado por padrão: quem cria empresa é o super admin. */
+  SIGNUP_ENABLED: z.enum(["true", "false"]).default("false"),
   /** URL pública da app, usada em links de emails transacionais. */
   APP_URL: z.url().default("http://localhost:3000"),
   /** Notificações externas (WhatsApp/SMS/push). Só "console" implementado. */

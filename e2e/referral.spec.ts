@@ -56,7 +56,7 @@ test("link grava cookie, limpa a URL e o cadastro guarda o código", async ({ pa
   const reseller = await createReseller();
 
   await page.goto(`/r/${reseller.referral_code}`);
-  await expect(page).toHaveURL(/localhost:3000\/$/);
+  await expect(page).toHaveURL(/localhost:3100\/$/);
 
   const cookie = await referralCookie(context);
   expect(cookie?.value).toBe(reseller.referral_code);
@@ -89,7 +89,7 @@ test("?ref= grava o cookie e preserva os demais parâmetros", async ({ page, con
   const reseller = await createReseller();
 
   await page.goto(`/?ref=${reseller.referral_code}&utm_source=meta&utm_campaign=teste`);
-  await expect(page).toHaveURL(/localhost:3000\/\?utm_source=meta&utm_campaign=teste$/);
+  await expect(page).toHaveURL(/localhost:3100\/\?utm_source=meta&utm_campaign=teste$/);
   expect((await referralCookie(context))?.value).toBe(reseller.referral_code);
 
   await context.clearCookies();
@@ -104,7 +104,7 @@ test("vale o primeiro vendedor", async ({ page, context }) => {
 
   await page.goto(`/r/${first.referral_code}`);
   await page.goto(`/r/${second.referral_code}`);
-  await expect(page).toHaveURL(/localhost:3000\/$/);
+  await expect(page).toHaveURL(/localhost:3100\/$/);
   expect((await referralCookie(context))?.value).toBe(first.referral_code);
 });
 
@@ -118,7 +118,7 @@ test("código inválido e vendedor suspenso são ignorados, com a mesma resposta
 
   for (const code of ["nao-existe-e2e", suspended.referral_code, "codigo;invalido"]) {
     await page.goto(`/r/${encodeURIComponent(code)}`);
-    await expect(page).toHaveURL(/localhost:3000\/$/);
+    await expect(page).toHaveURL(/localhost:3100\/$/);
     expect(await referralCookie(context)).toBeUndefined();
   }
 
@@ -138,7 +138,7 @@ test("módulo desligado ignora o link", async ({ page, context }) => {
   await setModuleEnabled(false);
 
   await page.goto(`/r/${reseller.referral_code}`);
-  await expect(page).toHaveURL(/localhost:3000\/$/);
+  await expect(page).toHaveURL(/localhost:3100\/$/);
   expect(await referralCookie(context)).toBeUndefined();
 });
 

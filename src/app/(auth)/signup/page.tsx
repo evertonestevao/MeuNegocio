@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/password-input";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { signUpAction } from "@/server/actions/auth";
+import { isSignupOpen } from "@/server/signup";
 
 export const metadata: Metadata = { title: "Criar conta" };
 
@@ -15,6 +17,7 @@ export default async function SignUpPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+  if (!isSignupOpen() && !next?.startsWith("/invites/accept")) redirect("/login");
   return (
     <Card>
       <CardHeader>

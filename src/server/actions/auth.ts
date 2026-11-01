@@ -8,6 +8,8 @@ import { createRateLimiter } from "@/server/rateLimit";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { createAuthService } from "@/services/authService";
 import { toActionError, type ActionState } from "./action-state";
+import { AppError } from "@/lib/errors";
+import { hasPendingInvite, isSignupOpen } from "@/server/signup";
 
 /**
  * Server actions de autenticação: entrada única dos forms de auth.
@@ -33,6 +35,10 @@ export async function signUpAction(
 ): Promise<ActionState> {
   const next = formData.get("next");
   try {
+    // A verdade é aqui, não na tela: fechado, só passa quem tem convite pendente para o e-mail.
+    if (!isSignupOpen() && !(await hasPendingInvite(String(formData.get("email") ?? "")))) {
+      throw new AppError("forbidden", "O cadastro é feito pelo administrador. Fale conosco para contratar.");
+    }
     const auth = await getAuthService();
     await auth.signUp({
       fullName: formData.get("fullName"),

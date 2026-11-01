@@ -12,6 +12,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "client_location.created": "Local criado",
   "client_location.updated": "Local alterado",
   "client_location.deleted": "Local excluído",
+  "company.created": "Empresa criada",
   "company.closed": "Empresa encerrada",
   "company.updated": "Empresa alterada",
   "company.ownership_transferred": "Propriedade transferida",
