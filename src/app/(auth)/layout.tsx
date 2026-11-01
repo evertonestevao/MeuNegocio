@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="pointer-events-none absolute -right-48 -bottom-48 hidden size-[36rem] rounded-full border border-sidebar-primary/20 lg:block" aria-hidden />
         <div className="pointer-events-none absolute -right-24 -bottom-24 hidden size-[24rem] rounded-full border border-sidebar-primary/30 lg:block" aria-hidden />
         <div className="relative flex flex-col gap-2 px-6 py-6 lg:h-full lg:justify-between lg:p-14">
-          <Link href="/" className="text-xl font-semibold tracking-tight lg:text-2xl">
+          <Link href="/" className="font-heading text-2xl font-extrabold tracking-tight lg:text-2xl">
             {brand.name}
           </Link>
           <p className="max-w-md text-sm text-sidebar-foreground/75 lg:hidden">{TAGLINE}</p>

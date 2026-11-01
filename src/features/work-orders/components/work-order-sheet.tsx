@@ -26,6 +26,7 @@ import { downloadWorkOrderPdf, type WorkOrderPdfInput } from "../pdf";
 import { completeWorkOrderSchema, photoCaptionSchema } from "../schemas";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
 import { formatPhone } from "@/lib/masks";
+import { VISIT_STATUS_VARIANT } from "@/features/visits/components/visit-row";
 
 const TEXTAREA_CLASS =
   "border-input min-h-24 w-full rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
@@ -374,13 +375,13 @@ export function WorkOrderSheet({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-semibold tracking-tight break-words">{sheet.client_name}</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight break-words">{sheet.client_name}</h2>
         <p className="text-sm text-muted-foreground first-letter:uppercase">
           {formatLongDay(sheet.visit_date)} · {sheet.starts_at.slice(0, 5)}–{sheet.ends_at.slice(0, 5)}
         </p>
         <div className="flex flex-wrap gap-1">
           <Badge variant="outline">{VISIT_KIND_LABEL[sheet.kind]}</Badge>
-          <Badge variant="secondary">{VISIT_STATUS_LABEL[sheet.status]}</Badge>
+          <Badge variant={VISIT_STATUS_VARIANT[sheet.status]}>{VISIT_STATUS_LABEL[sheet.status]}</Badge>
         </div>
       </div>
 

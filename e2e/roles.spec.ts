@@ -39,8 +39,8 @@ test("member convidado não recebe os poderes do owner", async ({ browser }) => 
   await member.getByRole("menuitem", { name: /Empresa Papéis E2E/ }).click();
   await expect(member.getByRole("button", { name: /Empresa Papéis E2E/ })).toBeVisible();
   await member.goto("/dashboard");
-  await expect(member.getByRole("heading", { name: "Empresa Papéis E2E" })).toBeVisible();
-  await expect(member.getByText("Membro", { exact: true })).toBeVisible();
+  await expect(member.locator("main").getByText("Empresa Papéis E2E")).toBeVisible();
+  await expect(member.locator("main").getByText(/· Membro$/)).toBeVisible();
   await expect(member.getByRole("link", { name: "Membros", exact: true })).toBeHidden();
   await expect(member.getByRole("link", { name: "Assinatura", exact: true })).toBeHidden();
 

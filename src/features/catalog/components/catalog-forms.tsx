@@ -14,7 +14,7 @@ import { deleteCatalogItemAction, saveCatalogItemAction } from "@/server/actions
 import type { CatalogItem, CatalogKind, PricingMode } from "@/types/database";
 
 const SELECT_CLASS =
-  "border-input h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+  "border-input h-11 md:h-9 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (

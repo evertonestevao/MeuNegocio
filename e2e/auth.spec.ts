@@ -26,7 +26,7 @@ test("signup, logout e login levam ao dashboard", async ({ page }) => {
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole("heading", { name: "Empresa Auth E2E" })).toBeVisible();
+  await expect(page.locator("main").getByText("Empresa Auth E2E")).toBeVisible();
 });
 
 test("login com senha errada mostra erro e não navega", async ({ page }) => {

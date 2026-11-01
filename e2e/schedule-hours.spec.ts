@@ -37,7 +37,8 @@ test("conflito de agenda, horas sugeridas e fechamento do prestador", async ({ p
   await expect(page.getByRole("button", { name: "Fechar e pagar" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Ajustar horas" })).toHaveCount(0);
 
-  await page.goto(`/dashboard/expenses?m=${yesterday.slice(0, 7)}&view=list`);
+  // O pagamento entra na data do fechamento, que é hoje, mesmo se as horas forem do mês anterior.
+  await page.goto(`/dashboard/expenses?m=${dateFromToday(0).slice(0, 7)}&view=list`);
   const expense = page.locator("main li", { hasText: "Prestação de serviços — Marcos Prestador" });
   await expect(expense).toContainText("R$ 300,00");
 

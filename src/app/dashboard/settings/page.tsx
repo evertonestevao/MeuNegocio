@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { BellRing } from "lucide-react";
+import Link from "next/link";
+import { BellRing, ChevronRight, CreditCard, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AccountDataSection } from "@/features/account/components/account-data-section";
@@ -42,11 +43,19 @@ export default async function SettingsPage() {
 
   const canEditCompany = permissionService.canEditCompany(active.role);
   const isOwner = active.role === "owner";
+  const companyLinks = [
+    ...(permissionService.canManageBilling(active.role)
+      ? [{ href: "/dashboard/billing", title: "Assinatura", description: "Plano, vagas e pagamentos", icon: CreditCard }]
+      : []),
+    ...(permissionService.canViewAudit(active.role)
+      ? [{ href: "/dashboard/audit", title: "Auditoria", description: "Histórico do que foi feito na empresa", icon: ScrollText }]
+      : []),
+  ];
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Configurações</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Configurações</h2>
         <p className="text-sm text-muted-foreground">Seu perfil e a empresa ativa</p>
       </div>
 
@@ -82,6 +91,27 @@ export default async function SettingsPage() {
               </div>
             ))}
           </CardContent>
+        </Card>
+      ) : null}
+
+      {companyLinks.length > 0 ? (
+        <Card className="py-0">
+          <ul className="flex flex-col divide-y">
+            {companyLinks.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-info/15 text-info">
+                    <item.icon className="size-5" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-sm font-medium">{item.title}</span>
+                    <span className="text-xs text-muted-foreground">{item.description}</span>
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Card>
       ) : null}
 

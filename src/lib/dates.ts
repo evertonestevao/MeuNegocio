@@ -25,3 +25,11 @@ export function formatTimestamp(timestamp: string | null | undefined, timezone =
 export function formatQuantity(value: number): string {
   return value.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 }
+
+/** Saudação conforme a hora no fuso da empresa. */
+export function greetingFor(timezone: string, now: Date = new Date()): string {
+  const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", hourCycle: "h23" }).format(now));
+  if (hour >= 5 && hour < 12) return "Bom dia!";
+  if (hour >= 12 && hour < 18) return "Boa tarde!";
+  return "Boa noite!";
+}

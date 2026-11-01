@@ -81,7 +81,7 @@ test("super admin cria empresa; responsável troca a senha e entra", async ({ br
   // Passa por /dashboard e cai nos termos: espera a tela, não o endereço.
   await owner.getByRole("checkbox", { name: /Li e aceito/ }).check();
   await owner.getByRole("button", { name: "Aceitar e continuar" }).click();
-  await expect(owner.getByRole("heading", { name: company })).toBeVisible();
+  await expect(owner.locator("main").getByText(company).first()).toBeVisible();
   await owner.goto("/dashboard/billing");
   await expect(owner.getByText("Plano atual:")).toContainText("Anual");
 

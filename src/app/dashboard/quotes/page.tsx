@@ -7,7 +7,7 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { QUOTE_STATUSES, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { QUOTE_STATUS_VARIANT, QUOTE_STATUSES, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { getQuoteService } from "@/server/quotes";
@@ -33,14 +33,14 @@ export default async function QuotesPage({
   const totalCount = Object.values(quotes.counts).reduce((sum, count) => sum + (count ?? 0), 0);
   const filterClass = (selected: boolean) =>
     selected
-      ? "rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-      : "rounded-lg border px-3 py-1.5 text-sm hover:bg-muted";
+      ? "shrink-0 whitespace-nowrap rounded-full bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground lg:py-1.5"
+      : "shrink-0 whitespace-nowrap rounded-full border bg-card px-3.5 py-2 text-sm hover:bg-muted lg:py-1.5";
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Orçamentos</h2>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Orçamentos</h2>
           <p className="text-sm text-muted-foreground">Do rascunho ao fechamento. Só orçamentos fechados entram no faturamento.</p>
         </div>
         <Button render={<Link href="/dashboard/quotes/new" />} nativeButton={false}>
@@ -48,13 +48,13 @@ export default async function QuotesPage({
         </Button>
       </div>
 
-      <nav className="flex flex-wrap gap-2" aria-label="Filtrar por status">
+      <nav className="flex flex-wrap gap-2" aria-label="Filtrar por situação">
         <Link href="/dashboard/quotes" className={filterClass(status === null)}>
-          Todos {totalCount}
+          Todos <span className="ml-1 text-xs opacity-70">{totalCount}</span>
         </Link>
         {QUOTE_STATUSES.map((value) => (
           <Link key={value} href={`/dashboard/quotes?status=${value}`} className={filterClass(status === value)}>
-            {QUOTE_STATUS_LABEL[value]} {quotes.counts[value] ?? 0}
+            {QUOTE_STATUS_LABEL[value]} <span className="ml-1 text-xs opacity-70">{quotes.counts[value] ?? 0}</span>
           </Link>
         ))}
       </nav>
@@ -73,15 +73,15 @@ export default async function QuotesPage({
                 <li key={quote.id}>
                   <Link
                     href={`/dashboard/quotes/${quote.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted/50"
+                    className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5 text-sm">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
                       <span className="font-medium break-words">
                         #{formatQuoteNumber(quote.number)} · {quote.title ?? "Sem título"}
                       </span>
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground">{quote.client_name ?? "Sem cliente"}</span>
+                      <span className="text-xs text-muted-foreground">
                         {[
-                          quote.client_name ?? "Sem cliente",
                           `criado em ${formatTimestamp(quote.created_at)}`,
                           quote.valid_until ? `válido até ${formatDate(quote.valid_until)}` : null,
                         ]
@@ -89,9 +89,9 @@ export default async function QuotesPage({
                           .join(" · ")}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={quote.status === "closed" ? "default" : "secondary"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
-                      <span className="text-sm font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+                      <span className="text-base font-semibold tabular-nums">{formatCents(quote.total_cents)}</span>
                     </div>
                   </Link>
                 </li>

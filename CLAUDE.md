@@ -77,8 +77,8 @@ Ao criar um arquivo novo, pergunte: "isso é lógica de negócio (service), esta
 
 ## Layout e responsividade
 
-- Sidebar é um único componente que muda de comportamento por breakpoint: vira drawer off-canvas abaixo de 1024px, e colapsa para modo "rail" (ícones) no desktop
-- Não duplicar componente de navegação para mobile e desktop
+- Abaixo de 1024px, navegação por abas fixas embaixo e folha "Mais"; no desktop, sidebar que colapsa para modo "rail" (ícones)
+- Abas e sidebar leem a mesma lista (`nav-items.ts`): não duplicar itens de navegação
 - Tabelas devem ter modo alternativo em cards para telas pequenas
 - Tema dark/light via CSS variables; cor primária configurável em um único arquivo de tokens
 

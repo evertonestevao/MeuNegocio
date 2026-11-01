@@ -73,7 +73,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
   if (!(await service.canUse(actor))) {
     return (
       <div className="flex flex-col gap-6">
-        <h2 className="text-xl font-semibold tracking-tight">Horas</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h2>
         <EmptyState icon={Clock} title="Recurso fora do plano" description="As horas não estão incluídas no plano da empresa." />
       </div>
     );
@@ -108,7 +108,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Horas</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h2>
         <p className="text-sm text-muted-foreground">
           Horas sugeridas pela agenda de visitas. Confira, ajuste o que for preciso e feche o período dos prestadores.
         </p>
@@ -215,7 +215,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
                           detail={[entry.location_name, entry.notes, entry.break_minutes ? `${entry.break_minutes} min de intervalo` : null].filter(Boolean).join(" · ")}
                           time={`${entry.starts_at.slice(0, 5)}–${entry.ends_at.slice(0, 5)}`}
                           total={formatMinutes(workedMinutes(entry))}
-                          badge={<Badge variant={paid ? "default" : "secondary"}>{TIME_ENTRY_STATUS_LABEL[entry.status]}</Badge>}
+                          badge={<Badge variant={paid ? "success" : "warning"}>{TIME_ENTRY_STATUS_LABEL[entry.status]}</Badge>}
                           actions={
                             paid ? null : (
                               <>

@@ -13,7 +13,7 @@ import {
   RemoveContactButton,
   RemoveLocationButton,
 } from "@/features/clients/components/client-forms";
-import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatCents } from "@/lib/money";
 import { getClientService } from "@/server/clients";
@@ -52,9 +52,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         >
           <ChevronLeft className="size-4" /> Clientes
         </Link>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold tracking-tight break-words">{client.name}</h2>
+            <h2 className="font-heading text-2xl font-extrabold tracking-tight break-words">{client.name}</h2>
             {client.document ? <p className="text-sm text-muted-foreground">{formatDocument(client.document)}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -181,7 +181,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                       #{formatQuoteNumber(quote.number)} · {quote.title ?? "Sem título"}
                     </span>
                     <span className="flex items-center gap-3">
-                      <Badge variant={quote.status === "closed" ? "default" : "secondary"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+                      <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
                       <span className="font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
                     </span>
                   </Link>

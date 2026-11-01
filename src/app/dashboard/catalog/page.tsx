@@ -38,9 +38,9 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Catálogo</h2>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Catálogo</h2>
           <p className="text-sm text-muted-foreground">
             Materiais que você vende e serviços que você presta, com os preços usados nos orçamentos.
           </p>
@@ -56,8 +56,8 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
             aria-current={tab.value === kind ? "page" : undefined}
             className={
               tab.value === kind
-                ? "rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-                : "rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                ? "whitespace-nowrap rounded-full bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground lg:py-1.5"
+                : "whitespace-nowrap rounded-full border bg-card px-3.5 py-2 text-sm hover:bg-muted lg:py-1.5"
             }
           >
             {tab.label} ({countOf(tab.value)})

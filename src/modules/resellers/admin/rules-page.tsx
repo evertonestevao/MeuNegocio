@@ -24,7 +24,7 @@ export default async function RulesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Regras e planos</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Regras e planos</h2>
         <p className="text-sm text-muted-foreground">
           Vale a regra mais específica: de um vendedor antes da que vale para todos; de um plano antes da que vale
           para todos os planos; e, por fim, a maior faixa que a venda alcança. Mudar regras não altera clientes já

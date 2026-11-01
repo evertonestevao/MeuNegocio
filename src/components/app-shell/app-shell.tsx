@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState } from "react";
-import { ChevronsLeft, ChevronsRight, Menu } from "lucide-react";
+import { useState } from "react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { brand } from "@/config/brand";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/providers/tenant-provider";
 import { Breadcrumbs } from "./breadcrumbs";
 import { CompanySwitcher } from "./company-switcher";
-import { navItems, titleForPath, type ShellNavItem } from "./nav-items";
+import { MobileNav } from "./mobile-nav";
+import { isSettingsSubpage, navItems, type NavItem, type ShellNavItem } from "./nav-items";
 import { UserMenu, type UserMenuProps } from "./user-menu";
 
 /** Cookie lido pelo layout server para SSR sem "flash" do estado colapsado. */
@@ -30,10 +30,8 @@ export interface AppShellProps extends UserMenuProps {
 }
 
 /**
- * Shell do app (plano §11): UMA sidebar que muda de comportamento —
- * desktop (lg+) fixa com modo rail persistido em cookie; abaixo de lg vira
- * drawer off-canvas (Sheet) aberto pelo hambúrguer. O conteúdo de navegação
- * (SidebarNav) é o mesmo nos dois contêineres.
+ * Shell do app: no desktop (lg+), sidebar fixa com modo rail persistido em cookie;
+ * abaixo de lg, abas embaixo e "Mais". Os dois usam os mesmos itens de nav-items.
  */
 export function AppShell({
   initialCollapsed,
@@ -44,31 +42,25 @@ export function AppShell({
   ...user
 }: AppShellProps) {
   const homeHref = area?.home.href ?? "/dashboard";
-  const nav = (collapsed: boolean, onNavigate?: () => void) =>
+  const nav = (collapsed: boolean) =>
     area ? (
-      <SidebarNav collapsed={collapsed} pathname={pathname} items={area.items} onNavigate={onNavigate} />
+      <SidebarNav collapsed={collapsed} pathname={pathname} items={area.items} />
     ) : (
-      <TenantSidebarNav
-        collapsed={collapsed}
-        pathname={pathname}
-        pendingInvitesCount={pendingInvitesCount}
-        onNavigate={onNavigate}
-      />
+      <TenantSidebarNav collapsed={collapsed} pathname={pathname} pendingInvitesCount={pendingInvitesCount} />
     );
 
   const [collapsed, setCollapsed] = useState(initialCollapsed);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
-  const toggleCollapsed = useCallback(() => {
+  function toggleCollapsed() {
     setCollapsed((current) => {
       document.cookie = `${SIDEBAR_COOKIE}=${!current}; path=/; max-age=31536000; samesite=lax`;
       return !current;
     });
-  }, []);
+  }
 
   return (
-    <div className="flex min-h-svh w-full">
+    <div className="flex min-h-svh w-full bg-app-canvas">
       {/* Sidebar desktop: some abaixo de lg; colapsa para rail de ícones. */}
       <aside
         data-collapsed={collapsed}
@@ -100,44 +92,65 @@ export function AppShell({
         </div>
       </aside>
 
-      {/* Sidebar mobile: mesmo SidebarNav dentro de um drawer off-canvas. */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent
-          side="left"
-          className="w-72 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground lg:hidden"
-        >
-          <SheetHeader className="h-14 justify-center border-b border-sidebar-border px-4">
-            <SheetTitle className="text-left font-semibold text-sidebar-foreground">{brand.name}</SheetTitle>
-          </SheetHeader>
-          {nav(false, () => setDrawerOpen(false))}
-        </SheetContent>
-      </Sheet>
-
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Abrir menu"
-          >
-            <Menu />
-          </Button>
-          {/* Desktop: breadcrumbs; mobile: título da página atual. */}
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground lg:border-border lg:bg-background/95 lg:text-foreground lg:backdrop-blur">
+          <Link href={homeHref} className="flex min-w-0 items-center gap-2.5 lg:hidden">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-lg font-extrabold text-sidebar-primary-foreground" aria-hidden>
+              {brand.name.slice(0, 1)}
+            </span>
+            <span className="truncate font-heading text-lg font-bold tracking-tight">{brand.name}</span>
+          </Link>
           <div className="hidden min-w-0 lg:block">
             <Breadcrumbs pathname={pathname} items={area?.items} />
           </div>
-          <h1 className="truncate text-sm font-medium lg:hidden">{titleForPath(pathname, area?.items)}</h1>
           <div className="ml-auto flex items-center gap-2">
             {area ? null : <CompanySwitcher canCreate={canCreateCompany} />}
-            <UserMenu {...user} />
+            <div className="hidden lg:block">
+              <UserMenu {...user} />
+            </div>
           </div>
         </header>
-        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 p-4 outline-none lg:p-8">{children}</main>
+        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] outline-none lg:p-8">{children}</main>
       </div>
+      {area ? (
+        <MobileNav
+          tabs={area.items.slice(0, 4)}
+          more={area.items.slice(4)}
+          isActive={(item) => pathname === item.href}
+          areaLinks={user.areaLinks}
+        />
+      ) : (
+        <TenantMobileNav pathname={pathname} pendingInvitesCount={pendingInvitesCount} areaLinks={user.areaLinks} />
+      )}
     </div>
   );
+}
+
+function TenantMobileNav({
+  pathname,
+  pendingInvitesCount,
+  areaLinks,
+}: {
+  pathname: string;
+  pendingInvitesCount: number;
+  areaLinks: UserMenuProps["areaLinks"];
+}) {
+  const { active } = useTenant();
+  const items: NavItem[] = navItems.filter((item) => item.roles.includes(active.role));
+  return (
+    <MobileNav
+      tabs={items.filter((item) => item.mobileTab)}
+      more={items.filter((item) => !item.mobileTab)}
+      isActive={(item) => isNavItemActive(item.href, pathname)}
+      pendingInvitesCount={pendingInvitesCount}
+      areaLinks={areaLinks}
+    />
+  );
+}
+
+function isNavItemActive(href: string, pathname: string): boolean {
+  if (href === "/dashboard") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`) || (href === "/dashboard/settings" && isSettingsSubpage(pathname));
 }
 
 function TenantSidebarNav({
@@ -147,7 +160,6 @@ function TenantSidebarNav({
   collapsed: boolean;
   pathname: string;
   pendingInvitesCount: number;
-  onNavigate?: () => void;
 }) {
   const { active } = useTenant();
   return (
@@ -164,25 +176,22 @@ function SidebarNav({
   pathname,
   items,
   pendingInvitesCount = 0,
-  onNavigate,
 }: {
   collapsed: boolean;
   pathname: string;
   items: ShellNavItem[];
   pendingInvitesCount?: number;
-  onNavigate?: () => void;
 }) {
   return (
     <nav className="flex flex-col gap-1 p-2">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || (item.href === "/dashboard/settings" && isSettingsSubpage(pathname));
         // Badge de atenção: convites pendentes para o usuário, em Configurações.
         const badgeCount = item.href === "/dashboard/settings" ? pendingInvitesCount : 0;
         const link = (
           <Link
             key={item.href}
             href={item.href}
-            onClick={onNavigate}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",

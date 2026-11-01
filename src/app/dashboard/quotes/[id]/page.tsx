@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
-import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
 import { getClientService } from "@/server/clients";
@@ -55,8 +55,8 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           <ChevronLeft className="size-4" /> Orçamentos
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold tracking-tight">Orçamento Nº {formatQuoteNumber(quote.number)}</h2>
-          <Badge variant={quote.status === "closed" ? "default" : "secondary"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Orçamento Nº {formatQuoteNumber(quote.number)}</h2>
+          <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{dates.join(" · ")}</p>
         {quote.status === "draft" ? null : (

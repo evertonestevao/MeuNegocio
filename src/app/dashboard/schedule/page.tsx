@@ -16,12 +16,21 @@ import { getEmployeeService, getVisitService } from "@/server/schedule";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import type { VisitKind } from "@/types/database";
+import { VISIT_STATUS_BAR } from "@/features/visits/components/visit-row";
+import { VISIT_STATUS_LABEL } from "@/features/visits/schemas";
+
+const VISIT_STATUS_BORDER = {
+  scheduled: "border-l-info",
+  in_progress: "border-l-warning",
+  completed: "border-l-success",
+  canceled: "border-l-muted-foreground/40",
+} as const;
 
 export const metadata: Metadata = { title: "Agenda" };
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const SELECT_CLASS =
-  "border-input h-8 min-w-0 rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+  "border-input h-11 md:h-9 min-w-0 rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 export default async function SchedulePage({
   searchParams,
@@ -79,7 +88,7 @@ export default async function SchedulePage({
   const next = view === "week" ? addDays(selected, 7) : addMonths(selected, 1);
   const title = view === "week" ? `${formatDate(days[0])} a ${formatDate(days[6])}` : formatMonth(selected);
   const toggleClass = (on: boolean) =>
-    cn("rounded-lg px-3 py-1.5 text-sm", on ? "bg-primary font-medium text-primary-foreground" : "border hover:bg-muted");
+    cn("whitespace-nowrap rounded-full px-3.5 py-2 text-sm lg:py-1.5", on ? "bg-primary font-medium text-primary-foreground" : "border bg-card hover:bg-muted");
 
   const rowActions = (visit: (typeof visits)[number]) => (
     <>
@@ -90,9 +99,9 @@ export default async function SchedulePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Agenda</h2>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Agenda</h2>
           <p className="text-sm text-muted-foreground">Visitas técnicas e execuções, com a equipe escalada.</p>
         </div>
         <NewVisitButton prefill={prefill} options={options} defaultOpen={params.new === "1"} />
@@ -115,7 +124,7 @@ export default async function SchedulePage({
         <Link href={href({ view: "week" })} className={toggleClass(view === "week")}>
           Semana
         </Link>
-        <form action="/dashboard/schedule" className="flex min-w-0 flex-wrap items-center gap-2 lg:ml-auto">
+        <form action="/dashboard/schedule" className="grid w-full min-w-0 grid-cols-[1fr_1fr_auto] items-center gap-2 lg:ml-auto lg:flex lg:w-auto">
           <input type="hidden" name="view" value={view} />
           <input type="hidden" name="d" value={selected} />
           <select name="employee" aria-label="Filtrar por pessoa" defaultValue={params.employee ?? ""} className={SELECT_CLASS}>
@@ -149,27 +158,29 @@ export default async function SchedulePage({
           <div className="grid grid-cols-7">
             {days.map((day) => {
               const list = visitsOn(day);
+              const activeCount = list.filter((visit) => visit.status !== "canceled").length;
               const outside = day.slice(0, 7) !== selected.slice(0, 7);
               return (
                 <Link
                   key={day}
                   href={href({ d: day })}
-                  aria-label={`${formatLongDay(day)}, ${list.length} visita(s)`}
+                  aria-label={`${formatLongDay(day)}, ${activeCount} visita(s)`}
                   aria-current={day === selected ? "date" : undefined}
                   className={cn(
-                    "flex min-h-14 min-w-0 flex-col gap-1 border-r border-b p-1 text-xs hover:bg-muted/60 lg:min-h-24 lg:p-1.5 [&:nth-child(7n)]:border-r-0",
+                    "flex min-h-16 min-w-0 flex-col items-center gap-1 border-r border-b p-1 text-sm hover:bg-muted/60 lg:min-h-24 lg:items-stretch lg:p-1.5 lg:text-xs [&:nth-child(7n)]:border-r-0",
                     outside && "text-muted-foreground/50",
-                    day === selected && "bg-muted",
+                    day === selected && "ring-2 ring-inset ring-foreground",
                   )}
                 >
-                  <span className={cn("w-fit rounded-full px-1.5 tabular-nums", day === today && "bg-primary font-semibold text-primary-foreground")}>
+                  <span className={cn("flex size-7 items-center justify-center rounded-full tabular-nums lg:size-6", "font-semibold", day === today && "bg-foreground text-background")}>
                     {Number(day.slice(8))}
                   </span>
                   {list.slice(0, 3).map((visit) => (
                     <span
                       key={visit.id}
                       className={cn(
-                        "hidden truncate rounded bg-secondary px-1 py-0.5 lg:block",
+                        "hidden truncate rounded border-l-2 bg-secondary px-1 py-0.5 lg:block",
+                        VISIT_STATUS_BORDER[visit.status],
                         visit.status === "canceled" && "line-through opacity-60",
                       )}
                     >
@@ -177,7 +188,11 @@ export default async function SchedulePage({
                     </span>
                   ))}
                   {list.length > 3 ? <span className="hidden text-muted-foreground lg:block">+{list.length - 3}</span> : null}
-                  {list.length > 0 ? <span className="w-fit rounded bg-secondary px-1 tabular-nums lg:hidden">{list.length}</span> : null}
+                  {activeCount > 0 ? (
+                    <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground tabular-nums lg:hidden" aria-hidden>
+                      {activeCount}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -208,6 +223,15 @@ export default async function SchedulePage({
           ))}
         </div>
       )}
+
+      <ul className="-mt-3 hidden flex-wrap gap-x-4 lg:flex gap-y-1 text-xs text-muted-foreground" aria-label="Legenda das situações">
+        {(["scheduled", "in_progress", "completed"] as const).map((status) => (
+          <li key={status} className="flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-full", VISIT_STATUS_BAR[status])} aria-hidden />
+            {VISIT_STATUS_LABEL[status]}
+          </li>
+        ))}
+      </ul>
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">

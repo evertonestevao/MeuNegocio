@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEMO_READ_ONLY_CODE } from "@/config/demo";
-import { createDemoClient, demoDayOffset, shiftDates } from "./client";
+import { createDemoClient, demoDayOffset, shiftDates, shiftToCurrentMonth } from "./client";
 
 describe("client da demonstração", () => {
   const client = createDemoClient("owner");
@@ -71,5 +71,14 @@ describe("datas da demonstração", () => {
       c: "Rua 2026",
       d: 5,
     });
+  });
+
+  it("valores por mês acompanham o mês atual, sem passar de hoje", () => {
+    expect(shiftToCurrentMonth("2026-10-12", "2026-10-31")).toBe("2026-10-12");
+    expect(shiftToCurrentMonth("2026-10-12", "2026-11-01")).toBe("2026-11-01");
+    expect(shiftToCurrentMonth("2026-10-12", "2026-11-20")).toBe("2026-11-12");
+    expect(shiftToCurrentMonth("2026-09-22", "2026-11-01")).toBe("2026-10-22");
+    expect(shiftToCurrentMonth("2026-08-31", "2027-03-15")).toBe("2027-01-31");
+    expect(shiftToCurrentMonth("2026-08-31", "2026-11-15")).toBe("2026-09-30");
   });
 });

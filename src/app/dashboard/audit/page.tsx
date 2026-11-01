@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ScrollText } from "lucide-react";
+import { ChevronLeft, ScrollText } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
@@ -45,8 +46,11 @@ export default async function AuditPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <Link href="/dashboard/settings" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="size-4" /> Configurações
+      </Link>
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Auditoria</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Auditoria</h2>
         <p className="text-sm text-muted-foreground">
           Últimas ações registradas em {active.name}
         </p>

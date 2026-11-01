@@ -10,6 +10,7 @@ import { getCompanyProfileService } from "@/server/quotes";
 import { getActiveTenant } from "@/server/tenant";
 import { getWorkOrderService } from "@/server/workOrders";
 import type { VisitSheet } from "@/types/workOrders";
+import { VISIT_STATUS_VARIANT } from "@/features/visits/components/visit-row";
 
 export const metadata: Metadata = { title: "Minhas visitas" };
 
@@ -30,7 +31,7 @@ function VisitCard({ visit, today }: { visit: VisitSheet; today: string }) {
               <span className="text-muted-foreground">{visit.location.name}</span>
               <div className="flex flex-wrap gap-1">
                 <Badge variant="outline">{VISIT_KIND_LABEL[visit.kind]}</Badge>
-                <Badge variant={visit.status === "in_progress" ? "default" : "secondary"}>{VISIT_STATUS_LABEL[visit.status]}</Badge>
+                <Badge variant={VISIT_STATUS_VARIANT[visit.status]}>{VISIT_STATUS_LABEL[visit.status]}</Badge>
               </div>
             </div>
           </CardContent>
@@ -57,7 +58,7 @@ export default async function MyVisitsPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Minhas visitas</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Minhas visitas</h2>
         <p className="text-sm text-muted-foreground">Toque em uma visita para abrir a ordem de serviço.</p>
       </div>
 

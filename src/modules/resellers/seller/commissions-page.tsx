@@ -14,7 +14,7 @@ export default async function SellerCommissionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Minhas comissões</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Minhas comissões</h2>
         <p className="text-sm text-muted-foreground">Um lançamento por pagamento confirmado do cliente</p>
       </div>
       <StatCards

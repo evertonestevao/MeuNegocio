@@ -25,7 +25,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         <Link href="/dashboard/quotes" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" /> Orçamentos
         </Link>
-        <h2 className="text-xl font-semibold tracking-tight">Novo orçamento</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Novo orçamento</h2>
       </div>
       <QuoteEditor
         quote={null}

@@ -35,7 +35,7 @@ export function CompanyProfileFields({ profile }: { profile: Omit<CompanyProfile
           id="profile-timezone"
           name="timezone"
           defaultValue={profile.timezone}
-          className="border-input h-8 rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          className="border-input h-11 rounded-lg md:h-9 border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         >
           {COMPANY_TIMEZONES.map((timezone) => (
             <option key={timezone} value={timezone}>

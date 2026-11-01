@@ -38,7 +38,7 @@ export default async function ResellersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Vendedores</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Vendedores</h2>
         <p className="text-sm text-muted-foreground">Cadastro por convite e totais de cada vendedor</p>
       </div>
 

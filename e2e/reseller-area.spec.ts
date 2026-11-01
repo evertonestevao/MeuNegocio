@@ -260,7 +260,7 @@ test("quem é cliente e vendedor escolhe a área", async ({ page }) => {
   await page.goto("/escolher-area");
   await page.getByRole("link", { name: /Área do cliente/ }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Empresa Ambos E2E" })).toBeVisible();
+  await expect(page.locator("main").getByText("Empresa Ambos E2E")).toBeVisible();
 });
 
 test("convite: o link define a senha e, depois dos termos, leva a /vendedor", async ({ page }) => {

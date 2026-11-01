@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Send, Scale, Wallet } from "lucide-react";
+import { CalendarDays, CalendarPlus, Plus, Send, Scale, Wallet } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
 import { ROLE_LABEL } from "@/config/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { QUOTE_STATUS_LABEL, QUOTE_STATUS_VARIANT, formatQuoteNumber } from "@/features/quotes/status";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatLongDay, formatMonth } from "@/lib/calendar";
-import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
+import { addDays, formatDate, greetingFor, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { getFinanceService } from "@/server/home";
 import { getCompanyProfileService } from "@/server/quotes";
@@ -34,11 +34,11 @@ function QuoteRow({ quote, today }: { quote: QuoteListItem; today: string }) {
         ? "aguardando resposta"
         : days === 0
           ? "enviado hoje"
-          : `enviado há ${days} dia(s)`;
+          : days === 1 ? "enviado há 1 dia" : `enviado há ${days} dias`;
   return (
     <li>
-      <Link href={`/dashboard/quotes/${quote.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm hover:underline">
-        <span className="flex min-w-0 flex-1 basis-52 flex-col">
+      <Link href={`/dashboard/quotes/${quote.id}`} className="flex flex-col gap-2 py-3 text-sm hover:bg-muted/50">
+        <span className="flex min-w-0 flex-col">
           <span className="font-medium break-words">
             #{formatQuoteNumber(quote.number)} · {quote.title ?? "Sem título"}
           </span>
@@ -46,12 +46,26 @@ function QuoteRow({ quote, today }: { quote: QuoteListItem; today: string }) {
             {quote.client_name ?? "Sem cliente"} · {note}
           </span>
         </span>
-        <span className="flex items-center gap-3">
-          <Badge variant={quote.status === "approved" ? "success" : "info"}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
-          <span className="font-medium tabular-nums">{formatCents(quote.total_cents)}</span>
+        <span className="flex items-center justify-between gap-3">
+          <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+          <span className="text-base font-semibold tabular-nums">{formatCents(quote.total_cents)}</span>
         </span>
       </Link>
     </li>
+  );
+}
+
+function MonthBar({ label, cents, max, barClass }: { label: string; cents: number; max: number; barClass: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-semibold tabular-nums">{formatCents(cents)}</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: max > 0 ? `${Math.round((cents / max) * 100)}%` : "0%" }} />
+      </div>
+    </div>
   );
 }
 
@@ -67,29 +81,29 @@ export default async function DashboardPage() {
   const { finance, forecast } = home;
   const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
   const nextVisit = home.today.find((visit) => visit.status === "scheduled" || visit.status === "in_progress");
+  const monthMax = finance ? Math.max(finance.monthRevenueCents, finance.monthExpenseCents) : 0;
   const monthName = formatMonth(today).split(" ")[0].toLowerCase();
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div className="min-w-0">
-          <h2 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
-            <span className="break-words">{active.name}</span>
-            <Badge variant="outline">{ROLE_LABEL[active.role]}</Badge>
-          </h2>
-          <p className="text-sm text-muted-foreground first-letter:uppercase">{formatLongDay(today)}</p>
+          <h2 className="font-heading text-3xl font-extrabold tracking-tight">{greetingFor(profile.timezone)}</h2>
+          <p className="text-sm text-muted-foreground first-letter:uppercase">
+            {formatLongDay(today)} · <span className="break-words">{active.name}</span> · {ROLE_LABEL[active.role]}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
           <Button variant="outline" render={<Link href="/dashboard/schedule?new=1" />} nativeButton={false}>
-            Nova visita
+            <CalendarPlus className="size-4" /> Nova visita
           </Button>
           <Button render={<Link href="/dashboard/quotes/new" />} nativeButton={false}>
-            Novo orçamento
+            <Plus className="size-4" /> Novo orçamento
           </Button>
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${finance ? "xl:grid-cols-4" : ""}`}>
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${finance ? "lg:grid-cols-4" : ""}`}>
         <MetricCard
           icon={CalendarDays}
           tone="info"
@@ -102,7 +116,7 @@ export default async function DashboardPage() {
           tone="warning"
           label="Em negociação"
           value={formatCents(forecast.sentCents)}
-          hint={`${home.awaitingReply.length} enviado(s) · ${formatCents(forecast.approvedCents)} aprovados para fechar`}
+          hint={`${home.awaitingReply.length === 1 ? "1 enviado" : `${home.awaitingReply.length} enviados`} · ${formatCents(forecast.approvedCents)} a fechar`}
         />
         {finance ? (
           <>
@@ -119,7 +133,7 @@ export default async function DashboardPage() {
               tone={finance.dueSoonCents > 0 ? "warning" : "success"}
               label="A pagar em 7 dias"
               value={formatCents(finance.dueSoonCents)}
-              hint={finance.dueSoonCount === 0 ? "Nenhuma conta nos próximos dias." : `${finance.dueSoonCount} conta(s)`}
+              hint={finance.dueSoonCount === 0 ? "Nenhuma conta nos próximos dias." : finance.dueSoonCount === 1 ? "1 conta" : `${finance.dueSoonCount} contas`}
             />
           </>
         ) : null}
@@ -128,8 +142,8 @@ export default async function DashboardPage() {
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle>Hoje</CardTitle>
-            <Link href="/dashboard/schedule" className="text-sm underline underline-offset-4">
+            <CardTitle className="flex items-center gap-2"><CalendarDays className="size-4 text-info" /> Hoje</CardTitle>
+            <Link href="/dashboard/schedule" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
               Ver agenda
             </Link>
           </CardHeader>
@@ -161,8 +175,8 @@ export default async function DashboardPage() {
         <div className="flex min-w-0 flex-col gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
-              <CardTitle>Orçamentos em andamento</CardTitle>
-              <Link href="/dashboard/quotes" className="text-sm underline underline-offset-4">
+              <CardTitle className="flex items-center gap-2"><Send className="size-4 text-warning" /> Orçamentos em andamento</CardTitle>
+              <Link href="/dashboard/quotes" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
                 Ver todos
               </Link>
             </CardHeader>
@@ -182,8 +196,29 @@ export default async function DashboardPage() {
           {finance ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle>A pagar hoje</CardTitle>
-                <Link href="/dashboard/expenses" className="text-sm underline underline-offset-4">
+                <CardTitle className="first-letter:uppercase">{formatMonth(today)}</CardTitle>
+                <Link href="/dashboard/finance" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
+                  Ver financeiro
+                </Link>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 text-sm">
+                <MonthBar label="Faturamento" cents={finance.monthRevenueCents} max={monthMax} barClass="bg-chart-revenue" />
+                <MonthBar label="Gastos" cents={finance.monthExpenseCents} max={monthMax} barClass="bg-chart-expense" />
+                <div className="flex items-baseline justify-between gap-3 border-t pt-3">
+                  <span className="font-medium">Saldo do mês</span>
+                  <strong className={`font-heading text-2xl font-extrabold tabular-nums ${finance.balanceCents < 0 ? "text-destructive" : "text-success"}`}>
+                    {formatCents(finance.balanceCents)}
+                  </strong>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {finance ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2"><Wallet className="size-4 text-destructive" /> A pagar hoje</CardTitle>
+                <Link href="/dashboard/expenses" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
                   Ver gastos
                 </Link>
               </CardHeader>

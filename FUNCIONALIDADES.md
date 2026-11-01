@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-10-31
+**Última atualização:** 2026-11-01
 
 ## Sumário
 
@@ -210,7 +210,7 @@ Empresarial foi desativado.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Ver plano e uso de vagas** (`/dashboard/billing`, menu Assinatura) | Owner | — |
+| **Ver plano e uso de vagas** (`/dashboard/billing`, em Configurações › Assinatura) | Owner | — |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
 | **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois a empresa passa para o Free. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
 | **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e a empresa passa para o Free. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
@@ -248,7 +248,7 @@ Código: `src/services/featureFlagService.ts`.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Trilha de auditoria** (`/dashboard/audit`) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. O histórico completo fica disponível em todos os planos. |
+| **Trilha de auditoria** (`/dashboard/audit`, em Configurações › Auditoria) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. O histórico completo fica disponível em todos os planos. |
 | **Registro automático** | Sistema | Edição da empresa, mudança de papel, remoção, saída, convites, transferência de propriedade, exclusão de conta, eventos de pagamento. |
 | **Imutável** | — | O client não edita nem apaga registros. |
 | **Dados sensíveis** | — | Chaves como senha, token, secret e card são removidas antes de gravar. |
@@ -262,7 +262,8 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 - **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas.
 - **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
-- **Menu lateral único:** vira drawer abaixo de 1024 px e colapsa em ícones ("rail") no desktop.
+- **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início ou Minhas visitas, Agenda, Orçamentos, Financeiro, conforme o papel) e "Mais", com os demais itens, tema e sair.
+- **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturamento, gastos e saldo.
   Os itens aparecem conforme o papel:
 
   | Item | Quem vê |
@@ -271,8 +272,9 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Configurações | Todos |
   | Minhas visitas | Técnico |
   | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
-  | Horas, Gastos, Financeiro, Membros, Auditoria | Owner, admin |
-  | Assinatura | Owner |
+  | Horas, Gastos, Financeiro, Membros | Owner, admin |
+
+  Assinatura (owner) e Auditoria (owner, admin) ficam dentro de Configurações.
 
 - **Idioma:** tudo o que aparece na tela está em português, inclusive papéis (Proprietário, Administrador, Membro e Técnico), situação da assinatura, ações da auditoria e mensagens de erro. Os códigos em inglês ficam só no banco e no código. Um teste E2E percorre as telas procurando inglês.
 - **Máscaras:** CNPJ, CPF, telefone e valores têm máscara ao digitar (`src/components/masked-input.tsx`), e o servidor recusa CNPJ ou telefone incompletos. Valores mostram R$, agrupam milhares e fecham com centavos ao sair do campo: `1500` vira `1.500,00`, nunca `15,00`. Documentos e telefones também aparecem formatados nas listas, no link de aprovação e nos PDFs.
@@ -559,6 +561,8 @@ Tela em `/dashboard/finance`, só para owner e admin.
 Código: `src/services/financeService.ts`, `src/app/dashboard/finance/page.tsx`.
 
 ## 25. Demonstração
+
+Os valores de faturamento e gastos da demonstração acompanham o mês atual, para o financeiro nunca abrir zerado na virada do mês.
 
 Qualquer pessoa entra por "Ver demonstração", na página inicial, e navega pelas telas reais sem criar conta.
 

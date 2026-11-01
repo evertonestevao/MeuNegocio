@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Building2, Search } from "lucide-react";
+import { ChevronRight, Building2, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { getClientService } from "@/server/clients";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import { formatDocument } from "@/lib/masks";
+import { InitialsAvatar } from "@/components/initials-avatar";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -42,9 +43,9 @@ export default async function ClientsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Clientes</h2>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Clientes</h2>
           <p className="text-sm text-muted-foreground">Empresas atendidas, com contatos e locais de serviço.</p>
         </div>
         <NewClientButton />
@@ -98,14 +99,18 @@ export default async function ClientsPage({
             {clients.items.map((client) => (
               <Link key={client.id} href={`/dashboard/clients/${client.id}`}>
                 <Card>
-                  <CardContent className="flex flex-col gap-1">
-                    <span className="font-medium">{client.name}</span>
-                    <span className="text-sm text-muted-foreground">{summary(client)}</span>
-                    {client.primary_contact_name ? (
-                      <span className="text-sm text-muted-foreground">
-                        {[client.primary_contact_name, client.primary_contact_phone].filter(Boolean).join(" · ")}
-                      </span>
-                    ) : null}
+                  <CardContent className="flex items-center gap-3">
+                    <InitialsAvatar name={client.name} />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="break-words text-base font-medium">{client.name}</span>
+                      <span className="text-sm text-muted-foreground">{summary(client)}</span>
+                      {client.primary_contact_name ? (
+                        <span className="text-sm text-muted-foreground">
+                          {[client.primary_contact_name, client.primary_contact_phone].filter(Boolean).join(" · ")}
+                        </span>
+                      ) : null}
+                    </span>
+                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
                   </CardContent>
                 </Card>
               </Link>

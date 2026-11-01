@@ -58,7 +58,7 @@ export default async function ResellerDetailPage({ params }: { params: Promise<{
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
+        <h2 className="flex flex-wrap items-center gap-2 font-heading text-2xl font-extrabold tracking-tight">
           {reseller.name}
           <Badge variant={isActive ? "secondary" : "destructive"}>{isActive ? "Ativo" : "Suspenso"}</Badge>
         </h2>

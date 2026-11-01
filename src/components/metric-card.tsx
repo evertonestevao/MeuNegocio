@@ -4,11 +4,18 @@ import { cn } from "@/lib/utils";
 
 export type MetricTone = "info" | "success" | "warning" | "danger";
 
-const ICON_TONE: Record<MetricTone, string> = {
-  info: "bg-info/12 text-info dark:bg-info/20",
-  success: "bg-success/12 text-success dark:bg-success/20",
-  warning: "bg-warning/12 text-warning dark:bg-warning/20",
-  danger: "bg-destructive/10 text-destructive dark:bg-destructive/20",
+const TOP_BAR: Record<MetricTone, string> = {
+  info: "border-t-4 border-t-info",
+  success: "border-t-4 border-t-success",
+  warning: "border-t-4 border-t-warning",
+  danger: "border-t-4 border-t-destructive",
+};
+
+const ICON_COLOR: Record<MetricTone, string> = {
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+  danger: "text-destructive",
 };
 
 const VALUE_TONE: Partial<Record<MetricTone, string>> = {
@@ -16,39 +23,32 @@ const VALUE_TONE: Partial<Record<MetricTone, string>> = {
   success: "text-success",
 };
 
-/** Card de métrica do dashboard (grid responsivo, plano §11). */
+/** Card de número: compacto, para caber em duas colunas no celular. */
 export function MetricCard({
   icon: Icon,
   label,
   value,
   hint,
-  tone,
+  tone = "info",
   toneValue = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: string | number;
   hint?: string;
-  /** Cor do ícone. Sem tom, o card fica neutro. */
   tone?: MetricTone;
   /** Pinta também o valor, quando a cor diz algo sobre ele, como um saldo negativo. */
   toneValue?: boolean;
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className={cn("mt-1 truncate text-2xl font-semibold tabular-nums", toneValue && tone && VALUE_TONE[tone])}>{value}</p>
-          {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+    <Card className={cn("relative h-full gap-0 overflow-hidden py-3 sm:py-4", TOP_BAR[tone])}>
+      <CardContent className="flex flex-col gap-1.5 px-3 pt-1 sm:px-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 text-[11px] leading-tight font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+          <Icon className={cn("size-4 shrink-0", ICON_COLOR[tone])} aria-hidden />
         </div>
-        {tone ? (
-          <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", ICON_TONE[tone])}>
-            <Icon className="size-5" aria-hidden />
-          </span>
-        ) : (
-          <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        )}
+        <p className={cn("font-heading text-xl font-extrabold tracking-tight tabular-nums sm:text-2xl", toneValue && VALUE_TONE[tone])}>{value}</p>
+        {hint ? <p className="text-xs leading-snug text-muted-foreground">{hint}</p> : null}
       </CardContent>
     </Card>
   );

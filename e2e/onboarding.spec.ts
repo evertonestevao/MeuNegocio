@@ -27,7 +27,7 @@ test("onboarding recusa dado inválido sem perder o digitado e grava os dados da
   await page.getByLabel("Validade padrão do orçamento (dias)").fill("30");
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole("heading", { name: "Empresa Onboarding E2E" })).toBeVisible();
+  await expect(page.locator("main").getByText("Empresa Onboarding E2E")).toBeVisible();
 
   await page.goto("/dashboard/settings");
   await expect(page.getByLabel("CNPJ")).toHaveValue("11.222.333/0001-81");

@@ -41,10 +41,40 @@ export function shiftDates<T>(value: T, offsetDays: number): T {
   return value;
 }
 
+/**
+ * Valores por mês não podem andar por dias: no dia 1, tudo ficaria no mês anterior e o financeiro
+ * zerado. Andam por meses, mantêm o dia e, no mês atual, nunca passam de hoje.
+ */
+export function shiftToCurrentMonth(date: string, today: string): string {
+  const [baseYear, baseMonth] = BASELINE.split("-").map(Number);
+  const [todayYear, todayMonth] = today.split("-").map(Number);
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+  const months = (todayYear - baseYear) * 12 + todayMonth - baseMonth;
+  const total = year * 12 + (month - 1) + months;
+  const targetYear = Math.floor(total / 12);
+  const targetMonth = total % 12;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const shifted = new Date(Date.UTC(targetYear, targetMonth, Math.min(day, lastDay))).toISOString().slice(0, 10);
+  return shifted > today ? today : shifted;
+}
+
+const MONTHLY_DATE_COLUMNS: Record<string, string> = { revenues: "competence_date", expenses: "expense_date" };
+
 let cache: { offset: number; fixtures: typeof rawFixtures } | undefined;
 function fixtures() {
   const offset = demoDayOffset();
-  if (cache?.offset !== offset) cache = { offset, fixtures: shiftDates(rawFixtures, offset) };
+  if (cache?.offset !== offset) {
+    const shifted = shiftDates(rawFixtures, offset);
+    const today = todayInBrazil(new Date());
+    const original = rawFixtures.tables as unknown as Record<string, Row[]>;
+    const tables = shifted.tables as unknown as Record<string, Row[]>;
+    for (const [table, column] of Object.entries(MONTHLY_DATE_COLUMNS)) {
+      tables[table].forEach((row, index) => {
+        row[column] = shiftToCurrentMonth(String(original[table][index][column]), today);
+      });
+    }
+    cache = { offset, fixtures: shifted };
+  }
   return cache.fixtures;
 }
 
@@ -192,9 +222,8 @@ function callRpc(name: string, args: Row): Result {
     case "my_pending_invites":
       return ok([]);
     case "get_hours_month": {
-      const offset = demoDayOffset();
-      const baseMonth = shiftDates("2026-10-15", offset).slice(0, 7);
-      return ok(String(args.p_month).slice(0, 7) === baseMonth ? rpc.hours : { ...rpc.hours, entries: [], suggestions: [] });
+      const currentMonth = todayInBrazil(new Date()).slice(0, 7);
+      return ok(String(args.p_month).slice(0, 7) === currentMonth ? rpc.hours : { ...rpc.hours, entries: [], suggestions: [] });
     }
     case "list_my_visits":
       return ok(

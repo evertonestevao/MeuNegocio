@@ -102,13 +102,13 @@ export default async function ExpensesPage({
 
   const onDay = (day: string) => expenses.filter((expense) => expense.expense_date === day);
   const toggle = (on: boolean) =>
-    cn("rounded-lg px-3 py-1.5 text-sm", on ? "bg-primary font-medium text-primary-foreground" : "border hover:bg-muted");
+    cn("whitespace-nowrap rounded-full px-3.5 py-2 text-sm lg:py-1.5", on ? "bg-primary font-medium text-primary-foreground" : "border bg-card hover:bg-muted");
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Gastos</h2>
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Gastos</h2>
           <p className="text-sm text-muted-foreground">Despesas fixas, pontuais e de funcionários.</p>
         </div>
         {tab === "entries" ? <NewExpenseButton options={options} defaultDate={selected ?? defaultDate} /> : null}
@@ -130,7 +130,7 @@ export default async function ExpensesPage({
 
       {tab === "entries" ? (
         <>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-between gap-2 rounded-2xl bg-card p-2 shadow-xs ring-1 ring-foreground/8 sm:w-fit">
             <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
               <ChevronLeft className="size-4" />
             </Button>
@@ -138,6 +138,14 @@ export default async function ExpensesPage({
             <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
               <ChevronRight className="size-4" />
             </Button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-destructive/8 px-4 py-3">
+            <span className="text-sm font-medium">Total do mês</span>
+            <strong className="text-xl font-semibold tabular-nums">{formatCents(total)}</strong>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <Link href={href({ view: "calendar" })} className={toggle(view === "calendar")}>
               Calendário
             </Link>
@@ -151,10 +159,6 @@ export default async function ExpensesPage({
                 <Repeat className="size-4" /> Gerar recorrentes do mês
               </ActionButton>
             )}
-            <span className="flex items-baseline gap-2 text-sm lg:ml-auto">
-              <span className="text-muted-foreground">Total do mês</span>
-              <strong className="tabular-nums">{formatCents(total)}</strong>
-            </span>
           </div>
 
           {expenses.length === 0 ? (
@@ -189,7 +193,7 @@ export default async function ExpensesPage({
                         className={cn(
                           "flex min-h-14 min-w-0 flex-col gap-0.5 border-r border-b p-1 text-xs hover:bg-muted/60 lg:min-h-20 lg:p-1.5 [&:nth-child(7n)]:border-r-0",
                           outside && "text-muted-foreground/50",
-                          day === selected && "bg-muted",
+                          day === selected && "bg-primary/10",
                         )}
                       >
                         <span className="w-fit rounded-full px-1 tabular-nums">{Number(day.slice(8))}</span>
@@ -197,7 +201,7 @@ export default async function ExpensesPage({
                           <>
                             <span className="hidden font-medium tabular-nums lg:block">{formatCents(sum)}</span>
                             <span className="hidden text-muted-foreground lg:block">{list.length === 1 ? "1 gasto" : `${list.length} gastos`}</span>
-                            <span className="w-fit rounded bg-secondary px-1 tabular-nums lg:hidden">{list.length}</span>
+                            <span className="w-fit rounded-full bg-destructive/15 px-1.5 font-medium text-destructive tabular-nums lg:hidden">{list.length}</span>
                           </>
                         ) : null}
                       </Link>

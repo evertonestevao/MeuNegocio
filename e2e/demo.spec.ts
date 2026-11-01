@@ -27,13 +27,13 @@ test("demonstração abre as telas sem login, com dados fictícios e sem erro", 
   await page.goto("/");
   await page.getByRole("button", { name: "Ver demonstração" }).first().click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText("Você está em uma demonstração")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Refrigeração Exemplo" })).toBeVisible();
+  await expect(page.getByText("Demonstração", { exact: false }).first()).toBeVisible();
+  await expect(page.locator("main").getByText("Refrigeração Exemplo").first()).toBeVisible();
 
   for (const route of OFFICE_ROUTES) {
     await page.goto(route);
     await expect(page, route).toHaveURL(new RegExp(route.replace(/\//g, "\\/")));
-    await expect(page.getByText("Você está em uma demonstração"), route).toBeVisible();
+    await expect(page.getByText("Demonstração", { exact: false }).first(), route).toBeVisible();
   }
   expect(errors).toEqual([]);
 
@@ -100,7 +100,7 @@ test("pré-busca de links não encerra a demonstração", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   await page.getByRole("link", { name: "Clientes" }).click();
   await expect(page).toHaveURL(/\/dashboard\/clients/);
-  await expect(page.getByText("Você está em uma demonstração")).toBeVisible();
+  await expect(page.getByText("Demonstração", { exact: false }).first()).toBeVisible();
 });
 
 test("redirecionamentos não expõem o host interno, atrás de túnel ou proxy", async ({ request }) => {
@@ -113,4 +113,18 @@ test("redirecionamentos não expõem o host interno, atrás de túnel ou proxy",
   expect(await location("/demo/sair")).toBe("/");
   expect(await location("/admin/planos", { cookie: "demo_mode=owner" })).toBe("/dashboard");
   expect(await location("/?ref=codigo")).toMatch(/^\/r\//);
+});
+
+test("assinatura e auditoria ficam dentro de configurações, fora do menu", async ({ page }) => {
+  await page.goto("/demo");
+  await page.goto("/dashboard/settings");
+  const menu = page.getByRole("complementary");
+  await expect(menu.getByRole("link", { name: "Assinatura" })).toHaveCount(0);
+  await expect(menu.getByRole("link", { name: "Auditoria" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: /Auditoria/ }).click();
+  await expect(page.getByRole("heading", { name: "Auditoria" })).toBeVisible();
+  await page.getByRole("link", { name: "Configurações" }).last().click();
+  await page.getByRole("link", { name: /Assinatura/ }).click();
+  await expect(page.getByRole("heading", { name: "Assinatura" })).toBeVisible();
 });

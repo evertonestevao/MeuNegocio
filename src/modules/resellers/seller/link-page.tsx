@@ -18,7 +18,7 @@ export default async function SellerLinkPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Meu link</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Meu link</h2>
         <p className="text-sm text-muted-foreground">Quem contrata por um destes links fica vinculado a você.</p>
       </div>
 

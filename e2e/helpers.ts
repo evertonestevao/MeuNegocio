@@ -24,7 +24,7 @@ export async function signupAndOnboard(
   await page.getByRole("button", { name: "Criar empresa" }).click();
 
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole("heading", { name: company })).toBeVisible();
+  await expect(page.locator("main").getByText(company).first()).toBeVisible();
 }
 
 export function uniqueEmail(prefix: string): string {

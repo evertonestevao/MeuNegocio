@@ -28,7 +28,7 @@ export default async function OnboardingPage() {
         <Link href="/" className="text-2xl font-semibold tracking-tight">
           {brand.name}
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight">Sua conta ainda não tem empresa</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Sua conta ainda não tem empresa</h1>
         <p className="max-w-md text-muted-foreground">
           Peça um convite a quem administra a sua empresa ou{" "}
           <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" className="underline underline-offset-4">

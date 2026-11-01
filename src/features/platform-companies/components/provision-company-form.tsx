@@ -61,7 +61,7 @@ export function ProvisionCompanyForm({ plans, loginUrl }: { plans: Pick<Plan, "i
             id="planId"
             name="planId"
             defaultValue=""
-            className="border-input h-8 rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            className="border-input h-11 rounded-lg md:h-9 border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             <option value="">Sem plano, com os limites do gratuito</option>
             {plans.map((plan) => (

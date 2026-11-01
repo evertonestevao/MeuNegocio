@@ -28,7 +28,7 @@ export default async function CompaniesAdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Empresas</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Empresas</h2>
         <p className="text-sm text-muted-foreground">O cadastro público está fechado: novas empresas nascem aqui.</p>
       </div>
       <Card>

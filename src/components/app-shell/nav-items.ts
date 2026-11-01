@@ -7,10 +7,8 @@ import {
   ChartColumn,
   ClipboardCheck,
   HardHat,
-  CreditCard,
   FileText,
   LayoutDashboard,
-  ScrollText,
   Settings,
   Users,
   type LucideIcon,
@@ -29,6 +27,8 @@ export interface ShellNavItem {
 export interface NavItem extends ShellNavItem {
   /** Papéis que veem o item (autorização real fica no server/RLS). */
   roles: RoleCode[];
+  /** Vira aba fixa no celular; os demais ficam em "Mais". */
+  mobileTab?: boolean;
 }
 
 export const navItems: NavItem[] = [
@@ -37,19 +37,18 @@ export const navItems: NavItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     roles: ["owner", "admin", "member"],
+    mobileTab: true,
   },
-  { title: "Minhas visitas", href: "/dashboard/my-visits", icon: ClipboardCheck, roles: ["technician"] },
-  { title: "Agenda", href: "/dashboard/schedule", icon: CalendarDays, roles: ["owner", "admin", "member"] },
-  { title: "Orçamentos", href: "/dashboard/quotes", icon: FileText, roles: ["owner", "admin", "member"] },
+  { title: "Minhas visitas", href: "/dashboard/my-visits", icon: ClipboardCheck, roles: ["technician"], mobileTab: true },
+  { title: "Agenda", href: "/dashboard/schedule", icon: CalendarDays, roles: ["owner", "admin", "member"], mobileTab: true },
+  { title: "Orçamentos", href: "/dashboard/quotes", icon: FileText, roles: ["owner", "admin", "member"], mobileTab: true },
   { title: "Clientes", href: "/dashboard/clients", icon: Building2, roles: ["owner", "admin", "member"] },
   { title: "Catálogo", href: "/dashboard/catalog", icon: BookOpen, roles: ["owner", "admin", "member"] },
   { title: "Equipe", href: "/dashboard/team", icon: HardHat, roles: ["owner", "admin", "member"] },
   { title: "Horas", href: "/dashboard/hours", icon: Clock, roles: ["owner", "admin"] },
   { title: "Gastos", href: "/dashboard/expenses", icon: Wallet, roles: ["owner", "admin"] },
-  { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"] },
+  { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"], mobileTab: true },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
-  { title: "Assinatura", href: "/dashboard/billing", icon: CreditCard, roles: ["owner"] },
-  { title: "Auditoria", href: "/dashboard/audit", icon: ScrollText, roles: ["owner", "admin"] },
   {
     title: "Configurações",
     href: "/dashboard/settings",
@@ -58,9 +57,20 @@ export const navItems: NavItem[] = [
   },
 ];
 
+/** Páginas abertas a partir de Configurações, sem item próprio no menu. */
+const SETTINGS_SUBPAGES: Record<string, string> = {
+  "/dashboard/billing": "Assinatura",
+  "/dashboard/audit": "Auditoria",
+};
+
+export function isSettingsSubpage(pathname: string): boolean {
+  return pathname in SETTINGS_SUBPAGES;
+}
+
 /** Título da página atual a partir do pathname (breadcrumb/header mobile). */
 export function titleForPath(pathname: string, items: ShellNavItem[] = navItems): string {
   if (pathname.startsWith("/dashboard/work-orders")) return "Ordem de serviço";
+  if (pathname in SETTINGS_SUBPAGES) return SETTINGS_SUBPAGES[pathname];
   const match = [...items]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
@@ -76,8 +77,11 @@ export default async function BillingPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link href="/dashboard/settings" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="size-4" /> Configurações
+      </Link>
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Assinatura</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Assinatura</h2>
         <p className="text-sm text-muted-foreground">
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
           {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}

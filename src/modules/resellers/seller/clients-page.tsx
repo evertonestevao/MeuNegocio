@@ -12,7 +12,7 @@ export default async function SellerClientsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Meus clientes</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Meus clientes</h2>
         <p className="text-sm text-muted-foreground">Quem contratou pelo seu link</p>
       </div>
       <StatCards

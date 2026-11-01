@@ -8,7 +8,7 @@ export function StatCards({ stats }: { stats: Array<{ label: string; value: stri
         <Card key={stat.label}>
           <CardContent>
             <p className="text-sm text-muted-foreground">{stat.label}</p>
-            <p className="text-xl font-semibold tracking-tight">{stat.value}</p>
+            <p className="font-heading text-2xl font-extrabold tracking-tight">{stat.value}</p>
           </CardContent>
         </Card>
       ))}

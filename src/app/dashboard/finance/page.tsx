@@ -45,7 +45,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Financeiro</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Financeiro</h2>
         <p className="text-sm text-muted-foreground">Faturamento (orçamentos fechados) e gastos, lado a lado.</p>
       </div>
 
@@ -59,15 +59,19 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard icon={TrendingUp} label="Faturamento" value={formatCents(overview.revenueCents)} hint={changeHint(overview.revenueChange)} />
-        <MetricCard icon={TrendingDown} label="Gastos" value={formatCents(overview.expenseCents)} hint={changeHint(overview.expenseChange)} />
-        <MetricCard
-          icon={Scale}
-          label="Saldo do mês"
-          value={formatCents(overview.balanceCents)}
-          hint={overview.balanceCents >= 0 ? "Faturamento maior que os gastos" : "Gastos maiores que o faturamento"}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        <MetricCard icon={TrendingUp} tone="info" label="Faturamento" value={formatCents(overview.revenueCents)} hint={changeHint(overview.revenueChange)} />
+        <MetricCard icon={TrendingDown} tone="warning" label="Gastos" value={formatCents(overview.expenseCents)} hint={changeHint(overview.expenseChange)} />
+        <div className="col-span-2 sm:col-span-1">
+          <MetricCard
+            icon={Scale}
+            tone={overview.balanceCents < 0 ? "danger" : "success"}
+            toneValue
+            label="Saldo do mês"
+            value={formatCents(overview.balanceCents)}
+            hint={overview.revenueCents === 0 && overview.expenseCents === 0 ? "Sem movimento neste mês" : overview.balanceCents >= 0 ? "Sobrou dinheiro neste mês" : "Gastos maiores que o faturamento"}
+          />
+        </div>
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -130,8 +134,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                         <span className="min-w-0 break-words">{category.name}</span>
                         <span className="shrink-0 font-medium tabular-nums">{formatCents(category.totalCents)}</span>
                       </span>
-                      <span className="h-1.5 rounded-full bg-muted" aria-hidden>
-                        <span className="block h-full rounded-full bg-chart-1" style={{ width: `${(category.totalCents / largestCategory) * 100}%` }} />
+                      <span className="h-2 rounded-full bg-muted" aria-hidden>
+                        <span className="block h-full rounded-full bg-chart-2" style={{ width: `${(category.totalCents / largestCategory) * 100}%` }} />
                       </span>
                     </li>
                   ))}
@@ -158,7 +162,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                 <span>Possível entrada</span>
                 <span className="tabular-nums">{formatCents(overview.forecast.possibleCents)}</span>
               </p>
-              <Link href="/dashboard/quotes" className="w-fit underline underline-offset-4">
+              <Link href="/dashboard/quotes" className="w-fit font-medium text-primary hover:underline">
                 Ver orçamentos
               </Link>
             </CardContent>
@@ -199,7 +203,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>Lançamentos de gasto</CardTitle>
-            <Link href={`/dashboard/expenses?m=${month.slice(0, 7)}&view=list`} className="text-sm underline underline-offset-4">
+            <Link href={`/dashboard/expenses?m=${month.slice(0, 7)}&view=list`} className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
               Gerenciar gastos
             </Link>
           </CardHeader>

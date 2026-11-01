@@ -37,7 +37,11 @@ export function CompanySwitcher({ canCreate }: { canCreate: boolean }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="sm" className="max-w-44 gap-2 sm:max-w-56" />
+            <Button
+              variant="outline"
+              size="sm"
+              className={`max-w-44 gap-2 text-foreground sm:max-w-56 ${companies.length === 1 && !canCreate ? "hidden lg:inline-flex" : ""}`}
+            />
           }
         >
           <Building2 className="size-4 shrink-0" />
