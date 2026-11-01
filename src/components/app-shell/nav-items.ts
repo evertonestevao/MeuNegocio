@@ -61,6 +61,7 @@ export const navItems: NavItem[] = [
 const SETTINGS_SUBPAGES: Record<string, string> = {
   "/dashboard/billing": "Assinatura",
   "/dashboard/audit": "Auditoria",
+  "/dashboard/settings/checklists": "Checklists",
 };
 
 export function isSettingsSubpage(pathname: string): boolean {

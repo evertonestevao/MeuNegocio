@@ -135,7 +135,7 @@ export function EditCatalogItemButton({ item }: { item: CatalogItem }) {
       validate={parseCatalogForm}
       submitLabel="Salvar"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Editar ${item.name}`} onClick={open}>
+        <Button variant="edit" size="icon-sm" aria-label={`Editar ${item.name}`} onClick={open}>
           <Pencil className="size-4" />
         </Button>
       )}
@@ -154,7 +154,7 @@ export function DeleteCatalogItemButton({ item }: { item: CatalogItem }) {
       submitLabel="Excluir"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Excluir ${item.name}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir ${item.name}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}

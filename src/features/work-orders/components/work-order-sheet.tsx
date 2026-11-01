@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Camera, Download, MapPin, Phone, Trash2, Users } from "lucide-react";
+import { Camera, Check, ImageUp, Pencil, Plus, Download, MapPin, Phone, Trash2, Users } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,9 +14,11 @@ import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL } from "@/features/visits/schemas"
 import { formatLongDay } from "@/lib/calendar";
 import { formatTimestamp } from "@/lib/dates";
 import {
+  addWorkOrderChecklistItemAction,
   addWorkOrderPhotoAction,
   completeWorkOrderAction,
   removeWorkOrderPhotoAction,
+  updateWorkOrderPhotoCaptionAction,
   saveWorkOrderAction,
   startWorkOrderAction,
 } from "@/server/actions/workOrders";
@@ -74,13 +76,17 @@ function PhotoGrid({
   sheet,
   urls,
   onRemove,
+  onSaveCaption,
   pending,
 }: {
   sheet: VisitSheet;
   urls: Record<string, string>;
   onRemove?: (photoId: string) => void;
+  onSaveCaption?: (photoId: string, caption: string) => Promise<boolean>;
   pending?: boolean;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
   const photos = sheet.work_order?.photos ?? [];
   if (photos.length === 0) return <p className="text-sm text-muted-foreground">Nenhuma foto ainda.</p>;
   return (
@@ -97,20 +103,60 @@ function PhotoGrid({
               className="aspect-[4/3] w-full rounded-lg border object-cover"
             />
           ) : null}
-          {photo.caption ? <span className="text-xs break-words text-muted-foreground">{photo.caption}</span> : null}
-          {onRemove ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              className="self-start"
-              aria-label={`Remover foto ${photo.caption ?? ""}`}
-              onClick={() => onRemove(photo.id)}
+          {editingId === photo.id ? (
+            <form
+              className="flex flex-col gap-1.5"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (await onSaveCaption?.(photo.id, draft)) setEditingId(null);
+              }}
             >
-              <Trash2 className="size-4" /> Remover
-            </Button>
-          ) : null}
+              <Input aria-label="Legenda da foto" value={draft} maxLength={200} autoFocus onChange={(event) => setDraft(event.target.value)} />
+              <div className="flex gap-1">
+                <Button type="submit" size="sm" disabled={pending}>
+                  <Check className="size-4" /> Salvar
+                </Button>
+                <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setEditingId(null)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {photo.caption ? <span className="text-xs break-words text-muted-foreground">{photo.caption}</span> : null}
+              {onRemove ? (
+                <div className="flex">
+                  {onSaveCaption ? (
+                    <Button
+                      type="button"
+                      variant="edit"
+                      size="sm"
+                      disabled={pending}
+                      className="px-2 max-sm:size-10 max-sm:p-0"
+                      aria-label={`${photo.caption ? "Editar" : "Adicionar"} legenda da foto ${photo.caption ?? ""}`}
+                      onClick={() => {
+                        setDraft(photo.caption ?? "");
+                        setEditingId(photo.id);
+                      }}
+                    >
+                      <Pencil className="size-4" /> <span className="max-sm:hidden">Legenda</span>
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={pending}
+                    className="px-2 max-sm:size-10 max-sm:p-0"
+                    aria-label={`Remover foto ${photo.caption ?? ""}`}
+                    onClick={() => onRemove(photo.id)}
+                  >
+                    <Trash2 className="size-4" /> <span className="max-sm:hidden">Remover</span>
+                  </Button>
+                </div>
+              ) : null}
+            </>
+          )}
         </li>
       ))}
     </ul>
@@ -155,10 +201,13 @@ function OpenOrderForm({
   const [finishedTime, setFinishedTime] = useState(defaultFinishedTime);
   const [signatureName, setSignatureName] = useState("");
   const [caption, setCaption] = useState("");
+  const [newItem, setNewItem] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const photoInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   const signature = useRef<SignaturePadHandle>(null);
+  const openItems = (order?.checklist.length ?? 0) - done.length;
 
   function persist(nextDone: string[], nextReport: string, nextStarted: string) {
     startTransition(async () => {
@@ -171,6 +220,23 @@ function OpenOrderForm({
     const next = checked ? [...done, id] : done.filter((value) => value !== id);
     setDone(next);
     persist(next, report, startedTime);
+  }
+
+  function addChecklistItem(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    startTransition(async () => {
+      const result = await addWorkOrderChecklistItemAction(sheet.id, newItem);
+      if (result.error) setError(result.error);
+      else setNewItem("");
+    });
+  }
+
+  function onPhotoChosen(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Limpa para o mesmo arquivo poder ser escolhido de novo.
+    event.target.value = "";
+    if (file) void addPhoto(file);
   }
 
   async function addPhoto(file: File) {
@@ -207,6 +273,22 @@ function OpenOrderForm({
       const result = await removeWorkOrderPhotoAction(sheet.id, photoId);
       if (result.error) setError(result.error);
     });
+  }
+
+  async function saveCaption(photoId: string, value: string): Promise<boolean> {
+    setError(null);
+    const parsed = photoCaptionSchema.safeParse(value);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Legenda inválida.");
+      return false;
+    }
+    const result = await updateWorkOrderPhotoCaptionAction(sheet.id, photoId, parsed.data);
+    if (result.error) {
+      setError(result.error);
+      return false;
+    }
+    toast.success("Legenda salva");
+    return true;
   }
 
   async function complete() {
@@ -258,6 +340,15 @@ function OpenOrderForm({
               </li>
             ))}
           </ul>
+          <form onSubmit={addChecklistItem} className="mt-2 flex items-end gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Label htmlFor="checklist-new-item">Incluir item</Label>
+              <Input id="checklist-new-item" value={newItem} maxLength={120} placeholder="Ex.: Trocar a lâmpada do corredor" onChange={(event) => setNewItem(event.target.value)} />
+            </div>
+            <Button type="submit" variant="edit" disabled={pending || !newItem.trim()} className="mr-0 shrink-0" aria-label="Incluir item no checklist">
+              <Plus className="size-4" /> <span className="max-sm:hidden">Incluir</span>
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -267,7 +358,7 @@ function OpenOrderForm({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">Registre o antes e o depois. As fotos vão no PDF da ordem de serviço.</p>
-          <PhotoGrid sheet={sheet} urls={photoUrls} onRemove={removePhoto} pending={pending} />
+          <PhotoGrid sheet={sheet} urls={photoUrls} onRemove={removePhoto} onSaveCaption={saveCaption} pending={pending} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="photo-caption">Legenda da próxima foto (opcional)</Label>
             <Input id="photo-caption" value={caption} onChange={(event) => setCaption(event.target.value)} />
@@ -279,14 +370,17 @@ function OpenOrderForm({
             accept="image/*"
             capture="environment"
             className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void addPhoto(file);
-            }}
+            onChange={onPhotoChosen}
           />
-          <Button type="button" variant="outline" disabled={pending} className="self-start" onClick={() => photoInput.current?.click()}>
-            <Camera className="size-4" /> {pending ? "Aguarde..." : "Adicionar foto"}
-          </Button>
+          <input ref={galleryInput} id="photo-gallery" type="file" accept="image/*" className="sr-only" onChange={onPhotoChosen} />
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button type="button" variant="outline" disabled={pending} onClick={() => photoInput.current?.click()}>
+              <Camera className="size-4" /> {pending ? "Aguarde..." : "Tirar foto"}
+            </Button>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => galleryInput.current?.click()}>
+              <ImageUp className="size-4" /> Enviar do aparelho
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -339,6 +433,11 @@ function OpenOrderForm({
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+          ) : null}
+          {openItems > 0 ? (
+            <p className="rounded-lg bg-warning/10 px-3 py-2 text-sm">
+              {openItems === 1 ? "1 item do checklist está em aberto." : `${openItems} itens do checklist estão em aberto.`} Você pode concluir mesmo assim.
+            </p>
           ) : null}
           <Button disabled={pending} onClick={() => void complete()}>
             {pending ? "Aguarde..." : "Concluir ordem de serviço"}

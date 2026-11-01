@@ -371,6 +371,49 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Checklists: modelo só com owner e admin, nunca de outra empresa.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000003', 'sec-member@test.local');
+select sec_test.must_fail('membro altera o modelo de checklist',
+  $$select public.save_checklist_template('5ec0c000-0000-4000-8000-000000000001', 'execution', array['x'])$$);
+select sec_test.must_fail('membro grava direto no modelo de checklist',
+  $$insert into public.checklist_templates (company_id, kind, labels) values ('5ec0c000-0000-4000-8000-000000000001', 'execution', array['x'])$$);
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('outra empresa lê o modelo de checklist',
+  $$select public.list_checklist_templates('5ec0c000-0000-4000-8000-000000000001')$$);
+select sec_test.must_fail('outra empresa altera o modelo de checklist',
+  $$select public.save_checklist_template('5ec0c000-0000-4000-8000-000000000001', 'execution', array['x'])$$);
+select sec_test.login('5ec00000-0000-4000-8000-000000000002', 'sec-admin@test.local');
+select public.save_checklist_template('5ec0c000-0000-4000-8000-000000000001', 'execution', array['  Item do admin  ', '']);
+do $$
+begin
+  if (public.list_checklist_templates('5ec0c000-0000-4000-8000-000000000001') -> 'execution') <> '["Item do admin"]'::jsonb then
+    raise exception 'FALHA checklist: admin não conseguiu salvar o modelo limpo';
+  end if;
+end $$;
+reset role;
+
+do $$
+begin
+  if has_function_privilege('anon', 'public.list_checklist_templates(uuid)', 'execute')
+    or has_function_privilege('anon', 'public.add_work_order_checklist_item(uuid, uuid, text)', 'execute') then
+    raise exception 'FALHA checklist: função aberta para anônimo';
+  end if;
+end $$;
+
+-- Item em campo: só em ordem aberta de quem está escalado.
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+begin
+  perform public.add_work_order_checklist_item('5ec0c000-0000-4000-8000-000000000001', gen_random_uuid(), 'x');
+  raise exception 'FALHA checklist: item incluído em visita que não é do usuário' using errcode = 'P0002';
+exception when raise_exception then null; -- recusa esperada, com mensagem ao usuário
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

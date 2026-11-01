@@ -493,11 +493,15 @@ Tela para celular em `/dashboard/my-visits` (lista) e `/dashboard/work-orders/[v
 | Função | Quem | Regras |
 |---|---|---|
 | **Ver as próprias visitas** | Quem está escalado | Próximas e concluídas recentes. Mostra cliente, local, contato e equipe, sem documento nem observações do cliente. Só funciona com pessoa da equipe vinculada ao usuário. |
-| **"Cheguei"** | Quem está escalado | Põe a visita em andamento e cria a ordem de serviço com o checklist padrão do tipo da visita. Repetir não duplica. |
+| **"Cheguei"** | Quem está escalado | Põe a visita em andamento e cria a ordem de serviço com o checklist do atendimento ou, sem ajuste, o modelo da empresa para o tipo da visita. Repetir não duplica. |
+| **Modelos de checklist** (`/dashboard/settings/checklists`, em Configurações › Checklists) | Owner, admin | Uma lista por tipo de visita, até 30 itens de até 120 caracteres. Empresa sem modelo usa a lista padrão. Ordens já iniciadas não mudam. |
+| **Checklist do atendimento** (na visita agendada) | Quem edita a agenda | Inclui, altera ou tira itens só daquela visita, sem mudar o modelo. "Usar o modelo" desfaz o ajuste. |
+| **Incluir item em campo** | Quem está escalado | Acrescenta itens à ordem aberta, até 50 no total. Não remove os existentes. |
+| **Concluir com itens em aberto** | Quem está escalado | Permitido. A tela avisa a quantidade, sem bloquear. |
 | **Checklist, relatório e início real** | Quem está escalado | Salvos automaticamente enquanto a ordem está aberta. |
-| **Fotos com legenda** | Quem está escalado | Até 30 por ordem. Comprimidas no navegador (até 900 KB). O servidor confere o tipo real do arquivo. |
+| **Fotos com legenda** | Quem está escalado | Tiradas na hora pela câmera ou enviadas do aparelho. A legenda pode ser incluída ou alterada enquanto a ordem estiver aberta. Até 30 por ordem. Comprimidas no navegador (até 900 KB). O servidor confere o tipo real do arquivo. |
 | **Concluir** | Quem está escalado | Exige assinatura, nome de quem assinou e fim depois do início. A visita vira concluída, e a ordem não muda mais. |
-| **Ver e baixar PDF** | Owner, admin, member; técnico nas próprias | O escritório só lê. PDF com checklist, relatório, fotos e assinatura, gerado no navegador. |
+| **Ver e baixar PDF** | Owner, admin, member; técnico nas próprias | O escritório só lê. PDF com cabeçalho da empresa, dados do cliente, checklist, relatório, fotos numeradas em duas colunas com legenda e assinatura, gerado no navegador. |
 
 Regras:
 

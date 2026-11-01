@@ -208,6 +208,11 @@ class DemoRpc implements PromiseLike<Result> {
   }
 }
 
+const DEMO_CHECKLISTS = {
+  assessment: ["Conferir local e acesso", "Medir e fotografar o que será orçado", "Anotar materiais necessários", "Combinar próximos passos com o cliente"],
+  execution: ["Conferir EPIs e ferramentas", "Isolar e sinalizar a área", "Executar o serviço", "Testar o funcionamento", "Limpar o local", "Mostrar o resultado ao cliente"],
+};
+
 function callRpc(name: string, args: Row): Result {
   const { rpc } = fixtures() as unknown as { rpc: { hours: { entries: unknown[] } & Row; myVisits: Row[]; sheets: Record<string, unknown> } };
   const ok = (data: unknown): Result => ({ data, error: null });
@@ -232,6 +237,8 @@ function callRpc(name: string, args: Row): Result {
           return date >= String(args.p_from) && date <= String(args.p_to);
         }),
       );
+    case "list_checklist_templates":
+      return ok(DEMO_CHECKLISTS);
     case "get_visit_sheet":
       return ok(rpc.sheets[String(args.p_visit_id)] ?? null);
     default:

@@ -114,7 +114,7 @@ export function ContactFormButton({ clientId, contact }: { clientId: string; con
       submitLabel="Salvar contato"
       trigger={(open) =>
         contact ? (
-          <Button variant="ghost" size="icon-sm" aria-label={`Editar ${contact.name}`} onClick={open}>
+          <Button variant="edit" size="icon-sm" aria-label={`Editar ${contact.name}`} onClick={open}>
             <Pencil className="size-4" />
           </Button>
         ) : (
@@ -155,7 +155,7 @@ export function RemoveContactButton({ clientId, contact }: { clientId: string; c
       submitLabel="Remover"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Remover ${contact.name}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Remover ${contact.name}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}
@@ -176,7 +176,7 @@ export function LocationFormButton({ clientId, location }: { clientId: string; l
       submitLabel="Salvar local"
       trigger={(open) =>
         location ? (
-          <Button variant="ghost" size="icon-sm" aria-label={`Editar ${location.name}`} onClick={open}>
+          <Button variant="edit" size="icon-sm" aria-label={`Editar ${location.name}`} onClick={open}>
             <Pencil className="size-4" />
           </Button>
         ) : (
@@ -210,7 +210,7 @@ export function RemoveLocationButton({ clientId, location }: { clientId: string;
       submitLabel="Remover"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Remover ${location.name}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Remover ${location.name}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}

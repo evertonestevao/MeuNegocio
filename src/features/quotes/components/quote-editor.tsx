@@ -156,7 +156,7 @@ export function QuoteEditor({
                         </div>
                         {readOnly ? null : (
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="icon-sm"
                             className="mt-6"
                             aria-label={`Remover ${line.description || "item"}`}

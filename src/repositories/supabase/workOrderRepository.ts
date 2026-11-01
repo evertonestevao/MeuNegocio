@@ -60,6 +60,25 @@ export function createSupabaseWorkOrderRepository(client: SupabaseClient): WorkO
       return data as string;
     },
 
+    async updatePhotoCaption(companyId, visitId, photoId, caption) {
+      const { error } = await client.rpc("update_work_order_photo_caption", {
+        p_company_id: companyId,
+        p_visit_id: visitId,
+        p_photo_id: photoId,
+        p_caption: caption,
+      });
+      if (error) fail(error);
+    },
+
+    async addChecklistItem(companyId, visitId, label) {
+      const { error } = await client.rpc("add_work_order_checklist_item", {
+        p_company_id: companyId,
+        p_visit_id: visitId,
+        p_label: label,
+      });
+      if (error) fail(error);
+    },
+
     async complete(companyId, visitId, { signaturePath, signatureName, finishedTime }) {
       const { error } = await client.rpc("complete_work_order", {
         p_company_id: companyId,

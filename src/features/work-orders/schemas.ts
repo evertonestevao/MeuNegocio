@@ -22,6 +22,18 @@ export const completeWorkOrderSchema = z
     message: "O horário de término precisa ser depois do início.",
   });
 
+export const checklistLabelSchema = z
+  .string()
+  .trim()
+  .min(1, "Escreva o item do checklist.")
+  .max(120, "Use até 120 caracteres em cada item.");
+
+/** Tira as linhas em branco antes de conferir os limites. */
+export const checklistLabelsSchema = z
+  .array(z.string())
+  .transform((labels) => labels.map((label) => label.trim()).filter(Boolean))
+  .pipe(z.array(checklistLabelSchema).max(30, "Use até 30 itens no checklist."));
+
 export const photoCaptionSchema = z.string().trim().max(200, "Use até 200 caracteres na legenda.");
 
 export const VISIT_KIND_DOCUMENT_LABEL = { assessment: "Visita técnica", execution: "Execução do serviço" } as const;

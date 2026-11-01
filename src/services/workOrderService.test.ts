@@ -24,6 +24,8 @@ function setup(current: VisitSheet | null = sheet({}), canUse = true) {
     save: vi.fn(async () => undefined),
     addPhoto: vi.fn(async () => undefined),
     removePhoto: vi.fn(async () => "co/wo/a.jpg"),
+    updatePhotoCaption: vi.fn(async () => undefined),
+    addChecklistItem: vi.fn(async () => undefined),
     complete: vi.fn(async () => undefined),
   } satisfies WorkOrderRepository;
   const files = {
@@ -70,6 +72,28 @@ describe("ordem de serviço", () => {
     await expect(done.service.addPhoto(ACTOR, "v", JPEG, "")).rejects.toMatchObject({ code: "conflict" });
     await expect(done.service.complete(ACTOR, "v", { signature: PNG, signatureName: "Ana", finishedTime: "12:00" })).rejects.toMatchObject({ code: "conflict" });
     expect(done.files.upload).not.toHaveBeenCalled();
+  });
+
+  it("inclui item no checklist só em OS aberta de quem está escalado", async () => {
+    const { service, repo } = setup(sheet({}));
+    await service.addChecklistItem(ACTOR, "v", "Trocar lâmpada");
+    expect(repo.addChecklistItem).toHaveBeenCalledWith("co", "v", "Trocar lâmpada");
+    const other = setup(sheet({}, { is_mine: false }));
+    await expect(other.service.addChecklistItem(ACTOR, "v", "x")).rejects.toMatchObject({ code: "not_found" });
+    const done = setup(sheet({ status: "completed" }));
+    await expect(done.service.addChecklistItem(ACTOR, "v", "x")).rejects.toMatchObject({ code: "conflict" });
+    expect(done.repo.addChecklistItem).not.toHaveBeenCalled();
+  });
+
+  it("edita a legenda só em OS aberta de quem está escalado", async () => {
+    const { service, repo } = setup(sheet({}));
+    await service.updatePhotoCaption(ACTOR, "v", "foto", "Depois");
+    expect(repo.updatePhotoCaption).toHaveBeenCalledWith("co", "v", "foto", "Depois");
+    const other = setup(sheet({}, { is_mine: false }));
+    await expect(other.service.updatePhotoCaption(ACTOR, "v", "foto", "x")).rejects.toMatchObject({ code: "not_found" });
+    const done = setup(sheet({ status: "completed" }));
+    await expect(done.service.updatePhotoCaption(ACTOR, "v", "foto", "x")).rejects.toMatchObject({ code: "conflict" });
+    expect(done.repo.updatePhotoCaption).not.toHaveBeenCalled();
   });
 
   it("exige OS iniciada", async () => {

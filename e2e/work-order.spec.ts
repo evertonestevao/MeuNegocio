@@ -74,8 +74,22 @@ test("técnico conclui a ordem de serviço e as horas chegam ao escritório", as
   await owner.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
   await expect(owner.getByRole("dialog")).toBeHidden();
 
+  // Modelo da empresa em Configurações.
+  await owner.goto("/dashboard/settings");
+  await owner.getByRole("link", { name: /Checklists/ }).click();
+  const template = owner.locator('[data-slot="card"]', { hasText: "Visita técnica" });
+  await template.getByRole("button", { name: "Adicionar item" }).click();
+  await template.getByLabel("Item 5 do checklist").fill("Item do modelo");
+  await template.getByRole("button", { name: /Salvar checklist/ }).click();
+  await expect(owner.getByText(/Checklist de visita técnica salvo/)).toBeVisible();
+
   const today = dateFromToday(0);
   const dialog = await fillVisit(owner, { client: "Cliente Campo E2E", location: "Obra", date: today, start: "01:00", end: "02:00", people: ["Carlos Equipe"] });
+  // Ajuste só deste atendimento, partindo do modelo.
+  await expect(dialog.getByText("Item do modelo")).toBeVisible();
+  await dialog.getByRole("button", { name: "Ajustar só nesta visita" }).click();
+  await dialog.getByRole("button", { name: "Adicionar item" }).click();
+  await dialog.getByLabel("Item 6 do checklist").fill("Item só desta visita");
   await dialog.getByRole("button", { name: "Salvar visita" }).click();
   await expect(dialog).toBeHidden();
 
@@ -88,10 +102,26 @@ test("técnico conclui a ordem de serviço e as horas chegam ao escritório", as
   await technician.getByRole("link", { name: /Cliente Campo E2E/ }).click();
   await technician.getByRole("button", { name: /Cheguei/ }).click();
   await expect(technician.getByText("Conferir local e acesso")).toBeVisible();
+  await expect(technician.getByRole("checkbox", { name: "Item do modelo" })).toBeVisible();
+  await expect(technician.getByRole("checkbox", { name: "Item só desta visita" })).toBeVisible();
+  await technician.getByLabel("Incluir item", { exact: true }).fill("Item incluído em campo");
+  await technician.getByRole("button", { name: "Incluir item no checklist" }).click();
+  await expect(technician.getByRole("checkbox", { name: "Item incluído em campo" })).toBeVisible();
   await technician.getByRole("checkbox", { name: "Conferir local e acesso" }).check();
+  await expect(technician.getByText(/itens do checklist estão em aberto/)).toBeVisible();
 
   await technician.getByLabel("Legenda da próxima foto (opcional)").fill("Antes do serviço");
   await technician.locator("#photo-file").setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: samplePng() });
+  await expect(technician.getByText("Antes do serviço", { exact: true })).toBeVisible();
+
+  // A legenda pode ser corrigida depois de enviada.
+  await technician.getByRole("button", { name: /Editar legenda da foto/ }).click();
+  await technician.getByLabel("Legenda da foto", { exact: true }).fill("Antes do serviço corrigido");
+  await technician.getByRole("button", { name: "Salvar", exact: true }).first().click();
+  await expect(technician.getByText("Antes do serviço corrigido", { exact: true })).toBeVisible();
+  await technician.getByRole("button", { name: /Editar legenda da foto/ }).click();
+  await technician.getByLabel("Legenda da foto", { exact: true }).fill("Antes do serviço");
+  await technician.getByRole("button", { name: "Salvar", exact: true }).first().click();
   await expect(technician.getByText("Antes do serviço", { exact: true })).toBeVisible();
 
   await technician.getByLabel("O que foi feito").fill("Serviço concluído.");

@@ -70,7 +70,7 @@ test("técnico vê as próprias visitas e a ordem de serviço", async ({ page })
   await page.getByRole("link", { name: "Ver como técnico" }).click();
   await expect(page).toHaveURL(/my-visits/);
   await page.getByRole("link", { name: /Padaria Pão Dourado/ }).first().click();
-  await expect(page.getByText("Checklist")).toBeVisible();
+  await expect(page.getByText("Checklist", { exact: true })).toBeVisible();
   await expect(page.getByText("Conferir EPIs")).toBeVisible();
 });
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, ChevronRight, CreditCard, ScrollText } from "lucide-react";
+import { BellRing, ChevronRight, ClipboardList, CreditCard, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AccountDataSection } from "@/features/account/components/account-data-section";
@@ -44,6 +44,9 @@ export default async function SettingsPage() {
   const canEditCompany = permissionService.canEditCompany(active.role);
   const isOwner = active.role === "owner";
   const companyLinks = [
+    ...(canEditCompany
+      ? [{ href: "/dashboard/settings/checklists", title: "Checklists", description: "Itens padrão de cada tipo de visita", icon: ClipboardList }]
+      : []),
     ...(permissionService.canManageBilling(active.role)
       ? [{ href: "/dashboard/billing", title: "Assinatura", description: "Plano, vagas e pagamentos", icon: CreditCard }]
       : []),

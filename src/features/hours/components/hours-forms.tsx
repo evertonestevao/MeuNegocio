@@ -113,7 +113,7 @@ export function EditEntryButton({
       validate={parseTimeEntryForm}
       submitLabel="Salvar horas"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label="Ajustar horas" onClick={open}>
+        <Button variant="edit" size="icon-sm" aria-label="Ajustar horas" onClick={open}>
           <Pencil className="size-4" />
         </Button>
       )}

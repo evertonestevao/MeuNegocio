@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { getClientService } from "@/server/clients";
 import { getCompanyProfileService, getQuoteService } from "@/server/quotes";
 import { getEmployeeService, getVisitService } from "@/server/schedule";
+import { getChecklistService } from "@/server/checklists";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import type { VisitKind } from "@/types/database";
@@ -51,16 +52,18 @@ export default async function SchedulePage({
   const days = view === "week" ? weekDays(selected) : monthGrid(selected);
 
   const visitService = await getVisitService();
-  const [visits, employees, clients, quotePicker] = await Promise.all([
+  const [visits, employees, clients, quotePicker, checklists] = await Promise.all([
     visitService.list(actor, { from: days[0], to: days.at(-1), kind, employeeId: params.employee || undefined }),
     (await getEmployeeService()).list(actor, today),
     (await getClientService()).listForPicker(actor),
     visitService.listQuotePicker(actor),
+    (await getChecklistService()).list(actor),
   ]);
   const options = {
     clients,
     employees: employees.map(({ id, name, active: isActive }) => ({ id, name, active: isActive })),
     quotes: quotePicker,
+    checklists,
   };
   const canDelete = permissionService.canDeleteRecords(active.role);
 

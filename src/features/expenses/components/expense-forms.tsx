@@ -123,7 +123,7 @@ export function EditExpenseButton({ expense, options }: { expense: Expense; opti
       validate={parseExpenseForm}
       submitLabel="Salvar gasto"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Editar ${expense.description}`} onClick={open}>
+        <Button variant="edit" size="icon-sm" aria-label={`Editar ${expense.description}`} onClick={open}>
           <Pencil className="size-4" />
         </Button>
       )}
@@ -143,7 +143,7 @@ export function DeleteExpenseButton({ expense }: { expense: Expense }) {
       submitLabel="Excluir"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Excluir ${expense.description}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir ${expense.description}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}
@@ -216,7 +216,7 @@ export function EditTemplateButton({ template, options }: { template: ExpenseTem
       validate={parseExpenseTemplateForm}
       submitLabel="Salvar recorrência"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Editar ${template.description}`} onClick={open}>
+        <Button variant="edit" size="icon-sm" aria-label={`Editar ${template.description}`} onClick={open}>
           <Pencil className="size-4" />
         </Button>
       )}
@@ -235,7 +235,7 @@ export function DeleteTemplateButton({ template }: { template: ExpenseTemplate }
       submitLabel="Excluir"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Excluir ${template.description}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir ${template.description}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}
@@ -259,7 +259,7 @@ export function CategoryFormButton({ category }: { category?: ExpenseCategory })
       submitLabel="Salvar"
       trigger={(open) =>
         category ? (
-          <Button variant="ghost" size="icon-sm" aria-label={`Renomear ${category.name}`} onClick={open}>
+          <Button variant="edit" size="icon-sm" aria-label={`Renomear ${category.name}`} onClick={open}>
             <Pencil className="size-4" />
           </Button>
         ) : (
@@ -286,7 +286,7 @@ export function DeleteCategoryButton({ category }: { category: ExpenseCategory }
       submitLabel="Excluir"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Excluir ${category.name}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir ${category.name}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}

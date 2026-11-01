@@ -275,6 +275,8 @@ export interface Visit {
   ends_at: string;
   status: VisitStatus;
   notes: string | null;
+  /** Lista só deste atendimento. Nula: usa o modelo da empresa. */
+  checklist_labels?: string[] | null;
 }
 
 export interface VisitListItem extends Visit {

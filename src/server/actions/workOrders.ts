@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { completeWorkOrderSchema, photoCaptionSchema, saveWorkOrderSchema } from "@/features/work-orders/schemas";
+import { checklistLabelSchema, completeWorkOrderSchema, photoCaptionSchema, saveWorkOrderSchema } from "@/features/work-orders/schemas";
 import { AppError } from "@/lib/errors";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
@@ -85,6 +85,37 @@ export async function removeWorkOrderPhotoAction(visitIdValue: string, photoIdVa
     await recordAudit({ companyId: actor.companyId, action: "work_order.photo_removed", entityType: "visit", entityId: visitId });
     refresh(visitId);
     return { success: "Foto removida" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+export async function addWorkOrderChecklistItemAction(visitIdValue: string, labelValue: unknown): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const visitId = uuid(visitIdValue, "Visita inválida");
+    const label = checklistLabelSchema.parse(labelValue);
+    const service = await getWorkOrderService();
+    await service.addChecklistItem(actor, visitId, label);
+    await recordAudit({ companyId: actor.companyId, action: "work_order.checklist_item_added", entityType: "visit", entityId: visitId });
+    refresh(visitId);
+    return { success: "Item incluído" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+export async function updateWorkOrderPhotoCaptionAction(visitIdValue: string, photoIdValue: string, captionValue: unknown): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const visitId = uuid(visitIdValue, "Visita inválida");
+    const photoId = uuid(photoIdValue, "Foto inválida");
+    const caption = photoCaptionSchema.parse(captionValue ?? "");
+    const service = await getWorkOrderService();
+    await service.updatePhotoCaption(actor, visitId, photoId, caption);
+    await recordAudit({ companyId: actor.companyId, action: "work_order.photo_updated", entityType: "visit", entityId: visitId });
+    refresh(visitId);
+    return { success: "Legenda salva" };
   } catch (err) {
     return handleError(err);
   }

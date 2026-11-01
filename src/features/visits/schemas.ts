@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { checklistLabelsSchema } from "@/features/work-orders/schemas";
 
 /** Validação da visita: roda no navegador e de novo no servidor. */
 
@@ -16,6 +17,8 @@ export const visitSchema = z
     status: z.enum(["scheduled", "in_progress", "completed", "canceled"], { error: "Escolha a situação." }),
     notes: z.string().trim().max(2000, "Use até 2000 caracteres."),
     employeeIds: z.array(z.uuid()).min(1, "Escolha ao menos uma pessoa da equipe."),
+    /** Lista só deste atendimento. Nula: usa o modelo da empresa. */
+    checklist: checklistLabelsSchema.nullable().default(null),
   })
   .refine((visit) => visit.endsAt > visit.startsAt, { message: "O horário de término precisa ser depois do início." });
 
@@ -37,6 +40,7 @@ export function parseVisitForm(formData: FormData): VisitInput {
     status: text("status"),
     notes: text("notes"),
     employeeIds: formData.getAll("employeeIds").map(String),
+    checklist: formData.get("checklistCustom") === "1" ? formData.getAll("checklist").map(String) : null,
   });
 }
 

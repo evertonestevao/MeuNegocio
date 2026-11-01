@@ -15,6 +15,8 @@ export interface WorkOrderRepository {
   save(companyId: string, visitId: string, input: { doneIds: string[]; report: string; startedTime: string }): Promise<void>;
   addPhoto(companyId: string, visitId: string, path: string, caption: string): Promise<void>;
   removePhoto(companyId: string, visitId: string, photoId: string): Promise<string>;
+  addChecklistItem(companyId: string, visitId: string, label: string): Promise<void>;
+  updatePhotoCaption(companyId: string, visitId: string, photoId: string, caption: string): Promise<void>;
   complete(companyId: string, visitId: string, input: { signaturePath: string; signatureName: string; finishedTime: string }): Promise<void>;
 }
 
@@ -105,6 +107,16 @@ export function createWorkOrderService({ repo, files, canUseWorkOrders, newId }:
       const path = await repo.removePhoto(actor.companyId, visitId, photoId);
       // O registro já saiu da OS; arquivo órfão em bucket privado não aparece para ninguém.
       await files.remove(path).catch(() => undefined);
+    },
+
+    async addChecklistItem(actor: ActorContext, visitId: string, label: string) {
+      await requireOpenOrder(actor, visitId);
+      await repo.addChecklistItem(actor.companyId, visitId, label);
+    },
+
+    async updatePhotoCaption(actor: ActorContext, visitId: string, photoId: string, caption: string) {
+      await requireOpenOrder(actor, visitId);
+      await repo.updatePhotoCaption(actor.companyId, visitId, photoId, caption);
     },
 
     async complete(

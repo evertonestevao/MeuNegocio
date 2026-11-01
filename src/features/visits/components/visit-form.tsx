@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
+import { ChecklistEditor } from "@/features/checklists/components/checklist-editor";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export interface VisitFormOptions {
   clients: ClientPickerOption[];
   employees: Pick<Employee, "id" | "name" | "active">[];
   quotes: QuotePickerOption[];
+  checklists: Record<VisitKind, string[]>;
 }
 
 export interface VisitPrefill {
@@ -40,6 +42,9 @@ function VisitFields({ visit, prefill, options }: { visit?: VisitListItem; prefi
   const [startsAt, setStartsAt] = useState(visit?.starts_at.slice(0, 5) ?? "08:00");
   const [endsAt, setEndsAt] = useState(visit?.ends_at.slice(0, 5) ?? "12:00");
   const [status, setStatus] = useState<VisitStatus>(visit?.status ?? "scheduled");
+  const [kind, setKind] = useState<VisitKind>(visit?.kind ?? prefill.kind ?? "assessment");
+  // Nulo: a visita segue o modelo da empresa, e o que aparece acompanha o tipo escolhido.
+  const [customChecklist, setCustomChecklist] = useState<string[] | null>(visit?.checklist_labels ?? null);
   const [chosen, setChosen] = useState<string[]>(visit?.employees.map((person) => person.id) ?? []);
 
   const client = options.clients.find((option) => option.id === clientId);
@@ -62,7 +67,7 @@ function VisitFields({ visit, prefill, options }: { visit?: VisitListItem; prefi
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor={`${prefix}-kind`}>Tipo da visita</Label>
-          <select id={`${prefix}-kind`} name="kind" defaultValue={visit?.kind ?? prefill.kind ?? "assessment"} className={SELECT_CLASS}>
+          <select id={`${prefix}-kind`} name="kind" value={kind} onChange={(event) => setKind(event.target.value as VisitKind)} className={SELECT_CLASS}>
             <option value="assessment">Visita técnica (para orçamento)</option>
             <option value="execution">Execução do serviço</option>
           </select>
@@ -219,6 +224,34 @@ function VisitFields({ visit, prefill, options }: { visit?: VisitListItem; prefi
           className="border-input min-h-16 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         />
       </div>
+      {customChecklist !== null ? <input type="hidden" name="checklistCustom" value="1" /> : null}
+      {customChecklist?.map((label, index) => <input key={index} type="hidden" name="checklist" value={label} />)}
+      {status === "scheduled" ? (
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label>Checklist deste atendimento</Label>
+            {customChecklist !== null ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setCustomChecklist(null)}>
+                Usar o modelo
+              </Button>
+            ) : null}
+          </div>
+          {customChecklist === null ? (
+            <>
+              <ul className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+                {options.checklists[kind].map((label) => (
+                  <li key={label}>○ {label}</li>
+                ))}
+              </ul>
+              <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setCustomChecklist(options.checklists[kind])}>
+                <Pencil className="size-4" /> Ajustar só nesta visita
+              </Button>
+            </>
+          ) : (
+            <ChecklistEditor idPrefix={`${prefix}-checklist`} labels={customChecklist} onChange={setCustomChecklist} />
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -262,7 +295,7 @@ export function EditVisitButton({ visit, options }: { visit: VisitListItem; opti
       validate={parseVisitForm}
       submitLabel="Salvar visita"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Editar visita em ${visit.client_name}`} onClick={open}>
+        <Button variant="edit" size="icon-sm" aria-label={`Editar visita em ${visit.client_name}`} onClick={open}>
           <Pencil className="size-4" />
         </Button>
       )}
@@ -281,7 +314,7 @@ export function DeleteVisitButton({ visit }: { visit: VisitListItem }) {
       submitLabel="Excluir"
       variant="destructive"
       trigger={(open) => (
-        <Button variant="ghost" size="icon-sm" aria-label={`Excluir visita em ${visit.client_name}`} onClick={open}>
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir visita em ${visit.client_name}`} onClick={open}>
           <Trash2 className="size-4" />
         </Button>
       )}

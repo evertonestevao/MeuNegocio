@@ -17,7 +17,7 @@ export function createSupabaseVisitRepository(client: SupabaseClient): VisitRepo
       let query = client
         .from("visits")
         .select(
-          "id, company_id, client_id, location_id, quote_id, kind, visit_date, starts_at, ends_at, status, notes, client:clients(name), location:client_locations(name), team:visit_employees(employee:employees(id, name))",
+          "id, company_id, client_id, location_id, quote_id, kind, visit_date, starts_at, ends_at, status, notes, checklist_labels, client:clients(name), location:client_locations(name), team:visit_employees(employee:employees(id, name))",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null);
@@ -91,6 +91,7 @@ export function createSupabaseVisitRepository(client: SupabaseClient): VisitRepo
         p_status: input.status,
         p_notes: input.notes,
         p_employee_ids: input.employeeIds,
+        p_checklist: input.checklist,
       });
       if (error) fail(error);
       return data as string;
