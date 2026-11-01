@@ -102,3 +102,15 @@ test("pré-busca de links não encerra a demonstração", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard\/clients/);
   await expect(page.getByText("Você está em uma demonstração")).toBeVisible();
 });
+
+test("redirecionamentos não expõem o host interno, atrás de túnel ou proxy", async ({ request }) => {
+  const location = async (path: string, headers: Record<string, string> = {}) => {
+    const value = (await request.get(path, { maxRedirects: 0, headers })).headers().location;
+    return value?.replace("http://localhost:3000", "");
+  };
+  expect(await location("/demo")).toBe("/dashboard");
+  expect(await location("/demo?perfil=tecnico")).toBe("/dashboard/my-visits");
+  expect(await location("/demo/sair")).toBe("/");
+  expect(await location("/admin/planos", { cookie: "demo_mode=owner" })).toBe("/dashboard");
+  expect(await location("/?ref=codigo")).toMatch(/^\/r\//);
+});

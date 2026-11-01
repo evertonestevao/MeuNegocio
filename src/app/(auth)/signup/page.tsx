@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { signUpAction } from "@/server/actions/auth";
 
@@ -18,7 +19,7 @@ export default async function SignUpPage({
     <Card>
       <CardHeader>
         <CardTitle>Criar conta</CardTitle>
-        <CardDescription>Comece grátis — crie sua empresa em seguida</CardDescription>
+        <CardDescription>Depois, você cadastra sua empresa e já pode começar.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <AuthForm action={signUpAction} submitLabel="Criar conta">
@@ -33,10 +34,9 @@ export default async function SignUpPage({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Senha</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required

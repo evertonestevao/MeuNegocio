@@ -79,6 +79,7 @@ mas não outros admins nem o owner.
 
 | Função | Como funciona | Regras |
 |---|---|---|
+| **Telas de acesso** | Login, cadastro e recuperação de senha têm painel com a marca no computador e cabeçalho compacto no celular. A senha pode ser exibida, e o login oferece a demonstração. | — |
 | **Cadastro** (`/signup`) | Nome completo, email e senha. Mostra links para Termos e Privacidade. | Senha com no mínimo 8 caracteres. Rate limit por email. |
 | **Login** (`/login`) | Email e senha. Respeita `?next=` para voltar à página de origem. | 10 tentativas por minuto por email. |
 | **Logout** | Menu do usuário, no topo do painel. | — |

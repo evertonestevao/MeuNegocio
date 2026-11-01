@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { resetPasswordAction } from "@/server/actions/auth";
 
@@ -18,10 +18,9 @@ export default function ResetPasswordPage() {
         <AuthForm action={resetPasswordAction} submitLabel="Salvar nova senha">
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Nova senha</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required

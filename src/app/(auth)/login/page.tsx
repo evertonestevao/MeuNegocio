@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { signInAction } from "@/server/actions/auth";
 
@@ -18,8 +20,8 @@ export default async function LoginPage({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Entrar</CardTitle>
-        <CardDescription>Acesse sua conta para continuar</CardDescription>
+        <CardTitle>Que bom ter você de volta</CardTitle>
+        <CardDescription>Entre para ver sua agenda, seus orçamentos e seu caixa.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {error === "link-invalido" ? (
@@ -41,10 +43,9 @@ export default async function LoginPage({
                 Esqueceu a senha?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="current-password"
               required
             />
@@ -60,6 +61,15 @@ export default async function LoginPage({
             Criar conta
           </Link>
         </p>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          ou
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        {/* Link comum: entrar na demonstração precisa recarregar no servidor. */}
+        <Button variant="outline" className="h-11 w-full" nativeButton={false} render={<a href="/demo" />}>
+          Conhecer o sistema sem criar conta
+        </Button>
       </CardContent>
     </Card>
   );

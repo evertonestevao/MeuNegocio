@@ -26,11 +26,20 @@ const PROTECTED_PREFIXES = [
 /** Rotas de auth que usuário logado não deve rever. */
 const AUTH_ONLY_ANONYMOUS = ["/login", "/signup", "/forgot-password"];
 
+/** Usa nextUrl, que já vem com o host público: em request.url, atrás de túnel, ele é o interno. */
+function redirectTo(request: NextRequest, destination: string) {
+  const [pathname, search] = destination.split("?");
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = search ? `?${search}` : "";
+  return NextResponse.redirect(url);
+}
+
 export async function proxy(request: NextRequest) {
   // Link de afiliado por ?ref=: vai para /r/[codigo], que grava o cookie e limpa a URL.
   const refRewrite = buildRefRewrite(request.nextUrl.pathname, request.nextUrl.searchParams);
   if (refRewrite) {
-    return NextResponse.redirect(new URL(refRewrite, request.url));
+    return redirectTo(request, refRewrite);
   }
 
   const { pathname: requestedPath } = request.nextUrl;
@@ -42,14 +51,13 @@ export async function proxy(request: NextRequest) {
   if (request.cookies.has(DEMO_COOKIE)) {
     if (isDemoPath(requestedPath)) return NextResponse.next({ request });
     if (PROTECTED_PREFIXES.some((prefix) => requestedPath.startsWith(prefix))) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return redirectTo(request, "/dashboard");
     }
     // Saiu para o site ou para criar conta: a demonstração termina aqui. Só em navegação de
     // verdade: o Next pré-busca os links visíveis, e isso não pode encerrar a demonstração.
     request.cookies.delete(DEMO_COOKIE);
     const leaving = NextResponse.next({ request });
-    const isPrefetch = request.headers.has("next-router-prefetch") || request.headers.get("sec-purpose")?.includes("prefetch");
-    if (!isPrefetch) leaving.cookies.delete(DEMO_COOKIE);
+    if (request.headers.get("sec-fetch-dest") === "document") leaving.cookies.delete(DEMO_COOKIE);
     return leaving;
   }
 
