@@ -1,14 +1,21 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getClientEnv } from "@/config/env";
+import { createDemoClient } from "./demo/client";
+import { getDemoProfile } from "./demo/mode";
 
 /**
  * Client Supabase para Server Components, Server Actions e Route Handlers.
  * Usa a chave ANÔNIMA (RLS ativa) com a sessão do usuário vinda dos cookies —
  * não confundir com o client service_role em supabase-admin.ts.
  */
-export async function getSupabaseServerClient() {
+export async function getSupabaseServerClient(): Promise<SupabaseClient> {
+  // Demonstração: dados fixos em memória, antes de qualquer conexão com o banco.
+  const demo = await getDemoProfile();
+  if (demo) return createDemoClient(demo);
+
   const cookieStore = await cookies();
   const env = getClientEnv();
 

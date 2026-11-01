@@ -29,6 +29,10 @@ test("as telas do proprietário não mostram inglês", async ({ page }) => {
     if (match) found.push(`${route}: ${match[0]}`);
   }
   expect(found).toEqual([]);
+
+  // A tela padrão do Next, para endereço inexistente, seria em inglês.
+  await page.goto("/pagina-que-nao-existe");
+  await expect(page.getByRole("heading", { name: "Página não encontrada" })).toBeVisible();
 });
 
 test("CNPJ, CPF, telefone e valor ganham máscara ao digitar e ao salvar", async ({ page }) => {

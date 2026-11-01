@@ -89,6 +89,9 @@ export default async function LandingPage() {
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
           <span className="font-semibold tracking-tight">{brand.name}</span>
           <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
+            <a href="/demo" className="hidden px-2 text-sm font-medium text-foreground hover:underline md:block">
+              Demonstração
+            </a>
             <a href="#telas" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
               Telas
             </a>
@@ -130,9 +133,9 @@ export default async function LandingPage() {
                 variant="outline"
                 className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground dark:bg-transparent"
                 nativeButton={false}
-                render={<a href="#telas" />}
+                render={<a href="/demo" />}
               >
-                Ver as telas
+                Ver demonstração
               </Button>
             </div>
             <ul style={{ "--lp-delay": "320ms" } as React.CSSProperties} className="lp-enter flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-sidebar-foreground/80">
@@ -302,9 +305,20 @@ export default async function LandingPage() {
           <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-4 py-20 text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Tire sua empresa do caderno</h2>
             <p className="max-w-xl text-pretty text-sidebar-foreground/80">Crie sua conta, cadastre a empresa e monte o primeiro orçamento.</p>
-            <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<Link href="/signup" />}>
-              Criar conta <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
-            </Button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<Link href="/signup" />}>
+                Criar conta <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground dark:bg-transparent"
+                nativeButton={false}
+                render={<a href="/demo" />}
+              >
+                Ver demonstração
+              </Button>
+            </div>
           </div>
         </section>
       </main>

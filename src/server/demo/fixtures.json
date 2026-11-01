@@ -1,0 +1,3620 @@
+{
+"companyId": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"userId": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"tables": {
+"companies": [
+{
+"id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Refrigeração Exemplo",
+"slug": "empresa-teste",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"company_members": [
+{
+"id": "360505c5-337f-4d53-a127-f224e993f381",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"role": "owner",
+"invited_by": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+}
+],
+"profiles": [
+{
+"id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"full_name": "Marina Costa",
+"avatar_url": null,
+"created_at": "2026-10-31T16:01:21.226086+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"company_profiles": [
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"cnpj": "12.345.678/0001-90",
+"phone": "(14) 3333-1000",
+"email": "contato@refrigeracaoexemplo.com.br",
+"address": "Av. das Nações, 1200, Bauru/SP",
+"quote_validity_days": 15,
+"quote_default_notes": "Pagamento em até 30 dias. Garantia de 90 dias para o serviço.",
+"timezone": "America/Sao_Paulo",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"clients": [
+{
+"id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Padaria Pão Dourado",
+"document": "12345678000195",
+"notes": "Atender antes das 6h ou depois das 14h.",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Clínica Vida Plena",
+"document": "98765432000110",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Condomínio Jardim das Flores",
+"document": "45678912000133",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Mercado Bom Preço",
+"document": "32165498000177",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"client_contacts": [
+{
+"id": "64723731-a6ed-4760-845b-d4e5ff279f2a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001",
+"email": "carla@exemplo.com",
+"is_primary": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "89d145bd-e621-4fcc-b313-9c4501e974f8",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"name": "Dr. Paulo Reis",
+"role": "Diretor",
+"phone": "(14) 99888-1002",
+"email": "paulo@exemplo.com",
+"is_primary": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "f1db9ca7-96ea-4724-acc5-e34f9f56f058",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003",
+"email": "sonia@exemplo.com",
+"is_primary": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "2686098a-a810-47a1-8630-8cb39a9ba623",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004",
+"email": "marcos@exemplo.com",
+"is_primary": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"client_locations": [
+{
+"id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"name": "Matriz",
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"name": "Bloco A",
+"address": "Rua das Hortênsias, 300, Bauru/SP",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"name": "Unidade Altos",
+"address": "Rua Araújo Leite, 88, Bauru/SP",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"name": "Loja Centro",
+"address": "Rua Batista de Carvalho, 450, Bauru/SP",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"catalog_items": [
+{
+"id": "7f499441-570a-423a-b38e-19f6a4bdbb64",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"kind": "product",
+"name": "Filtro secador",
+"description": null,
+"unit": "un",
+"pricing_mode": "fixed",
+"price_cents": 7800,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "f96fb1d3-4346-4310-a29a-2935b4be7327",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"kind": "product",
+"name": "Gás refrigerante R-410A",
+"description": null,
+"unit": "kg",
+"pricing_mode": "fixed",
+"price_cents": 16500,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "1aac1103-a629-41fc-a3bc-0b8ce791c308",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"kind": "service",
+"name": "Manutenção preventiva",
+"description": "Limpeza e revisão completa",
+"unit": "un",
+"pricing_mode": "fixed",
+"price_cents": 28000,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "92bfdadc-e493-4f5b-b44e-3b92b7dceb2b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"kind": "service",
+"name": "Mão de obra técnica",
+"description": "Serviço por hora",
+"unit": "h",
+"pricing_mode": "hourly",
+"price_cents": 9500,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"catalog_item_costs": [
+{
+"catalog_item_id": "1aac1103-a629-41fc-a3bc-0b8ce791c308",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"cost_cents": 9000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"catalog_item_id": "92bfdadc-e493-4f5b-b44e-3b92b7dceb2b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"cost_cents": 4500,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"catalog_item_id": "f96fb1d3-4346-4310-a29a-2935b4be7327",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"cost_cents": 9800,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"catalog_item_id": "7f499441-570a-423a-b38e-19f6a4bdbb64",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"cost_cents": 4200,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"quotes": [
+{
+"id": "a76d16d2-a192-4e18-862b-fe2910d6f8f1",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 1,
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"title": "Manutenção das câmaras frias",
+"status": "closed",
+"valid_until": "2026-11-15",
+"discount_cents": 5000,
+"subtotal_cents": 127600,
+"total_cents": 122600,
+"notes": "Pagamento em até 30 dias.",
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T20:46:51.25499+00:00",
+"approved_at": "2026-10-31T20:46:51.25499+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T20:46:51.25499+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 2,
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"title": "Instalação de split nas salas",
+"status": "closed",
+"valid_until": "2026-11-20",
+"discount_cents": 0,
+"subtotal_cents": 163500,
+"total_cents": 163500,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T20:46:51.25499+00:00",
+"approved_at": "2026-10-31T20:46:51.25499+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T20:46:51.25499+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 3,
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"title": "Revisão do sistema de ar do salão",
+"status": "approved",
+"valid_until": "2026-11-25",
+"discount_cents": 0,
+"subtotal_cents": 127600,
+"total_cents": 127600,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T20:46:51.25499+00:00",
+"approved_at": "2026-10-31T20:46:51.25499+00:00",
+"refused_at": null,
+"closed_at": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "4b416710-538f-4e33-8b7f-883903d30776",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 4,
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"title": "Troca do gás das ilhas de congelados",
+"status": "sent",
+"valid_until": "2026-11-14",
+"discount_cents": 0,
+"subtotal_cents": 163500,
+"total_cents": 163500,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T20:46:51.25499+00:00",
+"approved_at": null,
+"refused_at": null,
+"closed_at": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "2da438f7-8154-44ad-ba13-658601e2167c",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 5,
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"title": "Contrato anual de manutenção",
+"status": "draft",
+"valid_until": null,
+"discount_cents": 0,
+"subtotal_cents": 127600,
+"total_cents": 127600,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": null,
+"approved_at": null,
+"refused_at": null,
+"closed_at": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e3ff69d8-c0c4-43e4-943b-d97935e9a1a5",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 6,
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"title": "Instalação de câmara fria",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 820000,
+"total_cents": 820000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "e7655699-483e-47c5-a84a-8b39859aa4ed",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 7,
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"title": "Manutenção mensal",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 960000,
+"total_cents": 960000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "d6ba4dd8-0bfb-4a63-aa8c-4da6118ca2ee",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 8,
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"title": "Troca de compressor",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 890000,
+"total_cents": 890000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "fd0becdf-ac54-402c-9484-7c9445a8e52e",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 9,
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"title": "Projeto de climatização",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 1140000,
+"total_cents": 1140000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "70bed888-cf03-431a-aebb-0a05cbe3dea7",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 10,
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"title": "Instalação de VRF",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 1210000,
+"total_cents": 1210000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "68bf0cc0-3cfb-42b8-8f09-a43b4f4a180f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 11,
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"title": "Contrato de manutenção",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 980000,
+"total_cents": 980000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "28b00cd5-1523-41ed-b9bb-2ced663330a9",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"number": 12,
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"title": "Revisão geral",
+"status": "closed",
+"valid_until": "2026-12-31",
+"discount_cents": 0,
+"subtotal_cents": 520000,
+"total_cents": 520000,
+"notes": null,
+"public_token": "demonstracao",
+"sent_at": "2026-10-31T22:00:27.675988+00:00",
+"approved_at": "2026-10-31T22:00:27.675988+00:00",
+"refused_at": null,
+"closed_at": "2026-10-31T22:00:27.675988+00:00",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"quote_items": [
+{
+"id": "76ad1767-5006-49d3-a260-869765a4252b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "a76d16d2-a192-4e18-862b-fe2910d6f8f1",
+"catalog_item_id": "1aac1103-a629-41fc-a3bc-0b8ce791c308",
+"sort_order": 0,
+"description": "Manutenção preventiva",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 4.0,
+"people": 1,
+"unit_price_cents": 28000,
+"line_total_cents": 112000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "9f3f0fa8-bc21-4e72-ada4-fffb6c7b1dc8",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "a76d16d2-a192-4e18-862b-fe2910d6f8f1",
+"catalog_item_id": "7f499441-570a-423a-b38e-19f6a4bdbb64",
+"sort_order": 1,
+"description": "Filtro secador",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 2.0,
+"people": 1,
+"unit_price_cents": 7800,
+"line_total_cents": 15600,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "428929af-e72a-4924-9c98-89c3a73545ea",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"catalog_item_id": "92bfdadc-e493-4f5b-b44e-3b92b7dceb2b",
+"sort_order": 0,
+"description": "Mão de obra técnica",
+"unit": "h",
+"pricing_mode": "hourly",
+"quantity": 6.0,
+"people": 2,
+"unit_price_cents": 9500,
+"line_total_cents": 114000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "7862cecc-a8b2-40a1-bc84-123e784bb6d2",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"catalog_item_id": "f96fb1d3-4346-4310-a29a-2935b4be7327",
+"sort_order": 1,
+"description": "Gás refrigerante R-410A",
+"unit": "kg",
+"pricing_mode": "fixed",
+"quantity": 3.0,
+"people": 1,
+"unit_price_cents": 16500,
+"line_total_cents": 49500,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "5ed36215-8f67-45a8-a381-a5288d214494",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"catalog_item_id": "1aac1103-a629-41fc-a3bc-0b8ce791c308",
+"sort_order": 0,
+"description": "Manutenção preventiva",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 4.0,
+"people": 1,
+"unit_price_cents": 28000,
+"line_total_cents": 112000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "eedae13c-07c7-4e9f-9943-a2e6b042555b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"catalog_item_id": "7f499441-570a-423a-b38e-19f6a4bdbb64",
+"sort_order": 1,
+"description": "Filtro secador",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 2.0,
+"people": 1,
+"unit_price_cents": 7800,
+"line_total_cents": 15600,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e46a41b8-6919-4743-b572-621db9e8155b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "4b416710-538f-4e33-8b7f-883903d30776",
+"catalog_item_id": "92bfdadc-e493-4f5b-b44e-3b92b7dceb2b",
+"sort_order": 0,
+"description": "Mão de obra técnica",
+"unit": "h",
+"pricing_mode": "hourly",
+"quantity": 6.0,
+"people": 2,
+"unit_price_cents": 9500,
+"line_total_cents": 114000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "8493dd07-2c8a-4169-a31a-62a7b6314847",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "4b416710-538f-4e33-8b7f-883903d30776",
+"catalog_item_id": "f96fb1d3-4346-4310-a29a-2935b4be7327",
+"sort_order": 1,
+"description": "Gás refrigerante R-410A",
+"unit": "kg",
+"pricing_mode": "fixed",
+"quantity": 3.0,
+"people": 1,
+"unit_price_cents": 16500,
+"line_total_cents": 49500,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "ced04d29-a017-41c3-8ecc-32f4301dae6f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "2da438f7-8154-44ad-ba13-658601e2167c",
+"catalog_item_id": "1aac1103-a629-41fc-a3bc-0b8ce791c308",
+"sort_order": 0,
+"description": "Manutenção preventiva",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 4.0,
+"people": 1,
+"unit_price_cents": 28000,
+"line_total_cents": 112000,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "cc4c2091-196f-4042-86b5-98f2f0c88ebf",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "2da438f7-8154-44ad-ba13-658601e2167c",
+"catalog_item_id": "7f499441-570a-423a-b38e-19f6a4bdbb64",
+"sort_order": 1,
+"description": "Filtro secador",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 2.0,
+"people": 1,
+"unit_price_cents": 7800,
+"line_total_cents": 15600,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "a95d5a4f-f8b5-4532-95e9-649bae3ce632",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "e3ff69d8-c0c4-43e4-943b-d97935e9a1a5",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Instalação de câmara fria",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 820000,
+"line_total_cents": 820000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "b1e1ace6-8685-49ea-80d2-261e7f8b5bae",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "e7655699-483e-47c5-a84a-8b39859aa4ed",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Manutenção mensal",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 960000,
+"line_total_cents": 960000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "1105b161-6c47-4b9d-bba0-cfd1ac101b1b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "d6ba4dd8-0bfb-4a63-aa8c-4da6118ca2ee",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Troca de compressor",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 890000,
+"line_total_cents": 890000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "d2d81e63-4b60-4815-8bc7-7a89e199db2b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "fd0becdf-ac54-402c-9484-7c9445a8e52e",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Projeto de climatização",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 1140000,
+"line_total_cents": 1140000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "26536875-5a6a-4b6c-80d1-8d9561b94ab7",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "70bed888-cf03-431a-aebb-0a05cbe3dea7",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Instalação de VRF",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 1210000,
+"line_total_cents": 1210000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "eeab9714-9563-4fce-a6f0-2043b06a00db",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "68bf0cc0-3cfb-42b8-8f09-a43b4f4a180f",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Contrato de manutenção",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 980000,
+"line_total_cents": 980000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "66177fbc-5030-4f7c-9556-4652e27ebc71",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "28b00cd5-1523-41ed-b9bb-2ced663330a9",
+"catalog_item_id": null,
+"sort_order": 0,
+"description": "Revisão geral",
+"unit": "un",
+"pricing_mode": "fixed",
+"quantity": 1.0,
+"people": 1,
+"unit_price_cents": 520000,
+"line_total_cents": 520000,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"revenues": [
+{
+"id": "bf976a02-fbb0-4179-b63f-c2fe5b5c6366",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "a76d16d2-a192-4e18-862b-fe2910d6f8f1",
+"amount_cents": 116600,
+"competence_date": "2026-10-12",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "d4bd7192-2344-4483-82bb-0fc8dd644577",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"amount_cents": 163500,
+"competence_date": "2026-09-18",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "f5685027-2e42-4ce4-bdc4-0f11b5d81ef1",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "e3ff69d8-c0c4-43e4-943b-d97935e9a1a5",
+"amount_cents": 820000,
+"competence_date": "2026-05-14",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "88cdb4de-0eaf-439e-a0ff-8bb0878e829f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "e7655699-483e-47c5-a84a-8b39859aa4ed",
+"amount_cents": 960000,
+"competence_date": "2026-06-11",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "ed6ae00a-d9fa-47a6-888c-4250fec95781",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "d6ba4dd8-0bfb-4a63-aa8c-4da6118ca2ee",
+"amount_cents": 890000,
+"competence_date": "2026-07-16",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "43250845-3669-4a8d-b3d9-16a1345f7c67",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "fd0becdf-ac54-402c-9484-7c9445a8e52e",
+"amount_cents": 1140000,
+"competence_date": "2026-08-13",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "f24b7f94-c5f6-4bd4-9696-d44af3a73a35",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "70bed888-cf03-431a-aebb-0a05cbe3dea7",
+"amount_cents": 1210000,
+"competence_date": "2026-09-10",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "cc68a060-c0fb-4976-aa54-faca512a63ab",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "68bf0cc0-3cfb-42b8-8f09-a43b4f4a180f",
+"amount_cents": 980000,
+"competence_date": "2026-10-08",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "6721571f-2763-4ae0-bb06-f200fadba75a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"quote_id": "28b00cd5-1523-41ed-b9bb-2ced663330a9",
+"amount_cents": 520000,
+"competence_date": "2026-10-22",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"employees": [
+{
+"id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Rafael Souza",
+"job_title": "Técnico de refrigeração",
+"active": true,
+"user_id": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Juliana Alves",
+"job_title": "Auxiliar técnica",
+"active": true,
+"user_id": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Marina Costa",
+"job_title": "Técnico responsável",
+"active": true,
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"employee_payment_details": [
+{
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"phone": "(14) 99777-2001",
+"contract_type": "clt",
+"hourly_cost_cents": 4500,
+"hourly_pay_cents": 0,
+"legal_name": null,
+"tax_id": null,
+"pix_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"phone": "(14) 99777-2002",
+"contract_type": "pj",
+"hourly_cost_cents": 6000,
+"hourly_pay_cents": 6000,
+"legal_name": "Rafael Souza ME",
+"tax_id": "11222333000181",
+"pix_key": "rafael@exemplo.com",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"phone": "(14) 99777-2003",
+"contract_type": "freelancer",
+"hourly_cost_cents": 3500,
+"hourly_pay_cents": 3500,
+"legal_name": "Juliana Alves",
+"tax_id": "52998224725",
+"pix_key": "juliana@exemplo.com",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"visits": [
+{
+"id": "2cd180c4-0b50-4544-bd09-2eb83030f97b",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-10-31",
+"starts_at": "16:00:00",
+"ends_at": "17:30:00",
+"status": "scheduled",
+"notes": "Avaliar ruído na ilha 3.",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "a559d847-0460-4770-a323-660d822ff9c6",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-31",
+"starts_at": "14:00:00",
+"ends_at": "15:30:00",
+"status": "in_progress",
+"notes": "Revisão da câmara 2.",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-20",
+"starts_at": "09:00:00",
+"ends_at": "15:00:00",
+"status": "completed",
+"notes": "Instalação concluída no prazo.",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "97d77eba-8cf0-4143-9a48-b0d187deeb88",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"kind": "execution",
+"visit_date": "2026-11-03",
+"starts_at": "08:00:00",
+"ends_at": "12:00:00",
+"status": "scheduled",
+"notes": "Levar escada grande.",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "7c658bcf-043c-4126-abf8-19c5b2fb6db7",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-11-02",
+"starts_at": "07:00:00",
+"ends_at": "08:30:00",
+"status": "scheduled",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "a60209af-664c-4f2a-a6cc-30e40bdc5334",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-11-05",
+"starts_at": "13:00:00",
+"ends_at": "17:00:00",
+"status": "scheduled",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "b83caa87-65c7-4770-b312-8beb294884cb",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-03",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "5cf05580-6690-4308-9685-b6f89d892372",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-05",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "4dac5608-525f-405a-9246-d6a70e7ae75f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-05",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "68a699f5-d4fc-4422-805d-828918108364",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-10-07",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "39c708d0-99ab-4d09-ac75-9ea8e7fdbfb0",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-09",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "70da2895-3b82-4c9a-94df-72bcde39257e",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-09",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "fa731ffa-b98a-4e8e-bbd4-f12c27bafe08",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-11",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "7379ae5f-764a-4e3c-96a5-dfde731f80ae",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-10-13",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "0742e0a6-e29f-44f6-9340-c0f66b0224e3",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-13",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "1179a7c9-3546-442b-a1ce-d0ca0822844a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-15",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "7f8fb3cd-ff2e-4860-8d1b-697e07adbe3d",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-17",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "5b8d586a-19cf-492f-8f21-405c5a8818a0",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-17",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "9a189375-e22a-4c4c-b50f-c51c1c86c16e",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-10-19",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "c6a329f5-a83e-426b-960e-c0793b2fa20a",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-21",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "a071d7cf-f04d-47ff-b1fe-047a1b9e3828",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-21",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "2897881d-b081-46af-bf49-f7dfedcf252c",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-23",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "98627026-4382-478d-ab42-207f49a9fd93",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-10-25",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "cde3cb5a-5ef1-45ca-b5fd-a27954dc6ccb",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-25",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "7c574265-2405-4467-9eb5-1631d4917c55",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-27",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "b0c4ca2f-8f21-4c03-bb89-8261a5797145",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-29",
+"starts_at": "08:00:00",
+"ends_at": "11:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "f2fc2c72-f1ff-41c4-9ddc-5076902626d9",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"location_id": "aa70ab38-4df2-4a88-86c0-468387603a43",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-10-29",
+"starts_at": "13:30:00",
+"ends_at": "17:00:00",
+"status": "completed",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "f8e502f2-547f-42dd-8931-6fae804975e4",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"location_id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
+"quote_id": null,
+"kind": "execution",
+"visit_date": "2026-11-03",
+"starts_at": "13:00:00",
+"ends_at": "17:00:00",
+"status": "scheduled",
+"notes": null,
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "baf68101-8c47-4586-b2a2-b2eea568edb4",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"location_id": "a86188d0-42bd-4068-beeb-eb2a77095ec9",
+"quote_id": null,
+"kind": "assessment",
+"visit_date": "2026-11-01",
+"starts_at": "09:00:00",
+"ends_at": "10:30:00",
+"status": "scheduled",
+"notes": "Avaliar o sistema do bloco B.",
+"created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"visit_employees": [
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "97d77eba-8cf0-4143-9a48-b0d187deeb88",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-11-03 08:00:00\",\"2026-11-03 12:00:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "97d77eba-8cf0-4143-9a48-b0d187deeb88",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-11-03 08:00:00\",\"2026-11-03 12:00:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "2cd180c4-0b50-4544-bd09-2eb83030f97b",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"time_range": "[\"2026-10-31 16:00:00\",\"2026-10-31 17:30:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a559d847-0460-4770-a323-660d822ff9c6",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"time_range": "[\"2026-10-31 14:00:00\",\"2026-10-31 15:30:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a559d847-0460-4770-a323-660d822ff9c6",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-31 14:00:00\",\"2026-10-31 15:30:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-20 09:00:00\",\"2026-10-20 15:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-20 09:00:00\",\"2026-10-20 15:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "7c658bcf-043c-4126-abf8-19c5b2fb6db7",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-11-02 07:00:00\",\"2026-11-02 08:30:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a60209af-664c-4f2a-a6cc-30e40bdc5334",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"time_range": "[\"2026-11-05 13:00:00\",\"2026-11-05 17:00:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a60209af-664c-4f2a-a6cc-30e40bdc5334",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-11-05 13:00:00\",\"2026-11-05 17:00:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "b83caa87-65c7-4770-b312-8beb294884cb",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-03 08:00:00\",\"2026-10-03 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "5cf05580-6690-4308-9685-b6f89d892372",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-05 08:00:00\",\"2026-10-05 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "4dac5608-525f-405a-9246-d6a70e7ae75f",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-05 13:30:00\",\"2026-10-05 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "68a699f5-d4fc-4422-805d-828918108364",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-07 08:00:00\",\"2026-10-07 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "39c708d0-99ab-4d09-ac75-9ea8e7fdbfb0",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-09 08:00:00\",\"2026-10-09 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "70da2895-3b82-4c9a-94df-72bcde39257e",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-09 13:30:00\",\"2026-10-09 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "fa731ffa-b98a-4e8e-bbd4-f12c27bafe08",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-11 08:00:00\",\"2026-10-11 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "7379ae5f-764a-4e3c-96a5-dfde731f80ae",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-13 08:00:00\",\"2026-10-13 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "0742e0a6-e29f-44f6-9340-c0f66b0224e3",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-13 13:30:00\",\"2026-10-13 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "1179a7c9-3546-442b-a1ce-d0ca0822844a",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-15 08:00:00\",\"2026-10-15 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "7f8fb3cd-ff2e-4860-8d1b-697e07adbe3d",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-17 08:00:00\",\"2026-10-17 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "5b8d586a-19cf-492f-8f21-405c5a8818a0",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-17 13:30:00\",\"2026-10-17 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "9a189375-e22a-4c4c-b50f-c51c1c86c16e",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-19 08:00:00\",\"2026-10-19 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "c6a329f5-a83e-426b-960e-c0793b2fa20a",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-21 08:00:00\",\"2026-10-21 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a071d7cf-f04d-47ff-b1fe-047a1b9e3828",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-21 13:30:00\",\"2026-10-21 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "2897881d-b081-46af-bf49-f7dfedcf252c",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-23 08:00:00\",\"2026-10-23 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "98627026-4382-478d-ab42-207f49a9fd93",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-25 08:00:00\",\"2026-10-25 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "cde3cb5a-5ef1-45ca-b5fd-a27954dc6ccb",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-25 13:30:00\",\"2026-10-25 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "7c574265-2405-4467-9eb5-1631d4917c55",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-27 08:00:00\",\"2026-10-27 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "b0c4ca2f-8f21-4c03-bb89-8261a5797145",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-10-29 08:00:00\",\"2026-10-29 11:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "f2fc2c72-f1ff-41c4-9ddc-5076902626d9",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"time_range": "[\"2026-10-29 13:30:00\",\"2026-10-29 17:00:00\")",
+"blocks_schedule": false,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "f8e502f2-547f-42dd-8931-6fae804975e4",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-11-03 13:00:00\",\"2026-11-03 17:00:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "baf68101-8c47-4586-b2a2-b2eea568edb4",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"time_range": "[\"2026-11-01 09:00:00\",\"2026-11-01 10:30:00\")",
+"blocks_schedule": true,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"work_orders": [
+{
+"id": "37cf207e-1095-4247-b781-ae8cc4f67455",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_id": "a559d847-0460-4770-a323-660d822ff9c6",
+"status": "in_progress",
+"checklist": [
+{
+"id": "1",
+"done": true,
+"label": "Conferir EPIs e ferramentas"
+},
+{
+"id": "2",
+"done": true,
+"label": "Isolar e sinalizar a área"
+},
+{
+"id": "3",
+"done": false,
+"label": "Executar o serviço"
+},
+{
+"id": "4",
+"done": false,
+"label": "Testar o funcionamento"
+},
+{
+"id": "5",
+"done": false,
+"label": "Limpar o local"
+},
+{
+"id": "6",
+"done": false,
+"label": "Mostrar o resultado ao cliente"
+}
+],
+"report": "Compressor em bom estado. Filtro trocado.",
+"started_time": "14:05:00",
+"finished_time": null,
+"signature_path": null,
+"signature_name": null,
+"signed_at": null,
+"started_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+}
+],
+"time_entries": [],
+"expense_categories": [
+{
+"id": "26a27f05-9fc1-4cb5-8f2a-675c7125e98d",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Funcionários",
+"system_key": "payroll",
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "737ace8b-a6af-40eb-943d-fc600a2b3a55",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Prestadores (PJ e autônomos)",
+"system_key": "contractors",
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "a6331452-23d0-4d1a-85d2-4b80df628c02",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Aluguel",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "7dd5f7d7-46ac-4a34-b336-134d7b6537a6",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Veículos e combustível",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Material",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "1f8bb1ad-b397-4a49-95fe-aafb26759597",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Impostos",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "8b7c001e-d205-41c5-8a8b-631d0f02a679",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Ferramentas e equipamentos",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+},
+{
+"id": "3fc94d23-34d4-47e8-bfaf-0d898d931593",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Outros",
+"system_key": null,
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:21.715178+00:00",
+"updated_at": "2026-10-31T16:01:21.715178+00:00"
+}
+],
+"expense_templates": [
+{
+"id": "9279dc9c-85b3-41a4-93c7-dad6412ccc67",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Aluguel do galpão",
+"category_id": "a6331452-23d0-4d1a-85d2-4b80df628c02",
+"amount_cents": 180000,
+"employee_id": null,
+"day_of_month": 5,
+"starts_on": "2026-08-01",
+"ends_on": null,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "cdb7356d-3297-487d-8a90-003de3c7885c",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Salário Marina Costa",
+"category_id": "26a27f05-9fc1-4cb5-8f2a-675c7125e98d",
+"amount_cents": 320000,
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"day_of_month": 5,
+"starts_on": "2026-08-01",
+"ends_on": null,
+"active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+}
+],
+"expenses": [
+{
+"id": "16264a8a-5adc-4ec5-97b8-4a235b7084b2",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Aluguel do galpão",
+"category_id": "a6331452-23d0-4d1a-85d2-4b80df628c02",
+"amount_cents": 180000,
+"expense_date": "2026-09-05",
+"kind": "recurring",
+"employee_id": null,
+"template_id": "9279dc9c-85b3-41a4-93c7-dad6412ccc67",
+"template_month": "2026-09-01",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "f4a5f84d-6d76-4c36-a0c8-e1544f8fcb9c",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Aluguel do galpão",
+"category_id": "a6331452-23d0-4d1a-85d2-4b80df628c02",
+"amount_cents": 180000,
+"expense_date": "2026-10-05",
+"kind": "recurring",
+"employee_id": null,
+"template_id": "9279dc9c-85b3-41a4-93c7-dad6412ccc67",
+"template_month": "2026-10-01",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "fa160792-41ff-4d99-b55e-cb513bc7958f",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Combustível da van",
+"category_id": "7dd5f7d7-46ac-4a34-b336-134d7b6537a6",
+"amount_cents": 48000,
+"expense_date": "2026-10-14",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "497b4ad7-79df-49e9-bac9-650792906737",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Compra de gás R-410A",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 62000,
+"expense_date": "2026-10-09",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "85be17e0-7d63-44b4-9463-307e9ca2e621",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Peças e filtros",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 31000,
+"expense_date": "2026-09-22",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "c7c5c777-d237-4776-9554-b7b285018c45",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Salário Marina Costa",
+"category_id": "26a27f05-9fc1-4cb5-8f2a-675c7125e98d",
+"amount_cents": 320000,
+"expense_date": "2026-09-05",
+"kind": "payroll",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"template_id": "cdb7356d-3297-487d-8a90-003de3c7885c",
+"template_month": "2026-09-01",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "d842bb0e-e145-47aa-b13e-cf7427e62b15",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Salário Marina Costa",
+"category_id": "26a27f05-9fc1-4cb5-8f2a-675c7125e98d",
+"amount_cents": 320000,
+"expense_date": "2026-10-05",
+"kind": "payroll",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"template_id": "cdb7356d-3297-487d-8a90-003de3c7885c",
+"template_month": "2026-10-01",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T22:00:27.675988+00:00"
+},
+{
+"id": "44051d86-94ca-4e6e-8899-42796f8287cd",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Despesas do mês",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 480000,
+"expense_date": "2026-05-20",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:44.401027+00:00",
+"updated_at": "2026-10-31T22:00:44.401027+00:00"
+},
+{
+"id": "1e0601ed-2f53-4d1e-b1b4-7f5524bdeea4",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Despesas do mês",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 510000,
+"expense_date": "2026-06-20",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:44.401027+00:00",
+"updated_at": "2026-10-31T22:00:44.401027+00:00"
+},
+{
+"id": "4406787c-2a7c-4b93-ad63-0013a9d2b973",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Despesas do mês",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 495000,
+"expense_date": "2026-07-20",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:44.401027+00:00",
+"updated_at": "2026-10-31T22:00:44.401027+00:00"
+},
+{
+"id": "c7e167d7-68c6-49a0-bd4f-438487762608",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Despesas do mês",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 560000,
+"expense_date": "2026-08-20",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T22:00:44.401027+00:00",
+"updated_at": "2026-10-31T22:00:44.401027+00:00"
+}
+],
+"subscriptions": [
+{
+"id": "f78889ab-a22b-4c97-947c-631655d04d85",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"plan_id": "1494ba59-5910-49b5-9135-28233a6491f1",
+"status": "active",
+"current_period_start": "2026-10-31T16:01:23.041+00:00",
+"current_period_end": "2026-11-30T16:01:23.041+00:00",
+"cancel_at_period_end": false,
+"external_subscription_id": "demo",
+"external_customer_id": "demo",
+"deleted_at": null,
+"created_at": "2026-10-31T16:01:23.051936+00:00",
+"updated_at": "2026-10-31T17:28:45.6977+00:00",
+"contracted_price_cents": 14900,
+"contracted_extra_seat_price_cents": 1990,
+"renews": true
+}
+],
+"plans": [
+{
+"id": "01413337-69b4-42d3-9f62-0cda70ba326b",
+"code": "free",
+"name": "Gratuito",
+"price_cents": 0,
+"currency": "BRL",
+"billing_interval": "month",
+"features": {
+"hours": false,
+"max_clients": 30,
+"max_members": 2,
+"work_orders": false,
+"public_approval": false,
+"max_quotes_month": 20
+},
+"is_active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T14:43:30.067592+00:00",
+"updated_at": "2026-10-31T21:17:31.167248+00:00",
+"extra_seat_price_cents": 0,
+"available_to_resellers": false,
+"custom_text": null
+},
+{
+"id": "97f99827-fc53-4ade-abaa-2ca8a04f78bc",
+"code": "enterprise",
+"name": "Empresarial",
+"price_cents": 59900,
+"currency": "BRL",
+"billing_interval": "month",
+"features": {
+"hours": true,
+"max_clients": null,
+"max_members": 50,
+"work_orders": true,
+"public_approval": true,
+"max_quotes_month": null
+},
+"is_active": false,
+"deleted_at": null,
+"created_at": "2026-10-31T14:43:30.067592+00:00",
+"updated_at": "2026-10-31T23:42:39.919067+00:00",
+"extra_seat_price_cents": 2990,
+"available_to_resellers": false,
+"custom_text": null
+},
+{
+"id": "4419ace3-61a7-4a4e-9c70-19aa792719c2",
+"code": "anual",
+"name": "Anual",
+"price_cents": 395880,
+"currency": "BRL",
+"billing_interval": "year",
+"features": {
+"hours": true,
+"max_clients": null,
+"max_members": 10,
+"work_orders": true,
+"public_approval": true,
+"max_quotes_month": null
+},
+"is_active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T22:29:08.795449+00:00",
+"updated_at": "2026-10-31T23:42:39.919067+00:00",
+"extra_seat_price_cents": 0,
+"available_to_resellers": false,
+"custom_text": null
+},
+{
+"id": "1494ba59-5910-49b5-9135-28233a6491f1",
+"code": "pro",
+"name": "Mensal",
+"price_cents": 37990,
+"currency": "BRL",
+"billing_interval": "month",
+"features": {
+"hours": true,
+"max_clients": null,
+"max_members": 10,
+"work_orders": true,
+"public_approval": true,
+"max_quotes_month": null
+},
+"is_active": true,
+"deleted_at": null,
+"created_at": "2026-10-31T14:43:30.067592+00:00",
+"updated_at": "2026-10-31T23:42:39.919067+00:00",
+"extra_seat_price_cents": 1990,
+"available_to_resellers": false,
+"custom_text": null
+}
+],
+"terms_versions": [
+{
+"id": "646815c3-d0f9-46ff-9791-22c5628ba407",
+"version": 1,
+"content": "# Termos de Uso e Política de Privacidade\n\n**ATENÇÃO: ESTE É UM TEXTO DE EXEMPLO (PLACEHOLDER).**\n\nEste conteúdo existe apenas para validar o fluxo técnico de aceite de termos do starter kit. Ele NÃO tem valor jurídico e DEVE ser substituído por texto redigido e revisado por profissional jurídico antes de qualquer uso com clientes reais.\n\n## 1. Sobre o serviço\nDescreva aqui o que o seu produto faz e as condições de uso.\n\n## 2. Dados pessoais\nDescreva aqui quais dados são coletados, com qual finalidade e base legal (LGPD, Lei 13.709/2018), por quanto tempo são retidos e como o titular exerce seus direitos.\n\n## 3. Contato\nInforme aqui o canal do encarregado de dados (DPO).",
+"published_at": "2026-10-31T14:43:30.092916+00:00",
+"is_current": true
+}
+],
+"terms_acceptances": [
+{
+"id": "c025087f-e824-4420-9eeb-74f70c648790",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"terms_version_id": "646815c3-d0f9-46ff-9791-22c5628ba407",
+"accepted_at": "2026-11-01T00:47:38.522183+00:00",
+"ip_address": null,
+"user_agent": null
+}
+],
+"audit_logs": [
+{
+"id": "00000000-0000-4000-8000-000000000001",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "work_order.started",
+"entity_type": "visit",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-31T17:05:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000002",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.send",
+"entity_type": "quote",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-30T13:20:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000003",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "visit.created",
+"entity_type": "visit",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-30T12:40:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000004",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "client.created",
+"entity_type": "client",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-28T19:15:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000005",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.closed",
+"entity_type": "quote",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-22T14:10:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000006",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.approved_by_client",
+"entity_type": "quote",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-21T16:45:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000007",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "expense.created",
+"entity_type": "expense",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-14T11:02:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000008",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "subscription.activated",
+"entity_type": "subscription",
+"entity_id": null,
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-01T10:00:00+00:00"
+}
+]
+},
+"rpc": {
+"hours": {
+"entries": [],
+"employees": [
+{
+"id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"name": "Juliana Alves",
+"active": true,
+"contract_type": "freelancer",
+"hourly_pay_cents": 3500
+},
+{
+"id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"name": "Marina Costa",
+"active": true,
+"contract_type": "clt",
+"hourly_pay_cents": 0
+},
+{
+"id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"name": "Rafael Souza",
+"active": true,
+"contract_type": "pj",
+"hourly_pay_cents": 6000
+}
+],
+"suggestions": [
+{
+"ends_at": "11:00:00",
+"visit_id": "b83caa87-65c7-4770-b312-8beb294884cb",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-03",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "5cf05580-6690-4308-9685-b6f89d892372",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-05",
+"client_name": "Mercado Bom Preço",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Matriz"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "4dac5608-525f-405a-9246-d6a70e7ae75f",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-05",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "68a699f5-d4fc-4422-805d-828918108364",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-07",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "39c708d0-99ab-4d09-ac75-9ea8e7fdbfb0",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-09",
+"client_name": "Clínica Vida Plena",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Unidade Altos"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "70da2895-3b82-4c9a-94df-72bcde39257e",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-09",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "fa731ffa-b98a-4e8e-bbd4-f12c27bafe08",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-11",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "7379ae5f-764a-4e3c-96a5-dfde731f80ae",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-13",
+"client_name": "Mercado Bom Preço",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Matriz"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "0742e0a6-e29f-44f6-9340-c0f66b0224e3",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-13",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "1179a7c9-3546-442b-a1ce-d0ca0822844a",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-15",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "7f8fb3cd-ff2e-4860-8d1b-697e07adbe3d",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-17",
+"client_name": "Clínica Vida Plena",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Unidade Altos"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "5b8d586a-19cf-492f-8f21-405c5a8818a0",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-17",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "9a189375-e22a-4c4c-b50f-c51c1c86c16e",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-19",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "15:00:00",
+"visit_id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"dismissed": false,
+"starts_at": "09:00:00",
+"entry_date": "2026-10-20",
+"client_name": "Clínica Vida Plena",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Unidade Altos"
+},
+{
+"ends_at": "15:00:00",
+"visit_id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"dismissed": false,
+"starts_at": "09:00:00",
+"entry_date": "2026-10-20",
+"client_name": "Clínica Vida Plena",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Unidade Altos"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "c6a329f5-a83e-426b-960e-c0793b2fa20a",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-21",
+"client_name": "Mercado Bom Preço",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Matriz"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "a071d7cf-f04d-47ff-b1fe-047a1b9e3828",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-21",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "2897881d-b081-46af-bf49-f7dfedcf252c",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-23",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "98627026-4382-478d-ab42-207f49a9fd93",
+"client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-25",
+"client_name": "Clínica Vida Plena",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Unidade Altos"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "cde3cb5a-5ef1-45ca-b5fd-a27954dc6ccb",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-25",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "7c574265-2405-4467-9eb5-1631d4917c55",
+"client_id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-27",
+"client_name": "Condomínio Jardim das Flores",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Bloco A"
+},
+{
+"ends_at": "11:00:00",
+"visit_id": "b0c4ca2f-8f21-4c03-bb89-8261a5797145",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"dismissed": false,
+"starts_at": "08:00:00",
+"entry_date": "2026-10-29",
+"client_name": "Mercado Bom Preço",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Matriz"
+},
+{
+"ends_at": "17:00:00",
+"visit_id": "f2fc2c72-f1ff-41c4-9ddc-5076902626d9",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "13:30:00",
+"entry_date": "2026-10-29",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "3897b6d6-9316-4e16-98e7-b15499a0d41d",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "15:30:00",
+"visit_id": "a559d847-0460-4770-a323-660d822ff9c6",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "14:05:00",
+"entry_date": "2026-10-31",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "15:30:00",
+"visit_id": "a559d847-0460-4770-a323-660d822ff9c6",
+"client_id": "ee4beccf-5e7e-4deb-8101-d92415dbc8da",
+"dismissed": false,
+"starts_at": "14:05:00",
+"entry_date": "2026-10-31",
+"client_name": "Padaria Pão Dourado",
+"employee_id": "50055ae5-5677-4d2c-b9ae-af7cfd0d1a07",
+"break_minutes": 0,
+"location_name": "Loja Centro"
+},
+{
+"ends_at": "17:30:00",
+"visit_id": "2cd180c4-0b50-4544-bd09-2eb83030f97b",
+"client_id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
+"dismissed": false,
+"starts_at": "16:00:00",
+"entry_date": "2026-10-31",
+"client_name": "Mercado Bom Preço",
+"employee_id": "9cecc973-cbcc-4690-b2e9-3bcfc7645d1a",
+"break_minutes": 0,
+"location_name": "Matriz"
+}
+]
+},
+"myVisits": [
+{
+"id": "a559d847-0460-4770-a323-660d822ff9c6",
+"kind": "execution",
+"team": [
+"Juliana Alves",
+"Marina Costa"
+],
+"notes": "Revisão da câmara 2.",
+"status": "in_progress",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "15:30:00",
+"is_mine": true,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "14:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-31",
+"work_order": {
+"id": "37cf207e-1095-4247-b781-ae8cc4f67455",
+"photos": [],
+"report": "Compressor em bom estado. Filtro trocado.",
+"status": "in_progress",
+"checklist": [
+{
+"id": "1",
+"done": true,
+"label": "Conferir EPIs e ferramentas"
+},
+{
+"id": "2",
+"done": true,
+"label": "Isolar e sinalizar a área"
+},
+{
+"id": "3",
+"done": false,
+"label": "Executar o serviço"
+},
+{
+"id": "4",
+"done": false,
+"label": "Testar o funcionamento"
+},
+{
+"id": "5",
+"done": false,
+"label": "Limpar o local"
+},
+{
+"id": "6",
+"done": false,
+"label": "Mostrar o resultado ao cliente"
+}
+],
+"signed_at": null,
+"started_time": "14:05:00",
+"finished_time": null,
+"signature_name": null,
+"signature_path": null
+},
+"client_name": "Padaria Pão Dourado"
+},
+{
+"id": "2cd180c4-0b50-4544-bd09-2eb83030f97b",
+"kind": "assessment",
+"team": [
+"Marina Costa"
+],
+"notes": "Avaliar ruído na ilha 3.",
+"status": "scheduled",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "17:30:00",
+"is_mine": true,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "16:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-31",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+{
+"id": "a60209af-664c-4f2a-a6cc-30e40bdc5334",
+"kind": "execution",
+"team": [
+"Marina Costa",
+"Rafael Souza"
+],
+"notes": null,
+"status": "scheduled",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "17:00:00",
+"is_mine": true,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "13:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-05",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+}
+],
+"sheets": {
+"2cd180c4-0b50-4544-bd09-2eb83030f97b": {
+"id": "2cd180c4-0b50-4544-bd09-2eb83030f97b",
+"kind": "assessment",
+"team": [
+"Marina Costa"
+],
+"notes": "Avaliar ruído na ilha 3.",
+"status": "scheduled",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "17:30:00",
+"is_mine": true,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "16:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-31",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"a559d847-0460-4770-a323-660d822ff9c6": {
+"id": "a559d847-0460-4770-a323-660d822ff9c6",
+"kind": "execution",
+"team": [
+"Juliana Alves",
+"Marina Costa"
+],
+"notes": "Revisão da câmara 2.",
+"status": "in_progress",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "15:30:00",
+"is_mine": true,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "14:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-31",
+"work_order": {
+"id": "37cf207e-1095-4247-b781-ae8cc4f67455",
+"photos": [],
+"report": "Compressor em bom estado. Filtro trocado.",
+"status": "in_progress",
+"checklist": [
+{
+"id": "1",
+"done": true,
+"label": "Conferir EPIs e ferramentas"
+},
+{
+"id": "2",
+"done": true,
+"label": "Isolar e sinalizar a área"
+},
+{
+"id": "3",
+"done": false,
+"label": "Executar o serviço"
+},
+{
+"id": "4",
+"done": false,
+"label": "Testar o funcionamento"
+},
+{
+"id": "5",
+"done": false,
+"label": "Limpar o local"
+},
+{
+"id": "6",
+"done": false,
+"label": "Mostrar o resultado ao cliente"
+}
+],
+"signed_at": null,
+"started_time": "14:05:00",
+"finished_time": null,
+"signature_name": null,
+"signature_path": null
+},
+"client_name": "Padaria Pão Dourado"
+},
+"9c6c13af-b975-4998-ba46-8e8418badc49": {
+"id": "9c6c13af-b975-4998-ba46-8e8418badc49",
+"kind": "execution",
+"team": [
+"Juliana Alves",
+"Rafael Souza"
+],
+"notes": "Instalação concluída no prazo.",
+"status": "completed",
+"contact": {
+"name": "Dr. Paulo Reis",
+"role": "Diretor",
+"phone": "(14) 99888-1002"
+},
+"ends_at": "15:00:00",
+"is_mine": false,
+"location": {
+"name": "Unidade Altos",
+"notes": null,
+"address": "Rua Araújo Leite, 88, Bauru/SP"
+},
+"starts_at": "09:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-20",
+"work_order": null,
+"client_name": "Clínica Vida Plena"
+},
+"97d77eba-8cf0-4143-9a48-b0d187deeb88": {
+"id": "97d77eba-8cf0-4143-9a48-b0d187deeb88",
+"kind": "execution",
+"team": [
+"Juliana Alves",
+"Rafael Souza"
+],
+"notes": "Levar escada grande.",
+"status": "scheduled",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "12:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-03",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"7c658bcf-043c-4126-abf8-19c5b2fb6db7": {
+"id": "7c658bcf-043c-4126-abf8-19c5b2fb6db7",
+"kind": "assessment",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "scheduled",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "08:30:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "07:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-02",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"a60209af-664c-4f2a-a6cc-30e40bdc5334": {
+"id": "a60209af-664c-4f2a-a6cc-30e40bdc5334",
+"kind": "execution",
+"team": [
+"Marina Costa",
+"Rafael Souza"
+],
+"notes": null,
+"status": "scheduled",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "17:00:00",
+"is_mine": true,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "13:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-05",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"b83caa87-65c7-4770-b312-8beb294884cb": {
+"id": "b83caa87-65c7-4770-b312-8beb294884cb",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-03",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"5cf05580-6690-4308-9685-b6f89d892372": {
+"id": "5cf05580-6690-4308-9685-b6f89d892372",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-05",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"4dac5608-525f-405a-9246-d6a70e7ae75f": {
+"id": "4dac5608-525f-405a-9246-d6a70e7ae75f",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-05",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"68a699f5-d4fc-4422-805d-828918108364": {
+"id": "68a699f5-d4fc-4422-805d-828918108364",
+"kind": "assessment",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-07",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"39c708d0-99ab-4d09-ac75-9ea8e7fdbfb0": {
+"id": "39c708d0-99ab-4d09-ac75-9ea8e7fdbfb0",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Dr. Paulo Reis",
+"role": "Diretor",
+"phone": "(14) 99888-1002"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Unidade Altos",
+"notes": null,
+"address": "Rua Araújo Leite, 88, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-09",
+"work_order": null,
+"client_name": "Clínica Vida Plena"
+},
+"70da2895-3b82-4c9a-94df-72bcde39257e": {
+"id": "70da2895-3b82-4c9a-94df-72bcde39257e",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-09",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"fa731ffa-b98a-4e8e-bbd4-f12c27bafe08": {
+"id": "fa731ffa-b98a-4e8e-bbd4-f12c27bafe08",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-11",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"7379ae5f-764a-4e3c-96a5-dfde731f80ae": {
+"id": "7379ae5f-764a-4e3c-96a5-dfde731f80ae",
+"kind": "assessment",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-13",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"0742e0a6-e29f-44f6-9340-c0f66b0224e3": {
+"id": "0742e0a6-e29f-44f6-9340-c0f66b0224e3",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-13",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"1179a7c9-3546-442b-a1ce-d0ca0822844a": {
+"id": "1179a7c9-3546-442b-a1ce-d0ca0822844a",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-15",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"7f8fb3cd-ff2e-4860-8d1b-697e07adbe3d": {
+"id": "7f8fb3cd-ff2e-4860-8d1b-697e07adbe3d",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Dr. Paulo Reis",
+"role": "Diretor",
+"phone": "(14) 99888-1002"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Unidade Altos",
+"notes": null,
+"address": "Rua Araújo Leite, 88, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-17",
+"work_order": null,
+"client_name": "Clínica Vida Plena"
+},
+"5b8d586a-19cf-492f-8f21-405c5a8818a0": {
+"id": "5b8d586a-19cf-492f-8f21-405c5a8818a0",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-17",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"9a189375-e22a-4c4c-b50f-c51c1c86c16e": {
+"id": "9a189375-e22a-4c4c-b50f-c51c1c86c16e",
+"kind": "assessment",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-19",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"c6a329f5-a83e-426b-960e-c0793b2fa20a": {
+"id": "c6a329f5-a83e-426b-960e-c0793b2fa20a",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-21",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"a071d7cf-f04d-47ff-b1fe-047a1b9e3828": {
+"id": "a071d7cf-f04d-47ff-b1fe-047a1b9e3828",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-21",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"2897881d-b081-46af-bf49-f7dfedcf252c": {
+"id": "2897881d-b081-46af-bf49-f7dfedcf252c",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-23",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"98627026-4382-478d-ab42-207f49a9fd93": {
+"id": "98627026-4382-478d-ab42-207f49a9fd93",
+"kind": "assessment",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Dr. Paulo Reis",
+"role": "Diretor",
+"phone": "(14) 99888-1002"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Unidade Altos",
+"notes": null,
+"address": "Rua Araújo Leite, 88, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-25",
+"work_order": null,
+"client_name": "Clínica Vida Plena"
+},
+"cde3cb5a-5ef1-45ca-b5fd-a27954dc6ccb": {
+"id": "cde3cb5a-5ef1-45ca-b5fd-a27954dc6ccb",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-25",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"7c574265-2405-4467-9eb5-1631d4917c55": {
+"id": "7c574265-2405-4467-9eb5-1631d4917c55",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-27",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"b0c4ca2f-8f21-4c03-bb89-8261a5797145": {
+"id": "b0c4ca2f-8f21-4c03-bb89-8261a5797145",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "11:00:00",
+"is_mine": false,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "08:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-29",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+},
+"f2fc2c72-f1ff-41c4-9ddc-5076902626d9": {
+"id": "f2fc2c72-f1ff-41c4-9ddc-5076902626d9",
+"kind": "execution",
+"team": [
+"Rafael Souza"
+],
+"notes": null,
+"status": "completed",
+"contact": {
+"name": "Carla Mendes",
+"role": "Proprietária",
+"phone": "(14) 99888-1001"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Loja Centro",
+"notes": null,
+"address": "Rua Batista de Carvalho, 450, Bauru/SP"
+},
+"starts_at": "13:30:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-10-29",
+"work_order": null,
+"client_name": "Padaria Pão Dourado"
+},
+"f8e502f2-547f-42dd-8931-6fae804975e4": {
+"id": "f8e502f2-547f-42dd-8931-6fae804975e4",
+"kind": "execution",
+"team": [
+"Juliana Alves"
+],
+"notes": null,
+"status": "scheduled",
+"contact": {
+"name": "Sônia Prado",
+"role": "Síndica",
+"phone": "(14) 99888-1003"
+},
+"ends_at": "17:00:00",
+"is_mine": false,
+"location": {
+"name": "Bloco A",
+"notes": null,
+"address": "Rua das Hortênsias, 300, Bauru/SP"
+},
+"starts_at": "13:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-03",
+"work_order": null,
+"client_name": "Condomínio Jardim das Flores"
+},
+"baf68101-8c47-4586-b2a2-b2eea568edb4": {
+"id": "baf68101-8c47-4586-b2a2-b2eea568edb4",
+"kind": "assessment",
+"team": [
+"Juliana Alves"
+],
+"notes": "Avaliar o sistema do bloco B.",
+"status": "scheduled",
+"contact": {
+"name": "Marcos Lima",
+"role": "Gerente",
+"phone": "(14) 99888-1004"
+},
+"ends_at": "10:30:00",
+"is_mine": false,
+"location": {
+"name": "Matriz",
+"notes": null,
+"address": "Av. Rodrigues Alves, 2100, Bauru/SP"
+},
+"starts_at": "09:00:00",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"visit_date": "2026-11-01",
+"work_order": null,
+"client_name": "Mercado Bom Preço"
+}
+}
+}
+}

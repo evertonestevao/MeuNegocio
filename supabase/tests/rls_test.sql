@@ -1283,11 +1283,12 @@ begin
 
   select id into v_cat from public.expense_categories where company_id = co and name = 'Aluguel';
 
+  -- company_today, não current_date: o mês vale no fuso da empresa, e o UTC vira antes.
   -- Modelo vigente, modelo que começa no futuro, modelo encerrado e modelo inativo.
   insert into public.expense_templates (id, company_id, description, category_id, amount_cents, day_of_month, starts_on)
-  values ('b0b0b0b0-0000-4000-8000-000000000001', co, 'Aluguel do galpão', v_cat, 100000, 5, date_trunc('month', current_date) - interval '2 months');
+  values ('b0b0b0b0-0000-4000-8000-000000000001', co, 'Aluguel do galpão', v_cat, 100000, 5, date_trunc('month', public.company_today(co)) - interval '2 months');
   insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on)
-  values (co, 'Começa depois', v_cat, 100, 5, current_date + interval '3 months');
+  values (co, 'Começa depois', v_cat, 100, 5, public.company_today(co) + interval '3 months');
   insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, ends_on)
   values (co, 'Encerrado', v_cat, 100, 5, '2020-01-01', '2020-06-30');
   insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, active)
@@ -1295,22 +1296,22 @@ begin
   insert into public.expense_templates (company_id, description, category_id, amount_cents, day_of_month, starts_on, employee_id)
   values (co, 'Salário', v_cat, 100, 5, '2020-01-01', outra);
 
-  if public.generate_month_expenses(co, current_date) <> 2 then
+  if public.generate_month_expenses(co, public.company_today(co)) <> 2 then
     raise exception 'FALHA gastos: mês atual deveria gerar 2 lançamentos';
   end if;
-  if public.generate_month_expenses(co, current_date) <> 0 then
+  if public.generate_month_expenses(co, public.company_today(co)) <> 0 then
     raise exception 'FALHA gastos: repetir o job duplicou';
   end if;
   if public.generate_due_expenses() < 0 then raise exception 'FALHA gastos: job'; end if;
   select count(*) into n from public.expenses where company_id = co and description = 'Salário' and kind = 'payroll';
   if n <> 1 then raise exception 'FALHA gastos: modelo com funcionário não gerou folha'; end if;
-  if public.generate_month_expenses(co, (current_date + interval '1 month')::date) <> 0 then
+  if public.generate_month_expenses(co, (public.company_today(co) + interval '1 month')::date) <> 0 then
     raise exception 'FALHA gastos: gerou mês futuro';
   end if;
 
   -- Excluir o lançamento de um mês não o faz voltar; excluir o modelo mantém o que já foi gerado.
   update public.expenses set deleted_at = now() where template_id = 'b0b0b0b0-0000-4000-8000-000000000001';
-  if public.generate_month_expenses(co, current_date) <> 0 then
+  if public.generate_month_expenses(co, public.company_today(co)) <> 0 then
     raise exception 'FALHA gastos: lançamento excluído voltou';
   end if;
   update public.expenses set deleted_at = null where template_id = 'b0b0b0b0-0000-4000-8000-000000000001';

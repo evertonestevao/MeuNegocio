@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_COOKIE, isDemoPath } from "@/config/demo";
 import { getClientEnv } from "@/config/env";
 import { buildRefRewrite } from "@/modules/resellers/referralCookie";
 
@@ -30,6 +31,26 @@ export async function proxy(request: NextRequest) {
   const refRewrite = buildRefRewrite(request.nextUrl.pathname, request.nextUrl.searchParams);
   if (refRewrite) {
     return NextResponse.redirect(new URL(refRewrite, request.url));
+  }
+
+  const { pathname: requestedPath } = request.nextUrl;
+  if (requestedPath === "/demo" || requestedPath.startsWith("/demo/")) {
+    return NextResponse.next({ request });
+  }
+
+  // Demonstração: resolve aqui, sem criar client nem falar com o Supabase.
+  if (request.cookies.has(DEMO_COOKIE)) {
+    if (isDemoPath(requestedPath)) return NextResponse.next({ request });
+    if (PROTECTED_PREFIXES.some((prefix) => requestedPath.startsWith(prefix))) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    // Saiu para o site ou para criar conta: a demonstração termina aqui. Só em navegação de
+    // verdade: o Next pré-busca os links visíveis, e isso não pode encerrar a demonstração.
+    request.cookies.delete(DEMO_COOKIE);
+    const leaving = NextResponse.next({ request });
+    const isPrefetch = request.headers.has("next-router-prefetch") || request.headers.get("sec-purpose")?.includes("prefetch");
+    if (!isPrefetch) leaving.cookies.delete(DEMO_COOKIE);
+    return leaving;
   }
 
   let response = NextResponse.next({ request });

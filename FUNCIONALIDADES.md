@@ -286,6 +286,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, passagem para o Free, membros extras e como pedir. |
+| `/demo` | Demonstração sem login: abre as telas reais de `/dashboard` com uma empresa fictícia (seção 25). |
 | `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 
 O rodapé mostra os dados legais da empresa (`brand.legal` em `src/config/brand.ts`): razão social,
@@ -553,3 +554,18 @@ Tela em `/dashboard/finance`, só para owner e admin.
 | **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |
 
 Código: `src/services/financeService.ts`, `src/app/dashboard/finance/page.tsx`.
+
+## 25. Demonstração
+
+Qualquer pessoa entra por "Ver demonstração", na página inicial, e navega pelas telas reais sem criar conta.
+
+| Regra | Como funciona |
+|---|---|
+| **Sem banco** | Com o cookie da demonstração, os clients de servidor e de administrador são trocados por um substituto em memória (`src/server/demo/client.ts`), com dados fixos e sem URL nem chave. O proxy também não cria client. |
+| **Nada é salvo** | Formulários abrem e botões continuam visíveis. Ao salvar, aparece "Na demonstração não é possível salvar". Fotos, assinaturas e pagamento também são recusados. |
+| **Dados** | Empresa fictícia em `src/server/demo/fixtures.json`. As datas são recalculadas para perto de hoje, sem rotina nem escrita. |
+| **Perfis** | Escritório, com visão de proprietário, ou técnico, com as próprias visitas e a ordem de serviço. |
+| **Saída** | "Sair", ir para outra página do site ou criar conta encerra a demonstração. Sem uso, o cookie expira em 2 horas. |
+| **Fora da demonstração** | Painel de planos, revendedores e demais áreas fora de `/dashboard` redirecionam para o início da demonstração. |
+
+Um cookie falso não dá acesso a nada: ele só faz o servidor entregar os dados fictícios.

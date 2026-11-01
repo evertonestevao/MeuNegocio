@@ -10,6 +10,7 @@ import { endCompanyResellerLink, getCommissionService, linkCompanyAtCheckout } f
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
 import { createSupabaseUserRepository } from "@/repositories/supabase/userRepository";
 import { recordAudit } from "@/server/audit";
+import { rejectInDemo } from "@/server/demo/mode";
 import { getExternalPriceId } from "@/server/billing";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
@@ -23,6 +24,8 @@ import { toActionError, type ActionState } from "./action-state";
 /** Server actions de billing — toda ação revalida que o ator é owner. */
 
 async function requireOwner(companyId: string) {
+  // O gateway de pagamento fica fora do banco: a demonstração para antes de chegar nele.
+  await rejectInDemo();
   const tenant = await getTenantService();
   const role = await tenant.requireMembership(companyId);
   if (!permissionService.canManageBilling(role)) {
