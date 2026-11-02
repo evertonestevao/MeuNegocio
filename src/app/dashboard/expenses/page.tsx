@@ -117,13 +117,13 @@ export default async function ExpensesPage({
       </div>
 
       <nav className="flex flex-wrap gap-2" aria-label="Seção de gastos">
-        <Link href={href({ tab: "entries" })} className={toggle(tab === "entries")}>
+        <Link scroll={false} href={href({ tab: "entries" })} className={toggle(tab === "entries")}>
           Lançamentos
         </Link>
-        <Link href={href({ tab: "recurring" })} className={toggle(tab === "recurring")}>
+        <Link scroll={false} href={href({ tab: "recurring" })} className={toggle(tab === "recurring")}>
           Recorrentes
         </Link>
-        <Link href={href({ tab: "categories" })} className={toggle(tab === "categories")}>
+        <Link scroll={false} href={href({ tab: "categories" })} className={toggle(tab === "categories")}>
           Categorias
         </Link>
       </nav>
@@ -131,11 +131,11 @@ export default async function ExpensesPage({
       {tab === "entries" ? (
         <>
           <div className="flex items-center justify-between gap-2 rounded-2xl bg-card p-2 shadow-xs ring-1 ring-foreground/8 sm:w-fit">
-            <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
+            <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
               <ChevronLeft className="size-4" />
             </Button>
             <span className="min-w-36 text-center text-sm font-medium">{formatMonth(month)}</span>
-            <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
+            <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
               <ChevronRight className="size-4" />
             </Button>
           </div>
@@ -146,10 +146,10 @@ export default async function ExpensesPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={href({ view: "calendar" })} className={toggle(view === "calendar")}>
+            <Link scroll={false} href={href({ view: "calendar" })} className={toggle(view === "calendar")}>
               Calendário
             </Link>
-            <Link href={href({ view: "list" })} className={toggle(view === "list")}>
+            <Link scroll={false} href={href({ view: "list" })} className={toggle(view === "list")}>
               Lista
             </Link>
             {isFutureMonth ? (
@@ -187,7 +187,7 @@ export default async function ExpensesPage({
                     return (
                       <Link
                         key={day}
-                        href={href({ d: day, m: day.slice(0, 7) })}
+                        scroll={false} href={href({ d: day, m: day.slice(0, 7) })}
                         aria-label={`${formatLongDay(day)}, ${list.length} gasto(s)`}
                         aria-current={day === selected ? "date" : undefined}
                         className={cn(

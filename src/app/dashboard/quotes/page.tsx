@@ -49,11 +49,11 @@ export default async function QuotesPage({
       </div>
 
       <nav className="flex flex-wrap gap-2" aria-label="Filtrar por situação">
-        <Link href="/dashboard/quotes" className={filterClass(status === null)}>
+        <Link scroll={false} href="/dashboard/quotes" className={filterClass(status === null)}>
           Todos <span className="ml-1 text-xs opacity-70">{totalCount}</span>
         </Link>
         {QUOTE_STATUSES.map((value) => (
-          <Link key={value} href={`/dashboard/quotes?status=${value}`} className={filterClass(status === value)}>
+          <Link key={value} scroll={false} href={`/dashboard/quotes?status=${value}`} className={filterClass(status === value)}>
             {QUOTE_STATUS_LABEL[value]} <span className="ml-1 text-xs opacity-70">{quotes.counts[value] ?? 0}</span>
           </Link>
         ))}

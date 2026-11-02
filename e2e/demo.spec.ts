@@ -128,3 +128,23 @@ test("assinatura e auditoria ficam dentro de configurações, fora do menu", asy
   await page.getByRole("link", { name: /Assinatura/ }).click();
   await expect(page.getByRole("heading", { name: "Assinatura" })).toBeVisible();
 });
+
+test("no celular, tocar em um dia do calendário não volta a página para o topo", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 500 }, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  await page.goto("/demo");
+  for (const [path, day] of [["/dashboard/schedule", "de novembro"], ["/dashboard/expenses", "gasto"]] as const) {
+    await page.goto(path);
+    const days = page.getByRole("link", { name: new RegExp(day === "gasto" ? "gasto\\(s\\)" : "visita\\(s\\)") });
+    await days.nth(20).scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, 150));
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before).toBeGreaterThan(0);
+    const url = page.url();
+    await days.nth(20).tap();
+    await page.waitForURL((current) => current.href !== url);
+    await page.waitForTimeout(400);
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - before), path).toBeLessThan(5);
+  }
+  await context.close();
+});

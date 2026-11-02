@@ -111,20 +111,20 @@ export default async function SchedulePage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon-sm" render={<Link href={href({ d: previous })} aria-label="Anterior" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ d: previous })} aria-label="Anterior" />} nativeButton={false}>
           <ChevronLeft className="size-4" />
         </Button>
         <span className="min-w-36 text-center text-sm font-medium">{title}</span>
-        <Button variant="outline" size="icon-sm" render={<Link href={href({ d: next })} aria-label="Próximo" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ d: next })} aria-label="Próximo" />} nativeButton={false}>
           <ChevronRight className="size-4" />
         </Button>
-        <Link href={href({ d: today })} className={toggleClass(false)}>
+        <Link scroll={false} href={href({ d: today })} className={toggleClass(false)}>
           Hoje
         </Link>
-        <Link href={href({ view: "month" })} className={toggleClass(view === "month")}>
+        <Link scroll={false} href={href({ view: "month" })} className={toggleClass(view === "month")}>
           Mês
         </Link>
-        <Link href={href({ view: "week" })} className={toggleClass(view === "week")}>
+        <Link scroll={false} href={href({ view: "week" })} className={toggleClass(view === "week")}>
           Semana
         </Link>
         <form action="/dashboard/schedule" className="grid w-full min-w-0 grid-cols-[1fr_1fr_auto] items-center gap-2 lg:ml-auto lg:flex lg:w-auto">
@@ -166,7 +166,7 @@ export default async function SchedulePage({
               return (
                 <Link
                   key={day}
-                  href={href({ d: day })}
+                  scroll={false} href={href({ d: day })}
                   aria-label={`${formatLongDay(day)}, ${activeCount} visita(s)`}
                   aria-current={day === selected ? "date" : undefined}
                   className={cn(
@@ -206,7 +206,7 @@ export default async function SchedulePage({
           {days.map((day, index) => (
             <Card key={day} className={cn("gap-2 py-3", day === selected && "border-primary")}>
               <CardHeader className="px-3">
-                <Link href={href({ d: day })} className="text-sm font-medium hover:underline">
+                <Link scroll={false} href={href({ d: day })} className="text-sm font-medium hover:underline">
                   {WEEKDAY_LABELS[index]} {formatDate(day).slice(0, 5)}
                 </Link>
               </CardHeader>
@@ -215,7 +215,7 @@ export default async function SchedulePage({
                 {visitsOn(day).map((visit) => (
                   <Link
                     key={visit.id}
-                    href={href({ d: day })}
+                    scroll={false} href={href({ d: day })}
                     className={cn("rounded bg-secondary px-1.5 py-1 hover:underline", visit.status === "canceled" && "line-through opacity-60")}
                   >
                     <span className="font-medium tabular-nums">{visit.starts_at.slice(0, 5)}</span> {visit.client_name}

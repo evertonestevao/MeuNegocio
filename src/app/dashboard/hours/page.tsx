@@ -119,14 +119,14 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
           <ChevronLeft className="size-4" />
         </Button>
         <span className="min-w-36 text-center text-sm font-medium">{formatMonth(month)}</span>
-        <Button variant="outline" size="icon-sm" render={<Link href={href({ m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
           <ChevronRight className="size-4" />
         </Button>
-        <Link href={href({ clt: showClt ? undefined : "1" })} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted" aria-pressed={showClt}>
+        <Link scroll={false} href={href({ clt: showClt ? undefined : "1" })} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted" aria-pressed={showClt}>
           {showClt ? "Ocultar CLT" : "Mostrar também CLT"}
         </Link>
       </div>
@@ -140,7 +140,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
               {listed.map((person) => (
                 <li key={person.id}>
                   <Link
-                    href={href({ p: person.id })}
+                    scroll={false} href={href({ p: person.id })}
                     aria-current={person.id === selected?.id ? "true" : undefined}
                     className={cn("flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted/50", person.id === selected?.id && "bg-muted")}
                   >

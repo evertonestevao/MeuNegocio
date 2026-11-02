@@ -50,11 +50,11 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon-sm" render={<Link href={monthHref(addMonths(month, -1))} aria-label="Mês anterior" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={monthHref(addMonths(month, -1))} aria-label="Mês anterior" />} nativeButton={false}>
           <ChevronLeft className="size-4" />
         </Button>
         <span className="min-w-36 text-center text-sm font-medium">{formatMonth(month)}</span>
-        <Button variant="outline" size="icon-sm" render={<Link href={monthHref(addMonths(month, 1))} aria-label="Próximo mês" />} nativeButton={false}>
+        <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={monthHref(addMonths(month, 1))} aria-label="Próximo mês" />} nativeButton={false}>
           <ChevronRight className="size-4" />
         </Button>
       </div>
@@ -103,7 +103,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                   {overview.series.map((item) => (
                     <tr key={item.month} className="border-t">
                       <td className="py-1">
-                        <Link href={monthHref(item.month)} className="hover:underline">
+                        <Link scroll={false} href={monthHref(item.month)} className="hover:underline">
                           {formatMonth(item.month)}
                         </Link>
                       </td>

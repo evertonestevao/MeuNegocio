@@ -51,6 +51,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
       <nav className="flex gap-2" aria-label="Tipo de item">
         {tabs.map((tab) => (
           <Link
+            scroll={false}
             key={tab.value}
             href={`/dashboard/catalog?kind=${tab.value}`}
             aria-current={tab.value === kind ? "page" : undefined}
