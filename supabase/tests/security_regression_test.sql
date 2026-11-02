@@ -414,6 +414,68 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_table text;
+  v_rows bigint;
+  v_args text;
+  v_result text;
+  v_func record;
+  v_victim constant uuid := '5ec0c000-0000-4000-8000-000000000001';
+  -- Não abrem dado da empresa: só respondem false, um fuso, ou agem sobre o próprio usuário.
+  v_harmless constant text[] := array[
+    'company_today', 'company_now_time', 'is_company_admin', 'is_company_member', 'is_company_office', 'is_company_owner',
+    'leave_company'
+  ];
+begin
+  perform sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+  set local role authenticated;
+  for v_table in
+    select c.table_name from information_schema.columns c
+    join information_schema.tables t using (table_schema, table_name)
+    where c.table_schema = 'public' and c.column_name = 'company_id' and t.table_type = 'BASE TABLE'
+  loop
+    begin
+      execute format('select count(*) from public.%I where company_id = %L', v_table, v_victim) into v_rows;
+      if v_rows > 0 then raise exception 'FALHA isolamento: outra empresa lê % (% linhas)', v_table, v_rows using errcode = 'P0002'; end if;
+    exception when insufficient_privilege then null;
+    end;
+    begin
+      execute format('update public.%I set company_id = company_id where company_id = %L', v_table, v_victim);
+      get diagnostics v_rows = row_count;
+      if v_rows > 0 then raise exception 'FALHA isolamento: outra empresa altera % (% linhas)', v_table, v_rows using errcode = 'P0002'; end if;
+    exception when insufficient_privilege then null;
+    end;
+    begin
+      execute format('delete from public.%I where company_id = %L', v_table, v_victim);
+      get diagnostics v_rows = row_count;
+      if v_rows > 0 then raise exception 'FALHA isolamento: outra empresa apaga % (% linhas)', v_table, v_rows using errcode = 'P0002'; end if;
+    exception when insufficient_privilege then null;
+    end;
+  end loop;
+
+  for v_func in
+    select p.proname, p.proargtypes from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.proargnames[1] = 'p_company_id'
+      and has_function_privilege('authenticated', p.oid, 'execute') and not p.proname = any (v_harmless)
+  loop
+    select string_agg(case when ord = 1 then quote_literal(v_victim) || '::uuid' else 'null::' || format_type(type_oid, null) end, ', ' order by ord)
+    into v_args from unnest(v_func.proargtypes::oid[]) with ordinality as args(type_oid, ord);
+    begin
+      execute format('select to_jsonb(r)::text from public.%I(%s) r', v_func.proname, v_args) into v_result;
+      -- Só pode responder vazio: qualquer conteúdo seria dado de outra empresa.
+      if coalesce(v_result, 'null') not in ('null', '[]', '{}') then
+        raise exception 'FALHA isolamento: % devolveu dados a outra empresa: %', v_func.proname, left(v_result, 80) using errcode = 'P0002';
+      end if;
+    exception when insufficient_privilege or raise_exception then null;
+    end;
+  end loop;
+  reset role;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

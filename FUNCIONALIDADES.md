@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-01
+**Última atualização:** 2026-11-02
 
 ## Sumário
 
@@ -278,6 +278,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 - **Idioma:** tudo o que aparece na tela está em português, inclusive papéis (Proprietário, Administrador, Membro e Técnico), situação da assinatura, ações da auditoria e mensagens de erro. Os códigos em inglês ficam só no banco e no código. Um teste E2E percorre as telas procurando inglês.
 - **Máscaras:** CNPJ, CPF, telefone e valores têm máscara ao digitar (`src/components/masked-input.tsx`), e o servidor recusa CNPJ ou telefone incompletos. Valores mostram R$, agrupam milhares e fecham com centavos ao sair do campo: `1500` vira `1.500,00`, nunca `15,00`. Documentos e telefones também aparecem formatados nas listas, no link de aprovação e nos PDFs.
+- **Aplicativo instalável (PWA):** instala pela tela inicial, abre em tela cheia, com entrada animada uma vez por abertura e atalhos para Agenda e Novo orçamento. No celular, um aviso dispensável oferece a instalação; no iPhone, explica o caminho pelo Safari. Sem internet, mostra uma tela de "Sem conexão". Guarda no aparelho só arquivos do sistema: telas, dados, fotos e assinaturas sempre vêm do servidor.
 - **Tema** claro e escuro, com cor primária em `src/app/globals.css`. O menu lateral é escuro nos dois temas.
 - **Nome do produto:** provisório e editável só em `src/config/brand.ts`. Um teste falha se o nome aparecer fixo em outro arquivo de `src/`.
 - **Acessibilidade:** link "Pular para o conteúdo" (primeiro Tab), rótulos em pt-BR para leitores

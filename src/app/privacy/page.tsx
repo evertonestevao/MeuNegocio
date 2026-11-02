@@ -41,7 +41,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "9. Cookies",
-    body: "Usamos cookies essenciais para manter sua sessão autenticada e lembrar a empresa ativa e, se você chegar por um link de indicação, um cookie de até 30 dias que registra qual parceiro fez a indicação. Não usamos cookies de análise ou publicidade.",
+    body: "Usamos cookies essenciais para manter sua sessão autenticada e lembrar a empresa ativa e, se você chegar por um link de indicação, um cookie de até 30 dias que registra qual parceiro fez a indicação. Não usamos cookies de análise ou publicidade.\nAplicativo instalado: guarda no aparelho só arquivos do sistema, como ícones e código, e a preferência de não mostrar o convite de instalação. Telas, dados da empresa, fotos e assinaturas não ficam guardados nele.",
   },
   {
     title: "10. Retenção",
@@ -54,5 +54,5 @@ const sections: LegalSection[] = [
 ];
 
 export default function PrivacyPage() {
-  return <LegalPage title="Política de Privacidade" updatedAt="31/10/2026" sections={sections} />;
+  return <LegalPage title="Política de Privacidade" updatedAt="02/11/2026" sections={sections} />;
 }

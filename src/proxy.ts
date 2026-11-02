@@ -55,9 +55,10 @@ export async function proxy(request: NextRequest) {
     }
     // Saiu para o site ou para criar conta: a demonstração termina aqui. Só em navegação de
     // verdade: o Next pré-busca os links visíveis, e isso não pode encerrar a demonstração.
+    // O modo, e não o destino, porque o service worker repassa a navegação com outro destino.
     request.cookies.delete(DEMO_COOKIE);
     const leaving = NextResponse.next({ request });
-    if (request.headers.get("sec-fetch-dest") === "document") leaving.cookies.delete(DEMO_COOKIE);
+    if (request.headers.get("sec-fetch-mode") === "navigate") leaving.cookies.delete(DEMO_COOKIE);
     return leaving;
   }
 
@@ -110,5 +111,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Tudo, exceto estáticos, o webhook de pagamento (autenticado por assinatura) e o
   // link de afiliado (público e de alto tráfego: não precisa de sessão).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/webhooks|r/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|manifest\\.webmanifest|api/webhooks|r/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

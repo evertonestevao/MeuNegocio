@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { brand } from "@/config/brand";
+import { PwaSplash } from "@/features/pwa/components/pwa-splash";
+import { ServiceWorkerRegister } from "@/features/pwa/components/service-worker-register";
 import { ThemeProvider } from "@/providers/theme-provider";
 import "./globals.css";
 
@@ -30,6 +32,9 @@ export const metadata: Metadata = {
     template: `%s · ${brand.name}`,
   },
   description: brand.tagline,
+  applicationName: brand.name,
+  appleWebApp: { capable: true, title: brand.name, statusBarStyle: "black" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export default function RootLayout({
@@ -44,6 +49,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <PwaSplash />
         <a
           href="#conteudo"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
@@ -53,6 +59,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster richColors position="top-right" />
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

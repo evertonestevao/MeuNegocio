@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTenant } from "@/providers/tenant-provider";
 import { Breadcrumbs } from "./breadcrumbs";
 import { CompanySwitcher } from "./company-switcher";
+import { InstallBanner } from "@/features/pwa/components/install-banner";
 import { MobileNav } from "./mobile-nav";
 import { isSettingsSubpage, navItems, type NavItem, type ShellNavItem } from "./nav-items";
 import { UserMenu, type UserMenuProps } from "./user-menu";
@@ -110,7 +111,10 @@ export function AppShell({
             </div>
           </div>
         </header>
-        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] outline-none lg:p-8">{children}</main>
+        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] outline-none lg:p-8">
+          <InstallBanner />
+          {children}
+        </main>
       </div>
       {area ? (
         <MobileNav
