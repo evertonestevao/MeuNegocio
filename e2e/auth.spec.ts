@@ -34,6 +34,17 @@ test("login com senha errada mostra erro e não navega", async ({ page }) => {
   await page.getByLabel("E-mail").fill(uniqueEmail("inexistente"));
   await page.getByLabel("Senha").fill("senha-errada-123");
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByText("Email ou senha incorretos")).toBeVisible();
+  await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
   await expect(page).toHaveURL(/\/login/);
+});
+
+test("senha errada mantém o e-mail e mostra só o aviso", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("E-mail").fill("ninguem-e2e@e2e.local");
+  await page.getByLabel("Senha", { exact: true }).fill("senha-errada-123");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.locator('[data-slot="alert"]')).toContainText(/incorret/i);
+  await expect(page.getByLabel("E-mail")).toHaveValue("ninguem-e2e@e2e.local");
+  await expect(page.getByLabel("Senha", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Senha", { exact: true })).toBeFocused();
 });

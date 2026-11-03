@@ -47,7 +47,7 @@ test("assinatura, reativação, exportação e exclusão de conta", async ({ pag
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByText("Email ou senha incorretos")).toBeVisible();
+  await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
 });
 
 test("health check responde sem sessão, lendo o banco como anon", async ({ request }) => {
