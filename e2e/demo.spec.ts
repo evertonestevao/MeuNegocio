@@ -6,6 +6,8 @@ const OFFICE_ROUTES = [
   "/dashboard/schedule",
   "/dashboard/quotes",
   "/dashboard/quotes/new",
+  "/dashboard/services",
+  "/dashboard/services?tab=concluidos",
   "/dashboard/clients",
   "/dashboard/catalog",
   "/dashboard/team",
@@ -32,7 +34,7 @@ test("demonstração abre as telas sem login, com dados fictícios e sem erro", 
 
   for (const route of OFFICE_ROUTES) {
     await page.goto(route);
-    await expect(page, route).toHaveURL(new RegExp(route.replace(/\//g, "\\/")));
+    await expect(page, route).toHaveURL(new RegExp(route.replace(/[/?.]/g, "\\$&")));
     await expect(page.getByText("Demonstração", { exact: false }).first(), route).toBeVisible();
   }
   expect(errors).toEqual([]);
@@ -146,5 +148,35 @@ test("no celular, tocar em um dia do calendário não volta a página para o top
     await page.waitForTimeout(400);
     expect(Math.abs((await page.evaluate(() => window.scrollY)) - before), path).toBeLessThan(5);
   }
+  await context.close();
+});
+
+test("enviar orçamento pelo WhatsApp na demonstração abre o número comercial", async ({ page }) => {
+  await page.goto("/demo");
+  await page.goto("/dashboard/quotes?status=sent");
+  await page.locator('main a[href^="/dashboard/quotes/"]:not([href$="/new"])').first().click();
+  const link = page.locator('main a[href*="wa.me"]', { hasText: "Enviar pelo WhatsApp" });
+  await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5514997122258\?text=/);
+});
+
+test("o link do orçamento da demonstração abre sem login e não grava a resposta", async ({ browser }) => {
+  const count = async () => (await admin.from("quote_responses").select("id", { count: "exact", head: true })).count;
+  const before = await count();
+  // Sessão nova: é como o cliente abre o link recebido.
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/orcamento/demonstracao-0004");
+  await expect(page.getByText("orçamento de demonstração")).toBeVisible();
+  await expect(page.getByText("Orçamento Nº 0004")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Refrigeração Exemplo" })).toBeVisible();
+  await page.getByLabel(/nome/i).first().fill("Cliente de teste");
+  await page.getByRole("button", { name: /Aprovar/ }).click();
+  const confirm = page.getByRole("dialog").getByRole("button", { name: /Aprovar|Confirmar/ });
+  if (await confirm.isVisible().catch(() => false)) await confirm.click();
+  await expect(page.getByText("Na demonstração não é possível salvar")).toBeVisible();
+  expect(await count()).toBe(before);
+
+  const unknown = await page.goto("/orcamento/demonstracao-9999");
+  expect(unknown?.status()).toBe(404);
   await context.close();
 });

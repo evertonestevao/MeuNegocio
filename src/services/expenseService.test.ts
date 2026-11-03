@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExpenseInput } from "@/features/expenses/schemas";
-import { expenseSchema, expenseTemplateSchema } from "@/features/expenses/schemas";
+import { expenseSchema, expenseTemplateSchema, supplierSchema, supplierSearchKey } from "@/features/expenses/schemas";
 import type { ActorContext } from "@/server/actor";
-import type { Expense, ExpenseCategory } from "@/types/finance";
-import { createExpenseService, totalsByCategory, type ExpenseRepository } from "./expenseService";
+import type { Expense, ExpenseCategory, Supplier, SupplierSpend } from "@/types/finance";
+import { buildSupplierStats, createExpenseService, totalsByCategory, type ExpenseRepository } from "./expenseService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
 const INPUT = {} as ExpenseInput;
@@ -28,6 +28,11 @@ function makeRepo() {
     renameCategory: vi.fn(async () => undefined),
     softDeleteCategory: vi.fn(async () => undefined),
     categoryInUse: vi.fn(async () => false),
+    listSuppliers: vi.fn(async (): Promise<Supplier[]> => [{ id: "s1", name: "Casa do Eletricista", document: null, phone: null, notes: null }]),
+    insertSupplier: vi.fn(async () => "s-new"),
+    updateSupplier: vi.fn(async () => undefined),
+    softDeleteSupplier: vi.fn(async () => undefined),
+    listSupplierSpend: vi.fn(async (): Promise<SupplierSpend[]> => []),
   } satisfies ExpenseRepository;
 }
 
@@ -98,5 +103,61 @@ describe("validação de gastos", () => {
     expect(expenseTemplateSchema.safeParse({ ...valid, dayOfMonth: "29" }).success).toBe(false);
     expect(expenseTemplateSchema.safeParse({ ...valid, dayOfMonth: "0" }).success).toBe(false);
     expect(expenseTemplateSchema.safeParse({ ...valid, endsOn: "2025-01-01" }).success).toBe(false);
+  });
+});
+
+describe("fornecedores", () => {
+  const supplierInput = (supplierName: string | null, supplierId: string | null = null) => ({ ...INPUT, supplierName, supplierId }) as ExpenseInput;
+
+  it("nome digitado usa o cadastro de mesmo nome, sem diferença de acento ou maiúscula", async () => {
+    const repo = makeRepo();
+    await createExpenseService(repo).create(OWNER, supplierInput("  casa do ELETRICISTA "));
+    expect(repo.insertSupplier).not.toHaveBeenCalled();
+    expect(repo.insert).toHaveBeenCalledWith("co", expect.objectContaining({ supplierId: "s1" }));
+  });
+
+  it("nome novo vira fornecedor cadastrado; escolhido da lista não cria nada", async () => {
+    const repo = makeRepo();
+    const service = createExpenseService(repo);
+    await service.create(OWNER, supplierInput("Ferragens Bauru"));
+    expect(repo.insertSupplier).toHaveBeenCalledWith("co", expect.objectContaining({ name: "Ferragens Bauru" }));
+    expect(repo.insert).toHaveBeenLastCalledWith("co", expect.objectContaining({ supplierId: "s-new" }));
+    await service.create(OWNER, supplierInput("qualquer", "s1"));
+    expect(repo.insertSupplier).toHaveBeenCalledTimes(1);
+  });
+
+  it("member e técnico não veem nem cadastram fornecedores", async () => {
+    const service = createExpenseService(makeRepo());
+    for (const role of ["member", "technician"]) {
+      await expect(service.listSuppliers({ companyId: "co", role })).rejects.toMatchObject({ code: "forbidden" });
+      await expect(service.supplierStats({ companyId: "co", role }, null)).rejects.toMatchObject({ code: "forbidden" });
+    }
+  });
+
+  it("soma por fornecedor e mostra de quem mais se compra em cada categoria", () => {
+    const suppliers: Supplier[] = [
+      { id: "a", name: "Alfa", document: null, phone: null, notes: null },
+      { id: "b", name: "Beta", document: null, phone: null, notes: null },
+      { id: "c", name: "Sem compras", document: null, phone: null, notes: null },
+    ];
+    const spend = (supplier_id: string, amount_cents: number, category: string, expense_date = "2026-10-01") =>
+      ({ supplier_id, amount_cents, expense_date, category_id: category, category_name: category.toUpperCase() }) as SupplierSpend;
+    const { stats, byCategory } = buildSupplierStats(suppliers, [
+      spend("a", 300, "mat", "2026-10-05"),
+      spend("a", 100, "comb"),
+      spend("b", 700, "mat", "2026-09-01"),
+    ]);
+    expect(stats.map((item) => [item.supplier.id, item.totalCents, item.purchases])).toEqual([["b", 700, 1], ["a", 400, 2], ["c", 0, 0]]);
+    expect(stats[1].lastPurchase).toBe("2026-10-05");
+    expect(stats[1].topCategories).toEqual(["MAT", "COMB"]);
+    expect(byCategory[0]).toMatchObject({ categoryId: "mat", totalCents: 1000 });
+    expect(byCategory[0].suppliers.map((entry) => [entry.name, entry.sharePercent])).toEqual([["Beta", 70], ["Alfa", 30]]);
+  });
+
+  it("valida documento e telefone e normaliza o nome para a busca", () => {
+    expect(supplierSchema.parse({ name: "Loja", document: "12345678000195", phone: "14997122258" })).toMatchObject({ document: "12.345.678/0001-95", phone: "(14) 99712-2258" });
+    expect(supplierSchema.safeParse({ name: "Loja", document: "123" }).success).toBe(false);
+    expect(supplierSchema.safeParse({ name: "L" }).success).toBe(false);
+    expect(supplierSearchKey("  Elétrica  Paulista ")).toBe("eletrica paulista");
   });
 });

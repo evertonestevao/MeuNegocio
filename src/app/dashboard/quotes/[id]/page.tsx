@@ -4,16 +4,21 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { brand } from "@/config/brand";
+import { getDemoProfile } from "@/server/demo/mode";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
 import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService } from "@/server/quotes";
-import { getVisitService } from "@/server/schedule";
+import { getEmployeeService, getVisitService } from "@/server/schedule";
+import { getExpenseService } from "@/server/finance";
+import { getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -40,6 +45,34 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   ]);
   const location = clientDetail?.locations.find((candidate) => candidate.id === quote.location_id) ?? null;
   const primaryContact = clientDetail?.contacts[0] ?? null;
+  // Na demonstração os telefones são inventados: o WhatsApp não pode abrir conversa com um número de verdade.
+  const isDemo = (await getDemoProfile()) !== null;
+  // Custos e resultado: só depois de aprovado, e só para quem vê o financeiro.
+  const today = todayInTimezone(profile.timezone);
+  const showCosts = (quote.status === "approved" || quote.status === "closed") && permissionService.canManageFinance(active.role);
+  const targetMarginPercent = profile.target_margin_percent ?? 20;
+  const costs = showCosts
+    ? await (async () => {
+        const costService = await getServiceCostService();
+        const expenseService = await getExpenseService();
+        const [cost, categories, employees, quoteOptions, suppliers] = await Promise.all([
+          costService.getForQuote(actor, { id: quote.id, totalCents: quote.total_cents, plannedCostCents: plannedCostCents(items, catalog) }, targetMarginPercent),
+          expenseService.listCategories(actor),
+          (await getEmployeeService()).list(actor, today),
+          costService.listQuoteOptions(actor),
+          expenseService.listSuppliers(actor),
+        ]);
+        return {
+          cost,
+          options: {
+            categories,
+            employees: employees.map(({ id: employeeId, name, active: isActive }) => ({ id: employeeId, name, active: isActive })),
+            quotes: quoteOptions,
+            suppliers: suppliers.map(({ id: supplierId, name }) => ({ id: supplierId, name })),
+          },
+        };
+      })()
+    : null;
   const dates = [
     `Criado em ${formatTimestamp(quote.created_at, profile.timezone)}`,
     quote.sent_at ? `enviado em ${formatTimestamp(quote.sent_at, profile.timezone)}` : null,
@@ -89,6 +122,24 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </CardContent>
         </Card>
       ) : null}
+      {costs ? (
+        <ServiceCostSection
+          quoteId={quote.id}
+          cost={costs.cost}
+          targetMarginPercent={targetMarginPercent}
+          expenseOptions={costs.options}
+          today={today}
+          pdf={{
+            companyName: active.name,
+            quoteNumber: formatQuoteNumber(quote.number),
+            title: quote.title,
+            clientName: clientDetail?.client.name ?? null,
+            statusLabel: QUOTE_STATUS_LABEL[quote.status],
+            targetMarginPercent,
+            cost: costs.cost,
+          }}
+        />
+      ) : null}
       <QuoteEditor
         key={quote.updated_at}
         quote={quote}
@@ -108,12 +159,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               client: clientDetail?.client ?? null,
               location,
             })}
-            contact={primaryContact ? { name: primaryContact.name, phone: primaryContact.phone } : null}
+            contact={primaryContact ? { name: primaryContact.name, phone: isDemo ? brand.salesWhatsapp : primaryContact.phone } : null}
             publicUrl={allowsPublicLink ? getPublicQuoteUrl(quote.public_token) : null}
             revenue={revenue}
             canClose={permissionService.canCloseQuotes(active.role)}
             canDelete={permissionService.canDeleteRecords(active.role)}
-            today={todayInTimezone(profile.timezone)}
+            today={today}
           />
         }
       />

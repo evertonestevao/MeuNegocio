@@ -6,24 +6,37 @@ import { Button } from "@/components/ui/button";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm } from "@/features/expenses/schemas";
+import { PAYMENT_METHOD_LABEL, categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm, parseSupplierForm } from "@/features/expenses/schemas";
+import { SupplierCombobox, type SupplierOption } from "./supplier-combobox";
 import { centsToMoneyInput } from "@/lib/money";
 import {
   deleteExpenseAction,
   deleteExpenseCategoryAction,
   deleteExpenseTemplateAction,
+  deleteSupplierAction,
   saveExpenseAction,
   saveExpenseCategoryAction,
   saveExpenseTemplateAction,
+  saveSupplierAction,
 } from "@/server/actions/expenses";
-import type { Expense, ExpenseCategory, ExpenseTemplate } from "@/types/finance";
+import type { Expense, ExpenseCategory, ExpenseTemplate, Supplier } from "@/types/finance";
 
 const SELECT_CLASS =
   "border-input h-11 md:h-9 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
+export interface ExpenseQuoteOption {
+  id: string;
+  number: number;
+  title: string | null;
+  client_name: string | null;
+}
+
 export interface ExpenseFormOptions {
   categories: ExpenseCategory[];
   employees: { id: string; name: string; active: boolean }[];
+  /** Orçamentos aprovados ou fechados que podem receber o gasto. */
+  quotes?: ExpenseQuoteOption[];
+  suppliers?: SupplierOption[];
 }
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
@@ -65,8 +78,11 @@ function EmployeeSelect({ id, value, options }: { id: string; value?: string | n
   );
 }
 
-function ExpenseFields({ expense, options, defaultDate }: { expense?: Expense; options: ExpenseFormOptions; defaultDate: string }) {
+function ExpenseFields({ expense, options, defaultDate, defaultQuoteId }: { expense?: Expense; options: ExpenseFormOptions; defaultDate: string; defaultQuoteId?: string }) {
   const prefix = expense?.id ?? "new-expense";
+  // Só o gasto pontual entra no custo de um serviço: recorrências e folha são da empresa toda.
+  const canLinkQuote = !expense || expense.kind === "one_off";
+  const lockedQuote = !expense && defaultQuoteId ? options.quotes?.find((quote) => quote.id === defaultQuoteId) : undefined;
   return (
     <>
       {expense ? <input type="hidden" name="expenseId" value={expense.id} /> : null}
@@ -74,15 +90,9 @@ function ExpenseFields({ expense, options, defaultDate }: { expense?: Expense; o
         <p className="rounded-lg bg-muted px-3 py-2 text-xs">Este lançamento foi gerado por uma recorrência mensal. Editar aqui muda só este mês.</p>
       ) : null}
       <Field id={`${prefix}-description`} label="Descrição">
-        <Input id={`${prefix}-description`} name="description" defaultValue={expense?.description ?? ""} autoFocus />
+        <Input id={`${prefix}-description`} name="description" defaultValue={expense?.description ?? ""} placeholder="Ex.: Cabos e disjuntores" />
       </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field id={`${prefix}-category`} label="Categoria">
-          <CategorySelect id={`${prefix}-category`} value={expense?.category_id} options={options} />
-        </Field>
-        <Field id={`${prefix}-employee`} label="Funcionário">
-          <EmployeeSelect id={`${prefix}-employee`} value={expense?.employee_id} options={options} />
-        </Field>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Field id={`${prefix}-amount`} label="Valor">
           <MaskedInput mask="money" id={`${prefix}-amount`} name="amount" defaultValue={expense ? centsToMoneyInput(expense.amount_cents) : ""} />
         </Field>
@@ -90,6 +100,54 @@ function ExpenseFields({ expense, options, defaultDate }: { expense?: Expense; o
           <Input id={`${prefix}-date`} name="expenseDate" type="date" defaultValue={expense?.expense_date ?? defaultDate} />
         </Field>
       </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id={`${prefix}-category`} label="Categoria">
+          <CategorySelect id={`${prefix}-category`} value={expense?.category_id} options={options} />
+        </Field>
+        <Field id={`${prefix}-supplier`} label="Fornecedor">
+          <SupplierCombobox
+            id={`${prefix}-supplier`}
+            suppliers={options.suppliers ?? []}
+            initial={expense?.supplier_id ? { id: expense.supplier_id, name: expense.supplier ?? "" } : null}
+          />
+        </Field>
+      </div>
+      <Field id={`${prefix}-payment`} label="Forma de pagamento">
+        <select id={`${prefix}-payment`} name="paymentMethod" defaultValue={expense?.payment_method ?? ""} className={SELECT_CLASS}>
+          <option value="">Não informada</option>
+          {Object.entries(PAYMENT_METHOD_LABEL).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {canLinkQuote && options.quotes ? (
+        lockedQuote ? (
+          // Lançado de dentro do serviço: já vai para ele, sem um seletor a mais na tela.
+          <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+            <input type="hidden" name="quoteId" value={lockedQuote.id} />
+            Serviço: <strong>#{String(lockedQuote.number).padStart(4, "0")} · {lockedQuote.title ?? "Sem título"}</strong>
+          </p>
+        ) : (
+          <Field id={`${prefix}-quote`} label="Serviço (orçamento)" hint="Opcional. Entra no custo e no resultado desse serviço.">
+            <select id={`${prefix}-quote`} name="quoteId" defaultValue={expense?.quote_id ?? ""} className={SELECT_CLASS}>
+              <option value="">Nenhum, gasto geral</option>
+              {options.quotes.map((quote) => (
+                <option key={quote.id} value={quote.id}>
+                  #{String(quote.number).padStart(4, "0")} · {quote.title ?? "Sem título"}
+                  {quote.client_name ? ` · ${quote.client_name}` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )
+      ) : null}
+      {lockedQuote ? null : (
+        <Field id={`${prefix}-employee`} label="Funcionário">
+          <EmployeeSelect id={`${prefix}-employee`} value={expense?.employee_id} options={options} />
+        </Field>
+      )}
       <Field id={`${prefix}-notes`} label="Observações">
         <Input id={`${prefix}-notes`} name="notes" defaultValue={expense?.notes ?? ""} />
       </Field>
@@ -97,7 +155,19 @@ function ExpenseFields({ expense, options, defaultDate }: { expense?: Expense; o
   );
 }
 
-export function NewExpenseButton({ options, defaultDate, label = "Novo gasto", variant = "default" }: { options: ExpenseFormOptions; defaultDate: string; label?: string; variant?: "default" | "outline" }) {
+export function NewExpenseButton({
+  options,
+  defaultDate,
+  defaultQuoteId,
+  label = "Novo gasto",
+  variant = "default",
+}: {
+  options: ExpenseFormOptions;
+  defaultDate: string;
+  defaultQuoteId?: string;
+  label?: string;
+  variant?: "default" | "outline";
+}) {
   return (
     <DialogForm
       title="Novo gasto"
@@ -110,7 +180,7 @@ export function NewExpenseButton({ options, defaultDate, label = "Novo gasto", v
         </Button>
       )}
     >
-      <ExpenseFields options={options} defaultDate={defaultDate} />
+      <ExpenseFields options={options} defaultDate={defaultDate} defaultQuoteId={defaultQuoteId} />
     </DialogForm>
   );
 }
@@ -292,6 +362,64 @@ export function DeleteCategoryButton({ category }: { category: ExpenseCategory }
       )}
     >
       <input type="hidden" name="categoryId" value={category.id} />
+    </DialogForm>
+  );
+}
+
+export function SupplierFormButton({ supplier }: { supplier?: Supplier }) {
+  const prefix = supplier?.id ?? "new-supplier";
+  return (
+    <DialogForm
+      title={supplier ? "Editar fornecedor" : "Novo fornecedor"}
+      action={saveSupplierAction}
+      validate={parseSupplierForm}
+      submitLabel="Salvar fornecedor"
+      trigger={(open) =>
+        supplier ? (
+          <Button variant="edit" size="icon-sm" aria-label={`Editar ${supplier.name}`} onClick={open}>
+            <Pencil className="size-4" />
+          </Button>
+        ) : (
+          <Button onClick={open}>
+            <Plus className="size-4" /> Novo fornecedor
+          </Button>
+        )
+      }
+    >
+      {supplier ? <input type="hidden" name="supplierId" value={supplier.id} /> : null}
+      <Field id={`${prefix}-name`} label="Nome">
+        <Input id={`${prefix}-name`} name="name" defaultValue={supplier?.name ?? ""} placeholder="Ex.: Casa do Eletricista" />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id={`${prefix}-document`} label="CNPJ ou CPF">
+          <MaskedInput mask="cpfCnpj" id={`${prefix}-document`} name="document" defaultValue={supplier?.document ?? ""} placeholder="Opcional" />
+        </Field>
+        <Field id={`${prefix}-phone`} label="Telefone">
+          <MaskedInput mask="phone" id={`${prefix}-phone`} name="phone" defaultValue={supplier?.phone ?? ""} placeholder="Opcional" />
+        </Field>
+      </div>
+      <Field id={`${prefix}-notes`} label="Observações" hint="Ex.: vendedor, prazo de entrega, condições.">
+        <Input id={`${prefix}-notes`} name="notes" defaultValue={supplier?.notes ?? ""} />
+      </Field>
+    </DialogForm>
+  );
+}
+
+export function DeleteSupplierButton({ supplier }: { supplier: Supplier }) {
+  return (
+    <DialogForm
+      title="Excluir fornecedor"
+      description={`Excluir ${supplier.name}? Os gastos já lançados continuam com o nome dele.`}
+      action={deleteSupplierAction}
+      submitLabel="Excluir"
+      variant="destructive"
+      trigger={(open) => (
+        <Button variant="destructive" size="icon-sm" aria-label={`Excluir ${supplier.name}`} onClick={open}>
+          <Trash2 className="size-4" />
+        </Button>
+      )}
+    >
+      <input type="hidden" name="supplierId" value={supplier.id} />
     </DialogForm>
   );
 }

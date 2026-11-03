@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExpenseInput, ExpenseTemplateInput } from "@/features/expenses/schemas";
 import { AppError } from "@/lib/errors";
 import type { ExpenseRepository } from "@/services/expenseService";
-import type { Expense, ExpenseCategory, ExpenseTemplate } from "@/types/finance";
+import type { Expense, ExpenseCategory, ExpenseTemplate, Supplier, SupplierSpend } from "@/types/finance";
 
 function fail(error: { code?: string; message?: string } | null): never {
   if (error?.code === "P0001") throw new AppError("conflict", error.message ?? "Operação recusada", error);
@@ -19,6 +19,9 @@ function expenseColumns(input: ExpenseInput) {
     expense_date: input.expenseDate,
     employee_id: input.employeeId,
     notes: input.notes,
+    quote_id: input.quoteId,
+    supplier_id: input.supplierId,
+    payment_method: input.paymentMethod,
   };
 }
 
@@ -35,10 +38,18 @@ function templateColumns(input: ExpenseTemplateInput) {
   };
 }
 
-type WithCategory<T> = T & { category: { name: string } | null };
+type Related<T> = T | T[] | null;
+type WithCategory<T> = T & { category: { name: string } | null; quote?: Related<{ number: number }>; supplier_ref?: Related<{ name: string }> };
 
-function flatten<T extends object>({ category, ...row }: WithCategory<T>) {
-  return { ...row, category_name: category?.name ?? "" };
+const one = <T,>(value: Related<T> | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
+
+function flatten<T extends object>({ category, quote, supplier_ref, ...row }: WithCategory<T>) {
+  return {
+    ...row,
+    category_name: category?.name ?? "",
+    ...(quote === undefined ? {} : { quote_number: one(quote)?.number ?? null }),
+    ...(supplier_ref === undefined ? {} : { supplier: one(supplier_ref)?.name ?? null }),
+  };
 }
 
 export function createSupabaseExpenseRepository(client: SupabaseClient): ExpenseRepository {
@@ -53,7 +64,7 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
   }
 
   const EXPENSE_SELECT =
-    "id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, category:expense_categories(name)";
+    "id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), quote:quotes(number), supplier_ref:suppliers(name)";
 
   return {
     async list(companyId, from, to) {
@@ -139,6 +150,57 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
     },
 
     softDeleteTemplate: (companyId, templateId) => softDelete("expense_templates", companyId, templateId),
+
+    async listSuppliers(companyId) {
+      const { data, error } = await client
+        .from("suppliers")
+        .select("id, name, document, phone, notes")
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) fail(error);
+      return (data ?? []) as Supplier[];
+    },
+
+    async insertSupplier(companyId, input) {
+      const { data, error } = await client
+        .from("suppliers")
+        .insert({ company_id: companyId, ...input })
+        .select("id")
+        .single<{ id: string }>();
+      if (error?.code === "23505") throw new AppError("conflict", "Já existe um fornecedor com esse nome.", error);
+      if (error) fail(error);
+      return data.id;
+    },
+
+    async updateSupplier(companyId, supplierId, input) {
+      const { error } = await client
+        .from("suppliers")
+        .update(input)
+        .eq("company_id", companyId)
+        .eq("id", supplierId)
+        .is("deleted_at", null);
+      if (error?.code === "23505") throw new AppError("conflict", "Já existe um fornecedor com esse nome.", error);
+      if (error) fail(error);
+    },
+
+    async softDeleteSupplier(companyId, supplierId) {
+      await softDelete("suppliers", companyId, supplierId);
+    },
+
+    async listSupplierSpend(companyId, from) {
+      let query = client
+        .from("expenses")
+        .select("supplier_id, amount_cents, expense_date, category_id, category:expense_categories(name)")
+        .eq("company_id", companyId)
+        .not("supplier_id", "is", null)
+        .is("deleted_at", null);
+      if (from) query = query.gte("expense_date", from);
+      const { data, error } = await query;
+      if (error) fail(error);
+      type Row = Omit<SupplierSpend, "category_name"> & { category: { name: string } | null };
+      return ((data ?? []) as unknown as Row[]).map(({ category, ...row }) => ({ ...row, category_name: category?.name ?? "" }));
+    },
 
     async listCategories(companyId) {
       const { data, error } = await client

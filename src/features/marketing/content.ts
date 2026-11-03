@@ -1,25 +1,35 @@
 import {
   CalendarDays,
   ClipboardCheck,
+  ClipboardList,
   Clock,
   FileText,
   type LucideIcon,
+  PiggyBank,
   ShieldCheck,
+  Smartphone,
   Wallet,
 } from "lucide-react";
+import { brand } from "@/config/brand";
 
 /**
  * Textos da página inicial. Só o que o produto faz hoje: nada de depoimento, número ou promessa
- * que ele não cumpra. Preços e limites não ficam aqui: vêm do banco.
+ * que ele não cumpra. Funcionalidade nova que seja argumento de venda entra aqui (ver CLAUDE.md).
  */
 
 export const hero = {
   eyebrow: "Para empresas de serviços com equipe em campo",
   title: "Da visita técnica ao caixa, sem nada se perder no caminho",
   description:
-    "Orçamento que o cliente aprova pelo celular, agenda sem choque de horário, ordem de serviço assinada e o saldo do mês à vista. Tudo em um só lugar, no computador e no celular.",
-  highlights: ["Nada para instalar", "Aprovação sem criar conta", "Até 12x no cartão"],
+    "Orçamento que o cliente aprova pelo celular, agenda sem choque de horário, ordem de serviço assinada e quanto sobrou em cada serviço. Tudo em um só lugar, no computador e no celular.",
+  highlights: ["Nada para instalar", "Aprovação sem criar conta", "No celular e no computador"],
 };
+
+/**
+ * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
+ * novo impede que o navegador mostre a imagem antiga do cache.
+ */
+export const LANDING_SCREENS = "/landing/v3";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -36,7 +46,7 @@ export const showcases: {
     title: "Saiba o que está parado e o que falta fechar",
     description: "Cada orçamento mostra em que etapa está, do rascunho ao fechamento. Nada fica perdido em uma conversa antiga.",
     points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar sem criar conta", "Margem visível só para quem pode ver"],
-    image: "/landing/orcamentos.jpg",
+    image: `${LANDING_SCREENS}/orcamentos.jpg`,
     alt: "Tela de orçamentos com a lista por situação: rascunho, enviado, aprovado e fechado.",
     device: "browser",
   },
@@ -45,7 +55,7 @@ export const showcases: {
     title: "Sua equipe nunca em dois lugares ao mesmo tempo",
     description: "Veja o mês e a semana de toda a equipe. O sistema avisa do conflito enquanto você agenda e impede o choque de horário ao salvar.",
     points: ["Visitas técnicas e execuções", "Filtros por pessoa e por tipo", "Agende direto do cliente ou do orçamento"],
-    image: "/landing/agenda.jpg",
+    image: `${LANDING_SCREENS}/agenda.jpg`,
     alt: "Agenda do mês com as visitas distribuídas pelos dias e a lista de visitas do dia escolhido.",
     device: "browser",
   },
@@ -53,17 +63,27 @@ export const showcases: {
     eyebrow: "Ordem de serviço",
     title: "O técnico resolve tudo pelo celular",
     description: "Ele chega, marca o checklist, fotografa e colhe a assinatura do cliente. O escritório acompanha sem precisar ligar.",
-    points: ["Fotos com legenda e relatório", "Assinatura do cliente na tela", "PDF pronto ao concluir"],
-    image: "/landing/ordem-servico.jpg",
+    points: ["Checklist do seu jeito, por tipo de visita", "Fotos da câmera ou da galeria, com legenda", "Assinatura do cliente e PDF ao concluir"],
+    image: `${LANDING_SCREENS}/ordem-servico.jpg`,
     alt: "Ordem de serviço no celular com endereço, contato, equipe e checklist.",
     device: "phone",
+  },
+  {
+    eyebrow: "Serviços",
+    title: "Saiba quanto sobrou em cada serviço",
+    description:
+      "Os serviços aprovados ficam em uma tela só. Lance os gastos de cada um, e as horas da equipe entram sozinhas no custo. Você vê o resultado antes de faturar.",
+    points: ["Custo previsto contra o realizado", "Alerta quando a margem cai abaixo da sua meta", "Conclua e fature direto da lista"],
+    image: `${LANDING_SCREENS}/servicos.jpg`,
+    alt: "Tela de serviços em andamento, com visitas, valor cobrado, custos e resultado de cada serviço.",
+    device: "browser",
   },
   {
     eyebrow: "Financeiro",
     title: "O saldo do mês sem precisar montar planilha",
     description: "Serviços fechados, gastos, salários e pagamento de prestadores entram no mesmo lugar. A previsão fica separada do saldo, para você não contar com o que ainda não fechou.",
     points: ["Faturamento contra gastos em 6 meses", "Gastos por categoria", "Recorrências lançadas todo mês"],
-    image: "/landing/financeiro.jpg",
+    image: `${LANDING_SCREENS}/financeiro.jpg`,
     alt: "Tela do financeiro com faturamento, gastos, saldo, gráfico de 6 meses e gastos por categoria.",
     device: "browser",
   },
@@ -87,6 +107,29 @@ export const sampleFinance = {
   ],
 };
 
+/** Exemplo do bloco de lucro por serviço. Valores fictícios, sempre avisados na página. */
+export const sampleServiceResult = {
+  service: "Instalação de 3 splits",
+  client: "Clínica do exemplo",
+  chargedCents: 480000,
+  costs: [
+    { label: "Material", detail: "Casa do Eletricista", cents: 112000 },
+    { label: "Horas da equipe", detail: "2 técnicos, 12h no total", cents: 72000 },
+    { label: "Combustível", detail: "3 idas ao cliente", cents: 18000 },
+  ],
+};
+
+export const profitPitch = {
+  eyebrow: "Lucro de verdade",
+  title: "Você sabe quanto sobrou no último serviço?",
+  description: `Quando a compra de material, o combustível e as horas da equipe não ficam ligados ao serviço, o lucro vira palpite. No ${brand.name}, cada gasto e cada hora entram no serviço certo, e você vê o resultado antes de faturar.`,
+  points: [
+    "Lance o gasto na hora, já no serviço, com o fornecedor e a forma de pagamento",
+    "As horas da equipe entram sozinhas no custo",
+    "Custo previsto contra o realizado, com alerta de margem",
+  ],
+};
+
 export const sampleFunnel = [
   { label: "Enviados", value: 24 },
   { label: "Aprovados", value: 15 },
@@ -95,12 +138,12 @@ export const sampleFunnel = [
 
 export const pains = [
   {
-    title: "Orçamento que some na conversa",
-    description: "Enviado pelo WhatsApp, sem resposta e sem ninguém lembrar de cobrar.",
+    title: "Lucro no chute",
+    description: "Material comprado na hora, combustível e horas da equipe que ninguém liga ao serviço. No fim, ninguém sabe quanto sobrou.",
   },
   {
-    title: "Técnico em dois lugares ao mesmo tempo",
-    description: "Agenda no caderno ou na planilha só mostra o conflito quando o cliente já está esperando.",
+    title: "Orçamento que some na conversa",
+    description: "Enviado pelo WhatsApp, sem resposta e sem ninguém lembrar de cobrar.",
   },
   {
     title: "Fim do mês sem saber quanto sobrou",
@@ -113,7 +156,7 @@ export const journey = [
   { title: "Aprovação", description: "O cliente abre o link, sem criar conta, e aprova ou recusa." },
   { title: "Agenda", description: "Escale a equipe. Quem já tem visita no horário é bloqueado." },
   { title: "Execução", description: "No celular, o técnico faz o checklist, fotografa e colhe a assinatura." },
-  { title: "Caixa", description: "Feche o orçamento, pague os prestadores e veja o saldo do mês." },
+  { title: "Resultado", description: "Lance os gastos do serviço, conclua e veja quanto sobrou nele e no mês." },
 ];
 
 export const benefits: { icon: LucideIcon; title: string; description: string }[] = [
@@ -133,7 +176,25 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: ClipboardCheck,
     title: "Ordem de serviço no celular",
     description:
-      "Cheguei, checklist, fotos com legenda, relatório e assinatura do cliente. Depois de assinada, a ordem não muda mais e pode ser baixada em PDF.",
+      "Cheguei, checklist, fotos com legenda, relatório e assinatura do cliente. Depois de assinada, a ordem não muda mais e sai em um PDF organizado.",
+  },
+  {
+    icon: PiggyBank,
+    title: "Resultado por serviço",
+    description:
+      "Gastos lançados no serviço e horas da equipe viram o custo de cada trabalho. Veja a margem, compare com o previsto e saiba quais serviços dão lucro.",
+  },
+  {
+    icon: ClipboardList,
+    title: "Checklist do seu jeito",
+    description:
+      "Monte a lista padrão de cada tipo de visita, ajuste em um atendimento específico e deixe o técnico incluir o que aparecer no local.",
+  },
+  {
+    icon: Smartphone,
+    title: "Aplicativo no celular",
+    description:
+      "Instale na tela inicial e abra como um aplicativo, com as abas principais embaixo. Sem loja de aplicativos e sem atualização para baixar.",
   },
   {
     icon: Clock,
@@ -145,7 +206,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: Wallet,
     title: "Gastos e financeiro",
     description:
-      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e faturamento contra gastos dos últimos 6 meses. A previsão fica separada do saldo.",
+      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e por fornecedor, e faturamento contra gastos dos últimos 6 meses. Saiba de quem você mais compra cada coisa.",
   },
   {
     icon: ShieldCheck,
@@ -158,7 +219,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
 export const faq = [
   {
     question: "Preciso instalar alguma coisa?",
-    answer: "Não. O sistema funciona no navegador, no computador e no celular. O técnico usa a tela de ordem de serviço pelo próprio celular.",
+    answer: "Não. O sistema funciona no navegador, no computador e no celular. Se quiser, instale no celular como aplicativo, direto da tela inicial, sem loja de aplicativos.",
   },
   {
     question: "Meu cliente precisa criar conta para aprovar o orçamento?",

@@ -150,6 +150,8 @@ export interface CompanyProfile {
   quote_validity_days: number;
   quote_default_notes: string | null;
   timezone: string;
+  /** Margem que a empresa considera boa, em %. Abaixo dela o resultado aparece em alerta. */
+  target_margin_percent?: number;
 }
 
 export type CatalogKind = "product" | "service";

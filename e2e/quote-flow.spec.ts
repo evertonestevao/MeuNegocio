@@ -51,13 +51,48 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
 
   await page.reload();
   await expect(page.getByText(/Renato Cliente aprovou pelo link/)).toBeVisible();
+
+  // Aprovado, vira serviço em andamento.
+  await page.goto("/dashboard/services");
+  await expect(page.getByText("#0001 · Ampliação elétrica")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Concluir e faturar" })).toBeVisible();
+  await page.getByText("#0001 · Ampliação elétrica").click();
   await page.getByRole("button", { name: "Fechar e faturar" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Fechar e faturar" }).click();
   await expect(page.getByText("Faturado")).toBeVisible();
 
+  // Custos do serviço: o gasto lançado aqui entra no resultado e também no caixa do mês.
+  await expect(page.getByRole("heading", { name: "Custos e resultado do serviço" })).toBeVisible();
+  await page.getByRole("button", { name: "Lançar gasto" }).click();
+  const costDialog = page.getByRole("dialog");
+  await costDialog.getByLabel("Descrição").fill("Cabos e disjuntores");
+  await costDialog.getByLabel("Categoria").selectOption({ index: 1 });
+  await costDialog.getByLabel("Valor").fill("300,00");
+  await costDialog.getByLabel("Fornecedor").fill("Casa do Eletricista");
+  await expect(costDialog.getByText("Fornecedor novo: será cadastrado ao salvar.")).toBeVisible();
+  await costDialog.getByLabel("Forma de pagamento").selectOption("pix");
+  await expect(costDialog.getByText("Serviço: #0001", { exact: false })).toBeVisible();
+  await costDialog.getByRole("button", { name: "Salvar gasto" }).click();
+  await expect(costDialog).toBeHidden();
+  await expect(page.getByText("Cabos e disjuntores")).toBeVisible();
+  await expect(page.getByText("R$ 1.500,00").first()).toBeVisible();
+
+  // O fornecedor digitado virou cadastro, com o que foi pago a ele.
+  await page.goto("/dashboard/expenses?tab=suppliers");
+  const supplierRow = page.locator("li", { hasText: "Casa do Eletricista" }).first();
+  await expect(supplierRow).toContainText("R$ 300,00");
+  await expect(supplierRow).toContainText("1 compra");
+  await page.goto("/dashboard/expenses?view=list");
+  await expect(page.getByText(/Casa do Eletricista · PIX/).first()).toBeVisible();
+
+  await page.goto("/dashboard/services?tab=concluidos");
+  await expect(page.getByText("#0001 · Ampliação elétrica")).toBeVisible();
+  await expect(page.getByText("R$ 1.500,00").first()).toBeVisible();
+
   await page.goto("/dashboard/finance");
   await expect(page.getByText("#0001 · Ampliação elétrica")).toBeVisible();
-  await expect(page.getByText("R$ 1.800,00").first()).toBeVisible();
+  await expect(page.getByText("cobrado R$ 1.800,00", { exact: false })).toBeVisible();
+  await expect(page.getByText("R$ 1.500,00").first()).toBeVisible();
 
   // Fechado sai do faturamento só por "desfazer".
   await page.getByRole("link", { name: /#0001/ }).click();

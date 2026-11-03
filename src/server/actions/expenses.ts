@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm } from "@/features/expenses/schemas";
+import { categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm, parseSupplierForm } from "@/features/expenses/schemas";
 import { AppError } from "@/lib/errors";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
@@ -23,6 +23,10 @@ function uuid(value: FormDataEntryValue | null, message: string): string {
 function refresh(): void {
   revalidatePath("/dashboard/expenses");
   revalidatePath("/dashboard/hours");
+  revalidatePath("/dashboard/finance");
+  revalidatePath("/dashboard/services");
+  // O gasto pode estar ligado a um serviço: a página do orçamento mostra o resultado.
+  revalidatePath("/dashboard/quotes/[id]", "page");
 }
 
 export async function saveExpenseAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -114,6 +118,35 @@ export async function saveExpenseCategoryAction(_prev: ActionState | undefined, 
     await recordAudit({ companyId: actor.companyId, action: categoryId ? "expense_category.updated" : "expense_category.created", entityType: "expense_category", entityId: categoryId ?? undefined });
     refresh();
     return { success: "Categoria salva" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+export async function saveSupplierAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const input = parseSupplierForm(formData);
+    const supplierId = formData.get("supplierId") ? uuid(formData.get("supplierId"), "Fornecedor inválido") : null;
+    const service = await getExpenseService();
+    await service.saveSupplier(actor, supplierId, input);
+    await recordAudit({ companyId: actor.companyId, action: supplierId ? "supplier.updated" : "supplier.created", entityType: "supplier", entityId: supplierId ?? undefined });
+    refresh();
+    return { success: "Fornecedor salvo" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+export async function deleteSupplierAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const supplierId = uuid(formData.get("supplierId"), "Fornecedor inválido");
+    const service = await getExpenseService();
+    await service.removeSupplier(actor, supplierId);
+    await recordAudit({ companyId: actor.companyId, action: "supplier.deleted", entityType: "supplier", entityId: supplierId });
+    refresh();
+    return { success: "Fornecedor excluído" };
   } catch (err) {
     return handleError(err);
   }

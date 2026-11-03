@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuoteDocument } from "@/types/quotes";
-import { quoteItemDetail, quoteShareText, whatsappUrl } from "./pdf";
+import { greetingName, quoteItemDetail, quoteShareText, whatsappUrl } from "./pdf";
 
 const QUOTE = {
   number: 13,
@@ -33,5 +33,14 @@ describe("envio do orçamento", () => {
     const base = { description: "", unit: "un", quantity: 2, people: 3, unitPriceCents: 100, lineTotalCents: 0 };
     expect(quoteItemDetail({ ...base, pricingMode: "hourly" })).toContain("2 h × 3 pessoas");
     expect(quoteItemDetail({ ...base, pricingMode: "fixed" })).toContain("2 un ×");
+  });
+});
+
+describe("greetingName", () => {
+  it("usa o primeiro nome e mantém o tratamento", () => {
+    expect(greetingName("Carla Mendes")).toBe("Carla");
+    expect(greetingName("Dr. Paulo Reis")).toBe("Dr. Paulo");
+    expect(greetingName("Dra Helena Prado")).toBe("Dra Helena");
+    expect(greetingName("Dr.")).toBe("Dr.");
   });
 });

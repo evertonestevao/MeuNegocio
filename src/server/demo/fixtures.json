@@ -46,7 +46,8 @@
 "timezone": "America/Sao_Paulo",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"target_margin_percent": 20
 }
 ],
 "clients": [
@@ -297,7 +298,7 @@
 "subtotal_cents": 127600,
 "total_cents": 122600,
 "notes": "Pagamento em até 30 dias.",
-"public_token": "demonstracao",
+"public_token": "demonstracao-0001",
 "sent_at": "2026-10-31T20:46:51.25499+00:00",
 "approved_at": "2026-10-31T20:46:51.25499+00:00",
 "refused_at": null,
@@ -314,17 +315,17 @@
 "client_id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
 "location_id": "1148dfc8-73d5-405d-af68-035fabe5a481",
 "title": "Instalação de split nas salas",
-"status": "closed",
+"status": "approved",
 "valid_until": "2026-11-20",
 "discount_cents": 0,
 "subtotal_cents": 163500,
 "total_cents": 163500,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0002",
 "sent_at": "2026-10-31T20:46:51.25499+00:00",
 "approved_at": "2026-10-31T20:46:51.25499+00:00",
 "refused_at": null,
-"closed_at": "2026-10-31T20:46:51.25499+00:00",
+"closed_at": null,
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
@@ -343,7 +344,7 @@
 "subtotal_cents": 127600,
 "total_cents": 127600,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0003",
 "sent_at": "2026-10-31T20:46:51.25499+00:00",
 "approved_at": "2026-10-31T20:46:51.25499+00:00",
 "refused_at": null,
@@ -366,7 +367,7 @@
 "subtotal_cents": 163500,
 "total_cents": 163500,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0004",
 "sent_at": "2026-10-31T20:46:51.25499+00:00",
 "approved_at": null,
 "refused_at": null,
@@ -389,7 +390,7 @@
 "subtotal_cents": 127600,
 "total_cents": 127600,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0005",
 "sent_at": null,
 "approved_at": null,
 "refused_at": null,
@@ -412,7 +413,7 @@
 "subtotal_cents": 820000,
 "total_cents": 820000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0006",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -435,7 +436,7 @@
 "subtotal_cents": 960000,
 "total_cents": 960000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0007",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -458,7 +459,7 @@
 "subtotal_cents": 890000,
 "total_cents": 890000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0008",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -481,7 +482,7 @@
 "subtotal_cents": 1140000,
 "total_cents": 1140000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0009",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -504,7 +505,7 @@
 "subtotal_cents": 1210000,
 "total_cents": 1210000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0010",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -527,7 +528,7 @@
 "subtotal_cents": 980000,
 "total_cents": 980000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0011",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -550,7 +551,7 @@
 "subtotal_cents": 520000,
 "total_cents": 520000,
 "notes": null,
-"public_token": "demonstracao",
+"public_token": "demonstracao-0012",
 "sent_at": "2026-10-31T22:00:27.675988+00:00",
 "approved_at": "2026-10-31T22:00:27.675988+00:00",
 "refused_at": null,
@@ -842,15 +843,6 @@
 "quote_id": "a76d16d2-a192-4e18-862b-fe2910d6f8f1",
 "amount_cents": 116600,
 "competence_date": "2026-10-12",
-"deleted_at": null,
-"created_at": "2026-10-31T20:46:51.25499+00:00"
-},
-{
-"id": "d4bd7192-2344-4483-82bb-0fc8dd644577",
-"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
-"quote_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
-"amount_cents": 163500,
-"competence_date": "2026-09-18",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00"
 },
@@ -1963,7 +1955,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": null,
+"supplier_id": "51afc397-01a4-58c5-aef9-b5b30448ed15",
+"payment_method": "transfer"
 },
 {
 "id": "f4a5f84d-6d76-4c36-a0c8-e1544f8fcb9c",
@@ -1979,7 +1974,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": null,
+"supplier_id": "51afc397-01a4-58c5-aef9-b5b30448ed15",
+"payment_method": "transfer"
 },
 {
 "id": "fa160792-41ff-4d99-b55e-cb513bc7958f",
@@ -1995,7 +1993,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"supplier_id": "c509ace2-f7af-5147-92aa-9cb1d85f0fd9",
+"payment_method": "debit"
 },
 {
 "id": "497b4ad7-79df-49e9-bac9-650792906737",
@@ -2011,7 +2012,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"supplier_id": "750b5b51-1983-5103-b321-5af402f3343e",
+"payment_method": "pix"
 },
 {
 "id": "85be17e0-7d63-44b4-9463-307e9ca2e621",
@@ -2027,7 +2031,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"supplier_id": "5b8d8e1c-336a-549f-b07e-e820d139a693",
+"payment_method": "boleto"
 },
 {
 "id": "c7c5c777-d237-4776-9554-b7b285018c45",
@@ -2043,7 +2050,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 },
 {
 "id": "d842bb0e-e145-47aa-b13e-cf7427e62b15",
@@ -2059,7 +2069,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 },
 {
 "id": "44051d86-94ca-4e6e-8899-42796f8287cd",
@@ -2075,7 +2088,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:44.401027+00:00",
-"updated_at": "2026-10-31T22:00:44.401027+00:00"
+"updated_at": "2026-10-31T22:00:44.401027+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 },
 {
 "id": "1e0601ed-2f53-4d1e-b1b4-7f5524bdeea4",
@@ -2091,7 +2107,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:44.401027+00:00",
-"updated_at": "2026-10-31T22:00:44.401027+00:00"
+"updated_at": "2026-10-31T22:00:44.401027+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 },
 {
 "id": "4406787c-2a7c-4b93-ad63-0013a9d2b973",
@@ -2107,7 +2126,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:44.401027+00:00",
-"updated_at": "2026-10-31T22:00:44.401027+00:00"
+"updated_at": "2026-10-31T22:00:44.401027+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 },
 {
 "id": "c7e167d7-68c6-49a0-bd4f-438487762608",
@@ -2123,7 +2145,10 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:44.401027+00:00",
-"updated_at": "2026-10-31T22:00:44.401027+00:00"
+"updated_at": "2026-10-31T22:00:44.401027+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": null
 }
 ],
 "subscriptions": [
@@ -2346,6 +2371,52 @@
 "metadata": {},
 "deleted_at": null,
 "created_at": "2026-10-01T10:00:00+00:00"
+}
+],
+"suppliers": [
+{
+"id": "c509ace2-f7af-5147-92aa-9cb1d85f0fd9",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Posto Centro",
+"document": null,
+"phone": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-01T12:00:00+00:00",
+"updated_at": "2026-10-01T12:00:00+00:00"
+},
+{
+"id": "750b5b51-1983-5103-b321-5af402f3343e",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Refrigeração Center",
+"document": "12.555.444/0001-20",
+"phone": "(14) 3222-4455",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-01T12:00:00+00:00",
+"updated_at": "2026-10-01T12:00:00+00:00"
+},
+{
+"id": "5b8d8e1c-336a-549f-b07e-e820d139a693",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Casa do Refrigerista",
+"document": "33.111.222/0001-07",
+"phone": "(14) 3011-2233",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-01T12:00:00+00:00",
+"updated_at": "2026-10-01T12:00:00+00:00"
+},
+{
+"id": "51afc397-01a4-58c5-aef9-b5b30448ed15",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"name": "Imobiliária Centro",
+"document": "09.876.543/0001-11",
+"phone": "(14) 3333-9000",
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-01T12:00:00+00:00",
+"updated_at": "2026-10-01T12:00:00+00:00"
 }
 ]
 },

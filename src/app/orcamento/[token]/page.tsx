@@ -7,7 +7,8 @@ import { quoteItemDetail } from "@/features/quotes/pdf";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
-import { canUsePublicApproval, getPublicQuoteRepository } from "@/server/quotes";
+import { DEMO_QUOTE_TOKEN } from "@/config/demo";
+import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository } from "@/server/quotes";
 import { createRateLimiter } from "@/server/rateLimit";
 import { formatPhone } from "@/lib/masks";
 
@@ -21,7 +22,8 @@ const viewLimiter = () => createRateLimiter({ limit: 60, windowMs: 60_000 });
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  if (!/^[0-9a-f]{64}$/.test(token)) notFound();
+  const isDemo = DEMO_QUOTE_TOKEN.test(token);
+  if (!isDemo && !/^[0-9a-f]{64}$/.test(token)) notFound();
 
   const requestHeaders = await headers();
   const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
@@ -31,13 +33,18 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
     notFound();
   }
 
-  const quote = await getPublicQuoteRepository().getByToken(token);
-  if (!quote || !(await canUsePublicApproval(quote.companyId))) notFound();
+  const quote = isDemo ? await getDemoPublicQuote(token) : await getPublicQuoteRepository().getByToken(token);
+  if (!quote || (!isDemo && !(await canUsePublicApproval(quote.companyId)))) notFound();
   const { document, response } = quote;
   const canRespond = document.status === "sent" && quote.isWithinValidity;
 
   return (
     <main id="conteudo" className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8">
+      {isDemo ? (
+        <p className="rounded-lg bg-warning/10 px-3 py-2 text-sm">
+          Este é um orçamento de demonstração, com dados fictícios. É assim que o seu cliente recebe o link para aprovar.
+        </p>
+      ) : null}
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold break-words">{document.company.name}</h1>
         <p className="text-sm text-muted-foreground">

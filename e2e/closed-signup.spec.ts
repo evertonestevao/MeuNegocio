@@ -9,10 +9,8 @@ test("sem cadastro aberto: nada oferece criar conta e a rota não abre", async (
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Criar conta" })).toHaveCount(0);
   await expect(page.locator('a[href^="/signup"]')).toHaveCount(0);
-  await expect(page.locator("#planos").getByRole("button", { name: /Quero o plano Anual/ })).toBeVisible();
-  const whatsapp = await page.locator("#planos").getByRole("button", { name: /Quero o plano Anual/ }).getAttribute("href");
+  const whatsapp = await page.getByRole("button", { name: "Quero contratar" }).first().getAttribute("href");
   expect(whatsapp).toMatch(/^https:\/\/wa\.me\/5514997122258\?text=/);
-  expect(decodeURIComponent(whatsapp!)).toContain("plano Anual");
   await page.goto("/signup");
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("link", { name: "Criar conta" })).toHaveCount(0);

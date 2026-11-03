@@ -17,8 +17,10 @@ import {
   type ExpenseFormOptions,
   NewExpenseButton,
   NewTemplateButton,
+  SupplierFormButton,
 } from "@/features/expenses/components/expense-forms";
-import { EXPENSE_KIND_LABEL } from "@/features/expenses/schemas";
+import { EXPENSE_KIND_LABEL, PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
+import { SupplierPanel } from "@/features/expenses/components/supplier-panel";
 import { addMonths, formatLongDay, formatMonth, isValidDate, monthGrid } from "@/lib/calendar";
 import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
@@ -27,6 +29,8 @@ import { generateMonthExpensesAction } from "@/server/actions/expenses";
 import { getExpenseService } from "@/server/finance";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getEmployeeService } from "@/server/schedule";
+import { getServiceCostService } from "@/server/serviceCosts";
+import { formatQuoteNumber } from "@/features/quotes/status";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import type { Expense } from "@/types/finance";
@@ -43,7 +47,16 @@ function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFor
           <div className="flex min-w-0 flex-1 basis-52 flex-col gap-0.5">
             <span className="font-medium break-words">{expense.description}</span>
             <span className="text-xs text-muted-foreground">
-              {formatDate(expense.expense_date)} · {expense.category_name} · {EXPENSE_KIND_LABEL[expense.kind]}
+              {[
+                formatDate(expense.expense_date),
+                expense.category_name,
+                EXPENSE_KIND_LABEL[expense.kind],
+                expense.supplier,
+                expense.payment_method ? PAYMENT_METHOD_LABEL[expense.payment_method] : null,
+                expense.quote_number ? `Serviço #${formatQuoteNumber(expense.quote_number)}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -63,7 +76,7 @@ function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFor
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; view?: string; m?: string; d?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; m?: string; d?: string; p?: string }>;
 }) {
   const params = await searchParams;
   const { active } = await getActiveTenant();
@@ -75,19 +88,27 @@ export default async function ExpensesPage({
   const today = todayInTimezone(profile.timezone);
   const month = isValidDate(`${params.m}-01`) ? `${params.m}-01` : `${today.slice(0, 7)}-01`;
   const lastDay = addDays(addMonths(month, 1), -1);
-  const tab = params.tab === "recurring" || params.tab === "categories" ? params.tab : "entries";
+  const tab = params.tab === "recurring" || params.tab === "categories" || params.tab === "suppliers" ? params.tab : "entries";
+  // Período das contas por fornecedor: últimos 3 meses, 12 meses ou tudo.
+  const period = params.p === "3m" || params.p === "all" ? params.p : "12m";
+  const periodStart = period === "all" ? null : addDays(today, period === "3m" ? -90 : -365);
   const view = params.view === "list" ? "list" : "calendar";
 
   const service = await getExpenseService();
-  const [expenses, templates, categories, employees] = await Promise.all([
+  const [expenses, templates, categories, employees, quoteOptions, suppliers, supplierStats] = await Promise.all([
     service.list(actor, month, lastDay),
     service.listTemplates(actor),
     service.listCategories(actor),
     (await getEmployeeService()).list(actor, today),
+    (await getServiceCostService()).listQuoteOptions(actor),
+    service.listSuppliers(actor),
+    tab === "suppliers" ? service.supplierStats(actor, periodStart) : Promise.resolve(null),
   ]);
   const options = {
     categories,
     employees: employees.map(({ id, name, active: isActive }) => ({ id, name, active: isActive })),
+    quotes: quoteOptions,
+    suppliers: suppliers.map(({ id, name }) => ({ id, name })),
   };
   const total = expenses.reduce((sum, expense) => sum + expense.amount_cents, 0);
   const defaultDate = today.slice(0, 7) === month.slice(0, 7) ? today : month;
@@ -114,6 +135,7 @@ export default async function ExpensesPage({
         {tab === "entries" ? <NewExpenseButton options={options} defaultDate={selected ?? defaultDate} /> : null}
         {tab === "recurring" ? <NewTemplateButton options={options} defaultStart={`${today.slice(0, 7)}-01`} /> : null}
         {tab === "categories" ? <CategoryFormButton /> : null}
+        {tab === "suppliers" ? <SupplierFormButton /> : null}
       </div>
 
       <nav className="flex flex-wrap gap-2" aria-label="Seção de gastos">
@@ -125,6 +147,9 @@ export default async function ExpensesPage({
         </Link>
         <Link scroll={false} href={href({ tab: "categories" })} className={toggle(tab === "categories")}>
           Categorias
+        </Link>
+        <Link scroll={false} href={href({ tab: "suppliers" })} className={toggle(tab === "suppliers")}>
+          Fornecedores
         </Link>
       </nav>
 
@@ -290,6 +315,14 @@ export default async function ExpensesPage({
             </CardContent>
           </Card>
         )
+      ) : null}
+      {tab === "suppliers" && supplierStats ? (
+        <SupplierPanel
+          stats={supplierStats.stats}
+          byCategory={supplierStats.byCategory}
+          period={period}
+          periodHref={(value) => href({ tab: "suppliers", p: value })}
+        />
       ) : null}
     </div>
   );

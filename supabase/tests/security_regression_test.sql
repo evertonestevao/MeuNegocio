@@ -414,6 +414,76 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Custos por serviço: o gasto só aponta para orçamento aprovado ou fechado da mesma empresa.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_category uuid;
+  v_other_quote uuid;
+  v_draft uuid;
+begin
+  insert into public.expense_categories (company_id, name) values ('5ec0c000-0000-4000-8000-000000000001', 'Custos teste')
+  returning id into v_category;
+  -- Só para montar o cenário: a outra empresa é Free e a trava de limite barraria o orçamento.
+  set local session_replication_role = replica;
+  insert into public.quotes (company_id, number, status) values ('5ec0c000-0000-4000-8000-000000000002', 990, 'approved')
+  returning id into v_other_quote;
+  set local session_replication_role = origin;
+  insert into public.quotes (company_id, number, status) values ('5ec0c000-0000-4000-8000-000000000001', 991, 'draft')
+  returning id into v_draft;
+  begin
+    insert into public.expenses (company_id, description, category_id, amount_cents, expense_date, quote_id)
+    values ('5ec0c000-0000-4000-8000-000000000001', 'Gasto alheio', v_category, 100, current_date, v_other_quote);
+    raise exception 'FALHA custos: gasto ligado a orçamento de outra empresa' using errcode = 'P0002';
+  exception when foreign_key_violation or raise_exception then null;
+  end;
+  begin
+    insert into public.expenses (company_id, description, category_id, amount_cents, expense_date, quote_id)
+    values ('5ec0c000-0000-4000-8000-000000000001', 'Gasto em rascunho', v_category, 100, current_date, v_draft);
+    raise exception 'FALHA custos: gasto ligado a orçamento em rascunho' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Fornecedores: gasto não aponta para fornecedor de outra empresa; membro não vê nem cadastra.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_category uuid;
+  v_other uuid;
+begin
+  select id into v_category from public.expense_categories where company_id = '5ec0c000-0000-4000-8000-000000000001' limit 1;
+  insert into public.suppliers (company_id, name) values ('5ec0c000-0000-4000-8000-000000000002', 'Fornecedor alheio') returning id into v_other;
+  begin
+    insert into public.expenses (company_id, description, category_id, amount_cents, expense_date, supplier_id)
+    values ('5ec0c000-0000-4000-8000-000000000001', 'Gasto com fornecedor alheio', v_category, 100, current_date, v_other);
+    raise exception 'FALHA fornecedores: gasto ligado a fornecedor de outra empresa' using errcode = 'P0002';
+  exception when foreign_key_violation then null;
+  end;
+  insert into public.suppliers (company_id, name) values ('5ec0c000-0000-4000-8000-000000000001', 'Casa Teste');
+  begin
+    insert into public.suppliers (company_id, name) values ('5ec0c000-0000-4000-8000-000000000001', 'casa teste');
+    raise exception 'FALHA fornecedores: nome repetido com outra caixa' using errcode = 'P0002';
+  exception when unique_violation then null;
+  end;
+end $$;
+
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000003', 'sec-member@test.local');
+select sec_test.must_fail('membro lê fornecedores',
+  $$update public.suppliers set name = name where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_fail('membro cadastra fornecedor',
+  $$insert into public.suppliers (company_id, name) values ('5ec0c000-0000-4000-8000-000000000001', 'Do membro')$$);
+do $$
+begin
+  if exists (select 1 from public.suppliers where company_id = '5ec0c000-0000-4000-8000-000000000001') then
+    raise exception 'FALHA fornecedores: membro enxerga fornecedores' using errcode = 'P0002';
+  end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

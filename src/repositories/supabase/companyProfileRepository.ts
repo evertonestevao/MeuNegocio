@@ -25,6 +25,7 @@ export function createSupabaseCompanyProfileRepository(client: SupabaseClient): 
         address: input.address,
         quote_validity_days: input.quoteValidityDays,
         quote_default_notes: input.quoteDefaultNotes,
+        target_margin_percent: input.targetMarginPercent,
         timezone: input.timezone,
       });
       if (error) throw new AppError("internal_error", "Falha ao salvar os dados da empresa", error);

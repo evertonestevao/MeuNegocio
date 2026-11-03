@@ -39,10 +39,12 @@ export interface BarChartCardProps {
   height?: number;
   /** Largura do eixo Y, para valores longos como R$ 60.000. */
   yAxisWidth?: number;
+  /** Contagens: o eixo não mostra frações como 0,5 visita. */
+  integerValues?: boolean;
 }
 
 export function BarChartCard(props: BarChartCardProps) {
-  const { title, description, data, xKey, height = 240, yAxisWidth = 48 } = props;
+  const { title, description, data, xKey, height = 240, yAxisWidth = 48, integerValues = false } = props;
   const valueFormatter = resolveFormatter(props.valueFormatter, props.valueFormat);
   const series = normalizeSeriesList(
     props.series ?? (props.yKey ? [props.yKey] : []),
@@ -76,6 +78,7 @@ export function BarChartCard(props: BarChartCardProps) {
               />
               <YAxis
                 width={yAxisWidth}
+                allowDecimals={!integerValues}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}

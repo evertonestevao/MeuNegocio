@@ -33,6 +33,10 @@ export const companyProfileSchema = z.object({
   address: optionalText(300),
   quoteValidityDays: z.coerce.number({ error: "Informe a validade em dias." }).int("Informe a validade em dias.").min(1, "A validade mínima é 1 dia.").max(365, "A validade máxima é 365 dias."),
   quoteDefaultNotes: optionalText(4000),
+  targetMarginPercent: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.coerce.number({ error: "Informe a meta de margem." }).int("Use um número inteiro.").min(0, "Use de 0 a 100.").max(100, "Use de 0 a 100.").default(20),
+  ),
   timezone: z.enum(COMPANY_TIMEZONES, { error: "Escolha o fuso." }),
 });
 
@@ -51,6 +55,7 @@ export const DEFAULT_COMPANY_PROFILE = {
   quote_validity_days: 15,
   quote_default_notes: null,
   timezone: "America/Sao_Paulo",
+  target_margin_percent: 20,
 } as const;
 
 export function createCompanyProfileService(repo: CompanyProfileRepository) {

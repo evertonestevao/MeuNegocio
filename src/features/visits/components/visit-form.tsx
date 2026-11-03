@@ -62,7 +62,7 @@ function VisitFields({ visit, prefill, options }: { visit?: VisitListItem; prefi
   const selectable = options.employees.filter((person) => person.active || chosen.includes(person.id));
 
   return (
-    <div className="flex max-h-[60svh] flex-col gap-4 overflow-y-auto pr-1">
+    <div className="flex flex-col gap-4">
       {visit ? <input type="hidden" name="visitId" value={visit.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1.5">

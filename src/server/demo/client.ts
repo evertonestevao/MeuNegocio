@@ -95,7 +95,7 @@ function splitColumns(columns: string): string[] {
   return parts;
 }
 
-const TO_ONE_KEY: Record<string, string> = { profile: "user_id", terms: "terms_version_id" };
+const TO_ONE_KEY: Record<string, string> = { profile: "user_id", terms: "terms_version_id", supplier_ref: "supplier_id" };
 const PARENT_KEY: Record<string, string> = { clients: "client_id", visits: "visit_id", quotes: "quote_id" };
 
 function project(tables: Record<string, Row[]>, table: string, row: Row, columns: string): Row {
@@ -213,6 +213,39 @@ const DEMO_CHECKLISTS = {
   execution: ["Conferir EPIs e ferramentas", "Isolar e sinalizar a área", "Executar o serviço", "Testar o funcionamento", "Limpar o local", "Mostrar o resultado ao cliente"],
 };
 
+/** Mesmo formato de get_public_quote, montado só com os dados fictícios. */
+function demoPublicQuoteRow(token: string): Row | null {
+  const { tables } = fixtures() as unknown as { tables: Record<string, Row[]> };
+  const quotes = tables.quotes;
+  const quote = quotes.find((row) => row.public_token === token) ?? (token === "demonstracao" ? quotes.find((row) => row.status === "sent") : undefined);
+  if (!quote) return null;
+  const company = tables.companies.find((row) => row.id === quote.company_id);
+  const profile = tables.company_profiles.find((row) => row.company_id === quote.company_id);
+  const client = tables.clients.find((row) => row.id === quote.client_id);
+  const location = tables.client_locations.find((row) => row.id === quote.location_id);
+  // Um rascunho só recebe link ao ser enviado: quem abre vê como enviado.
+  const status = quote.status === "draft" ? "sent" : quote.status;
+  return {
+    company_id: quote.company_id,
+    quote_id: quote.id,
+    number: quote.number,
+    title: quote.title,
+    status,
+    valid_until: quote.valid_until ?? shiftDates("2026-11-15", demoDayOffset()),
+    is_within_validity: true,
+    created_at: quote.created_at,
+    subtotal_cents: quote.subtotal_cents,
+    discount_cents: quote.discount_cents,
+    total_cents: quote.total_cents,
+    notes: quote.notes,
+    company: { name: company?.name, cnpj: profile?.cnpj, phone: profile?.phone, email: profile?.email, address: profile?.address },
+    client: { name: client?.name, document: client?.document },
+    location: location ? { name: location.name, address: location.address } : null,
+    items: tables.quote_items.filter((item) => item.quote_id === quote.id && !item.deleted_at),
+    response: null,
+  };
+}
+
 function callRpc(name: string, args: Row): Result {
   const { rpc } = fixtures() as unknown as { rpc: { hours: { entries: unknown[] } & Row; myVisits: Row[]; sheets: Record<string, unknown> } };
   const ok = (data: unknown): Result => ({ data, error: null });
@@ -222,8 +255,9 @@ function callRpc(name: string, args: Row): Result {
     case "is_valid_referral_code":
       return ok(false);
     case "my_reseller_status":
-    case "get_public_quote":
       return ok(null);
+    case "get_public_quote":
+      return ok(demoPublicQuoteRow(String(args.p_token)));
     case "my_pending_invites":
       return ok([]);
     case "get_hours_month": {

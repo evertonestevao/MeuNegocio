@@ -1,5 +1,6 @@
 "use server";
 
+import { DEMO_QUOTE_TOKEN, DEMO_READ_ONLY_MESSAGE } from "@/config/demo";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -30,6 +31,7 @@ function quoteIdFrom(formData: FormData): string {
 
 function refresh(quoteId?: string): void {
   revalidatePath("/dashboard/quotes");
+  revalidatePath("/dashboard/services");
   if (quoteId) revalidatePath(`/dashboard/quotes/${quoteId}`);
 }
 
@@ -179,6 +181,8 @@ export async function respondPublicQuoteAction(
   formData: FormData,
 ): Promise<ActionState> {
   try {
+    if (DEMO_QUOTE_TOKEN.test(String(formData.get("token")))) return { error: DEMO_READ_ONLY_MESSAGE };
+
     const token = z.string().regex(/^[0-9a-f]{64}$/).safeParse(formData.get("token"));
     if (!token.success) throw new AppError("not_found", "Orçamento não encontrado");
 

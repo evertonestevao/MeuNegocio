@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-02
+**Última atualização:** 2026-11-03
 
 ## Sumário
 
@@ -34,6 +34,8 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 22. [Horas](#22-horas)
 23. [Gastos](#23-gastos)
 24. [Financeiro](#24-financeiro)
+25. [Custos e resultado por serviço](#25-custos-e-resultado-por-serviço)
+26. [Demonstração](#26-demonstração)
 
 ---
 
@@ -195,7 +197,7 @@ Empresarial foi desativado.
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 
 - Cria planos e edita nome, preço, membro extra, limites, recursos e um texto livre de até 2000
-  caracteres, exibido na oferta do plano na página inicial e em `/dashboard/billing`. Ativa e desativa.
+  caracteres, exibido na oferta do plano em `/dashboard/billing`. A página inicial não mostra planos nem preços por enquanto. Ativa e desativa.
 - O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
   oferta e quem já assina continua neles.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
@@ -260,9 +262,9 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 ## 11. Início e navegação
 
-- **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas.
+- **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturamento e gastos dos últimos 6 meses (owner e admin).
 - **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
-- **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início ou Minhas visitas, Agenda, Orçamentos, Financeiro, conforme o papel) e "Mais", com os demais itens, tema e sair.
+- **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início, Serviços, Agenda e Orçamentos, ou Minhas visitas para o técnico) e "Mais", com os demais itens, tema e sair.
 - **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturamento, gastos e saldo.
   Os itens aparecem conforme o papel:
 
@@ -271,7 +273,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
   | Início | Owner, admin, member. O técnico entra direto em Minhas visitas |
   | Configurações | Todos |
   | Minhas visitas | Técnico |
-  | Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
+  | Serviços, Agenda, Orçamentos, Clientes, Catálogo, Equipe | Owner, admin, member |
   | Horas, Gastos, Financeiro, Membros | Owner, admin |
 
   Assinatura (owner) e Auditoria (owner, admin) ficam dentro de Configurações.
@@ -288,11 +290,11 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 | Página | Conteúdo |
 |---|---|
-| `/` | Landing page: proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, funções, planos ativos lidos do banco, dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. Editar ou desativar um plano no painel reflete aqui. |
+| `/` | Landing page: proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, bloco "Você sabe quanto sobrou no último serviço?" com exemplo fictício de resultado de um serviço, funções, contato pelo WhatsApp comercial (sem planos nem preços por enquanto), dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. |
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, passagem para o Free, membros extras e como pedir. |
-| `/demo` | Demonstração sem login: abre as telas reais de `/dashboard` com uma empresa fictícia (seção 25). |
+| `/demo` | Demonstração sem login: abre as telas reais de `/dashboard` com uma empresa fictícia (seção 26). |
 | `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 
 O rodapé mostra os dados legais da empresa (`brand.legal` em `src/config/brand.ts`): razão social,
@@ -536,11 +538,13 @@ Código: `src/services/hoursService.ts`, `src/lib/hoursCalc.ts`, `src/server/act
 
 ## 23. Gastos
 
-Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calendário ou lista), Recorrentes e Categorias.
+Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calendário ou lista), Recorrentes, Categorias e Fornecedores.
 
 | Função | Regras |
 |---|---|
-| **Lançamentos** | Descrição, categoria, valor, data, funcionário opcional e observações. Tipos: pontual, recorrente, folha e prestador. |
+| **Lançamentos** | Descrição, valor, data, categoria, fornecedor, forma de pagamento (PIX, dinheiro, débito, crédito, boleto, transferência ou outro), serviço, funcionário e observações; só os quatro primeiros são obrigatórios. Tipos: pontual, recorrente, folha e prestador. |
+| **Fornecedor no lançamento** | Ao digitar, lista os fornecedores cadastrados (sem diferença de acento ou maiúscula). Nome novo vira cadastro ao salvar o gasto, sem duplicar um que já existe. |
+| **Fornecedores** (aba) | Nome, CNPJ ou CPF, telefone e observações. Mostra, em 3 meses, 12 meses ou tudo, quanto foi para cada fornecedor, número de compras, última compra e categorias principais, e "De quem mais compramos": os 3 fornecedores que mais receberam em cada categoria. Excluir mantém o nome nos gastos já lançados. |
 | **Recorrências** | Valor, categoria, dia de 1 a 28, início, fim opcional, ativa e funcionário opcional. Com funcionário, gera folha. |
 | **Geração mensal** | Um lançamento por mês para cada recorrência, por job idempotente, respeitando início e fim e sem gerar mês futuro. O job roda todo dia, por causa do fuso de cada empresa, e o botão "Gerar recorrentes do mês" faz o mesmo na hora. Excluir o lançamento de um mês não o faz voltar. |
 | **Editar um lançamento gerado** | Muda só aquele mês. Editar a recorrência vale para os próximos. |
@@ -565,7 +569,24 @@ Tela em `/dashboard/finance`, só para owner e admin.
 
 Código: `src/services/financeService.ts`, `src/app/dashboard/finance/page.tsx`.
 
-## 25. Demonstração
+## 25. Custos e resultado por serviço
+
+Para orçamentos aprovados ou fechados. Só owner e admin: membro e técnico não veem custos nem margem.
+
+| Função | Regras |
+|---|---|
+| **Serviços** (`/dashboard/services`, logo abaixo de Início e aba fixa no celular) | Em andamento (aprovados) e Concluídos (fechados). Cada serviço mostra visitas feitas, a próxima visita e, para owner e admin, cobrado, custos, resultado e margem, com "Lançar gasto" e "Concluir e faturar". Alerta quando o custo passa do previsto ou a margem fica abaixo da meta. O membro vê o andamento, sem valores. |
+| **Custos do serviço** (na página do orçamento) | Valor cobrado, custos e resultado, com a margem em % comparada à meta da empresa: verde na meta ou acima, laranja abaixo, vermelho no prejuízo. |
+| **Gastos do serviço** | São os mesmos gastos do caixa (`expenses`), com o campo opcional "Serviço (orçamento)" e "Fornecedor". "Lançar gasto" já vem com o orçamento escolhido. Só gasto pontual pode ser ligado, e só a orçamento aprovado ou fechado da mesma empresa (trava no banco). |
+| **Mão de obra** | Horas lançadas nas visitas do orçamento vezes o custo por hora de cada pessoa (em Equipe); sem ele, o valor pago por hora ao prestador. A hora do CLT é custo apropriado: o salário continua saindo uma vez só, no caixa do mês. Horas sem custo cadastrado geram aviso. |
+| **Previsto x realizado** | Compara o custo estimado pelo catálogo no orçamento com o custo real. |
+| **Relatório do serviço** | PDF de uso interno com resultado, custos por categoria, gastos e horas. |
+| **Resultado por serviço** (Financeiro) | Serviços fechados no mês, do maior resultado ao prejuízo, com a margem. |
+| **Meta de margem** (Configurações › Dados para orçamentos) | De 0 a 100%, padrão 20%. |
+
+O resultado não desconta impostos nem despesas fixas: é a margem do serviço, não o lucro líquido da empresa.
+
+## 26. Demonstração
 
 Os valores de faturamento e gastos da demonstração acompanham o mês atual, para o financeiro nunca abrir zerado na virada do mês.
 
@@ -574,6 +595,8 @@ Qualquer pessoa entra por "Ver demonstração", na página inicial, e navega pel
 | Regra | Como funciona |
 |---|---|
 | **Sem banco** | Com o cookie da demonstração, os clients de servidor e de administrador são trocados por um substituto em memória (`src/server/demo/client.ts`), com dados fixos e sem URL nem chave. O proxy também não cria client. |
+| **WhatsApp do orçamento** | "Enviar pelo WhatsApp" abre conversa com o WhatsApp comercial, nunca com os telefones fictícios dos clientes. |
+| **Link do orçamento** | `/orcamento/demonstracao-NNNN` abre sem login, com aviso de demonstração e dados fictícios, sem tocar no banco. Aprovar ou recusar responde "Na demonstração não é possível salvar". |
 | **Nada é salvo** | Formulários abrem e botões continuam visíveis. Ao salvar, aparece "Na demonstração não é possível salvar". Fotos, assinaturas e pagamento também são recusados. |
 | **Dados** | Empresa fictícia em `src/server/demo/fixtures.json`. As datas são recalculadas para perto de hoje, sem rotina nem escrita. |
 | **Perfis** | Escritório, com visão de proprietário, ou técnico, com as próprias visitas e a ordem de serviço. |

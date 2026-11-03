@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
 import type { Expense, ExpenseTemplate, RevenueListItem } from "@/types/finance";
-import { buildFinanceOverview, buildForecast, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
+import { buildFinanceOverview, buildForecast, buildWeekLoad, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
 const MEMBER: ActorContext = { companyId: "co", role: "member" };
@@ -119,8 +119,8 @@ describe("início", () => {
     const readers = makeReaders();
     readers.listRevenues.mockResolvedValue([revenue("2026-10-05", 1000)]);
     readers.listExpenses.mockImplementation(async (_company, from) =>
-      from === "2026-10-01"
-        ? [expense("2026-10-02", 300)]
+      from === "2026-05-01"
+        ? [expense("2026-10-02", 300), expense("2026-07-02", 900)]
         : [expense("2026-10-31", 40), expense("2026-11-03", 60)],
     );
     const { finance } = await createFinanceService(readers).getHome(OWNER, "2026-10-31");
@@ -129,6 +129,36 @@ describe("início", () => {
     expect(finance?.dueSoonCount).toBe(2);
     expect(finance?.dueToday).toHaveLength(1);
     expect(readers.listExpenses).toHaveBeenCalledWith("co", "2026-10-31", "2026-11-07");
+  });
+
+  it("mostra seis meses de faturamento e gastos, terminando no mês atual", async () => {
+    const readers = makeReaders();
+    readers.listRevenues.mockResolvedValue([revenue("2026-10-05", 1000), revenue("2026-05-20", 400)]);
+    readers.listExpenses.mockImplementation(async (_company, from) => (from === "2026-05-01" ? [expense("2026-08-02", 300)] : []));
+    const { finance } = await createFinanceService(readers).getHome(OWNER, "2026-10-31");
+    expect(readers.listRevenues).toHaveBeenCalledWith("co", "2026-05-01", "2026-10-31");
+    expect(finance?.trend.map((month) => month.month)).toEqual(["2026-05-01", "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01", "2026-10-01"]);
+    expect(finance?.trend[0].revenueCents).toBe(400);
+    expect(finance?.trend[3].expenseCents).toBe(300);
+    expect(finance?.monthRevenueCents).toBe(1000);
+    expect(finance?.monthExpenseCents).toBe(0);
+  });
+
+  it("conta as visitas dos próximos 7 dias por tipo, sem as canceladas", () => {
+    const week = buildWeekLoad(
+      [
+        { visit_date: "2026-10-31", kind: "execution", status: "scheduled" },
+        { visit_date: "2026-10-31", kind: "assessment", status: "completed" },
+        { visit_date: "2026-11-02", kind: "execution", status: "canceled" },
+        { visit_date: "2026-11-06", kind: "assessment", status: "scheduled" },
+        { visit_date: "2026-11-07", kind: "execution", status: "scheduled" },
+      ],
+      "2026-10-31",
+    );
+    expect(week).toHaveLength(7);
+    expect(week[0]).toEqual({ date: "2026-10-31", assessment: 1, execution: 1 });
+    expect(week[2]).toEqual({ date: "2026-11-02", assessment: 0, execution: 0 });
+    expect(week[6]).toEqual({ date: "2026-11-06", assessment: 1, execution: 0 });
   });
 
   describe("recorrências ainda não geradas", () => {

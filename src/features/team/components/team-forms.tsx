@@ -33,7 +33,7 @@ function EmployeeFields({ employee, users }: { employee?: EmployeeListItem; user
   const prefix = employee?.id ?? "new-employee";
   const details = employee?.details;
   return (
-    <div className="flex max-h-[60svh] flex-col gap-4 overflow-y-auto pr-1">
+    <div className="flex flex-col gap-4">
       {employee ? <input type="hidden" name="employeeId" value={employee.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id={`${prefix}-name`} label="Nome">

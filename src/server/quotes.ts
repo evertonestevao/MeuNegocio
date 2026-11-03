@@ -1,4 +1,5 @@
 import "server-only";
+import { createDemoClient } from "./demo/client";
 import { getServerEnv } from "@/config/env";
 import { todayInTimezone } from "@/lib/dates";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
@@ -57,6 +58,11 @@ export function getPublicQuoteUrl(token: string): string {
 }
 
 /** Link público: sem sessão, com service_role, sempre a partir do token. */
+/** Orçamento fictício para o link enviado da demonstração. Não fala com o banco. */
+export function getDemoPublicQuote(token: string) {
+  return createSupabasePublicQuoteRepository(createDemoClient("owner")).getByToken(token);
+}
+
 export function getPublicQuoteRepository(): PublicQuoteRepository {
   return createSupabasePublicQuoteRepository(getSupabaseAdminClient());
 }

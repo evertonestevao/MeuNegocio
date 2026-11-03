@@ -116,8 +116,14 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
 }
 
 /** Texto de envio: a mesma mensagem no WhatsApp e no "Copiar texto". */
+/** Primeiro nome, mantendo o tratamento: "Dr. Paulo Reis" vira "Dr. Paulo". */
+export function greetingName(fullName: string): string {
+  const [first, second] = fullName.trim().split(/\s+/);
+  return second && /^(dr|dra|sr|sra|eng|prof|profa)\.?$/i.test(first) ? `${first} ${second}` : first;
+}
+
 export function quoteShareText(quote: QuoteDocument, contactName: string | null, publicUrl: string | null): string {
-  const greeting = contactName ? `Olá, ${contactName.split(" ")[0]}!` : "Olá!";
+  const greeting = contactName ? `Olá, ${greetingName(contactName)}!` : "Olá!";
   return [
     `${greeting} Segue o orçamento Nº ${formatQuoteNumber(quote.number)} da ${quote.company.name}.`,
     quote.title ? `Serviço: ${quote.title}` : null,

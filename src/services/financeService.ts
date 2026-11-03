@@ -80,6 +80,8 @@ export function buildFinanceOverview(input: {
 export type FinanceOverview = ReturnType<typeof buildFinanceOverview>;
 
 export interface HomeFinance {
+  /** Faturamento e gastos dos últimos 6 meses, do mais antigo ao atual. */
+  trend: { month: string; revenueCents: number; expenseCents: number }[];
   monthRevenueCents: number;
   monthExpenseCents: number;
   balanceCents: number;
@@ -112,11 +114,38 @@ export function projectUngeneratedRecurring(templates: ExpenseTemplate[], today:
   return projected;
 }
 
-export function buildHomeFinance(input: { today: string; revenues: Sized[]; monthExpenses: Expense[]; upcoming: Expense[]; projected?: Sized[] }): HomeFinance {
-  const { today, revenues, monthExpenses, upcoming, projected = [] } = input;
+export interface WeekLoadDay {
+  date: string;
+  assessment: number;
+  execution: number;
+}
+
+/** Visitas por dia nos próximos 7 dias, a partir de hoje, separadas por tipo. Canceladas não contam. */
+export function buildWeekLoad(visits: Pick<VisitListItem, "visit_date" | "kind" | "status">[], today: string): WeekLoadDay[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(today, index);
+    const onDay = visits.filter((visit) => visit.visit_date === date && visit.status !== "canceled");
+    return {
+      date,
+      assessment: onDay.filter((visit) => visit.kind === "assessment").length,
+      execution: onDay.filter((visit) => visit.kind === "execution").length,
+    };
+  });
+}
+
+export function buildHomeFinance(input: {
+  today: string;
+  revenues: Sized[];
+  monthExpenses: Expense[];
+  upcoming: Expense[];
+  projected?: Sized[];
+  trend?: HomeFinance["trend"];
+}): HomeFinance {
+  const { today, revenues, monthExpenses, upcoming, projected = [], trend = [] } = input;
   const monthRevenueCents = sum(revenues);
   const monthExpenseCents = sum(monthExpenses);
   return {
+    trend,
     monthRevenueCents,
     monthExpenseCents,
     balanceCents: monthRevenueCents - monthExpenseCents,
@@ -149,7 +178,7 @@ export function createFinanceService(readers: FinanceReaders) {
       }
       const tomorrow = addDays(today, 1);
       const [visits, openQuotes] = await Promise.all([
-        readers.listVisits(actor.companyId, today, tomorrow),
+        readers.listVisits(actor.companyId, today, addDays(today, 6)),
         readers.listOpenQuotes(actor.companyId),
       ]);
       const active = visits.filter((visit) => visit.status !== "canceled");
@@ -159,17 +188,28 @@ export function createFinanceService(readers: FinanceReaders) {
         const monthStart = `${today.slice(0, 7)}-01`;
         const monthEnd = addDays(addMonths(monthStart, 1), -1);
         const until = addDays(today, 7);
-        const [revenues, monthExpenses, upcoming, templates] = await Promise.all([
-          readers.listRevenues(actor.companyId, monthStart, monthEnd),
-          readers.listExpenses(actor.companyId, monthStart, monthEnd),
+        // Seis meses de uma vez: o mês atual sai do mesmo resultado, para o gráfico.
+        const trendStart = addMonths(monthStart, -5);
+        const [sixMonthRevenues, sixMonthExpenses, upcoming, templates] = await Promise.all([
+          readers.listRevenues(actor.companyId, trendStart, monthEnd),
+          readers.listExpenses(actor.companyId, trendStart, monthEnd),
           readers.listExpenses(actor.companyId, today, until),
           readers.listExpenseTemplates(actor.companyId),
         ]);
         const projected = projectUngeneratedRecurring(templates, today, until);
-        finance = buildHomeFinance({ today, revenues, monthExpenses, upcoming, projected });
+        const overview = buildFinanceOverview({ month: monthStart, revenues: sixMonthRevenues, expenses: sixMonthExpenses, openQuotes: [] });
+        finance = buildHomeFinance({
+          today,
+          revenues: overview.revenues,
+          monthExpenses: overview.expenses,
+          upcoming,
+          projected,
+          trend: overview.series,
+        });
       }
 
       return {
+        week: buildWeekLoad(active, today),
         today: active.filter((visit) => visit.visit_date === today),
         tomorrow: active.filter((visit) => visit.visit_date === tomorrow),
         awaitingReply: openQuotes.filter((quote) => quote.status === "sent"),

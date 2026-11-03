@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays, CalendarPlus, Plus, Send, Scale, Wallet } from "lucide-react";
+import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { MetricCard } from "@/components/metric-card";
 import { ROLE_LABEL } from "@/config/roles";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,8 @@ import { getActiveTenant } from "@/server/tenant";
 import type { QuoteListItem } from "@/types/database";
 
 export const metadata: Metadata = { title: "Início" };
+
+const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function daysSince(timestamp: string | null, today: string): number | null {
   if (!timestamp) return null;
@@ -82,6 +85,17 @@ export default async function DashboardPage() {
   const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
   const nextVisit = home.today.find((visit) => visit.status === "scheduled" || visit.status === "in_progress");
   const monthMax = finance ? Math.max(finance.monthRevenueCents, finance.monthExpenseCents) : 0;
+  const weekData = home.week.map((day, index) => ({
+    dia: index === 0 ? "Hoje" : WEEKDAY_SHORT[new Date(`${day.date}T12:00:00Z`).getUTCDay()],
+    execucao: day.execution,
+    tecnica: day.assessment,
+  }));
+  const weekTotal = home.week.reduce((total, day) => total + day.execution + day.assessment, 0);
+  const trendData = (finance?.trend ?? []).map((item) => ({
+    mes: formatMonth(item.month).slice(0, 3),
+    faturamento: item.revenueCents / 100,
+    gastos: item.expenseCents / 100,
+  }));
   const monthName = formatMonth(today).split(" ")[0].toLowerCase();
 
   return (
@@ -136,6 +150,37 @@ export default async function DashboardPage() {
               hint={finance.dueSoonCount === 0 ? "Nenhuma conta nos próximos dias." : finance.dueSoonCount === 1 ? "1 conta" : `${finance.dueSoonCount} contas`}
             />
           </>
+        ) : null}
+      </div>
+
+      <div className={`grid items-start gap-4 ${finance ? "lg:grid-cols-2" : ""}`}>
+        <BarChartCard
+          title="Agenda dos próximos 7 dias"
+          description={weekTotal === 1 ? "1 visita marcada" : `${weekTotal} visitas marcadas`}
+          data={weekData}
+          xKey="dia"
+          series={[
+            { key: "execucao", label: "Execução" },
+            { key: "tecnica", label: "Visita técnica" },
+          ]}
+          integerValues
+          yAxisWidth={28}
+          height={200}
+        />
+        {finance ? (
+          <BarChartCard
+            title="Faturamento e gastos"
+            description="Últimos 6 meses. Faturamento conta só orçamentos fechados."
+            data={trendData}
+            xKey="mes"
+            series={[
+              { key: "faturamento", label: "Faturamento" },
+              { key: "gastos", label: "Gastos" },
+            ]}
+            valueFormat={{ style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 }}
+            yAxisWidth={64}
+            height={200}
+          />
         ) : null}
       </div>
 

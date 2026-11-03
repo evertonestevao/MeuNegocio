@@ -70,6 +70,17 @@ export function CompanyProfileFields({ profile }: { profile: Omit<CompanyProfile
       />
       <p className="text-xs text-muted-foreground">Entram automaticamente em todo orçamento novo e no PDF.</p>
     </div>
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="profile-margin">Meta de margem dos serviços (%)</Label>
+      <Input
+        id="profile-margin"
+        name="targetMarginPercent"
+        inputMode="numeric"
+        defaultValue={profile.target_margin_percent ?? 20}
+        className="max-w-32"
+      />
+      <p className="text-xs text-muted-foreground">Abaixo dela, o resultado do serviço aparece em alerta. Só você e o administrador veem.</p>
+    </div>
     </>
   );
 }

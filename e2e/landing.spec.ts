@@ -1,22 +1,19 @@
 import { expect, test } from "@playwright/test";
 
-/** A página inicial vende o produto, com os planos do banco, sem restos do template. */
-test("landing mostra o produto, os planos ativos e os dados legais", async ({ page }) => {
+/** A página inicial vende o produto, com contato pelo WhatsApp, sem restos do template. */
+test("landing mostra o produto, o contato pelo WhatsApp e os dados legais", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("visita técnica");
 
   const body = await page.locator("body").innerText();
   expect(body).not.toMatch(/starter|template|supabase|next\.js/i);
 
-  const plans = page.locator("#planos");
-  await expect(plans.getByText("12x de R$ 329,90")).toBeVisible();
-  await expect(plans.getByText("R$ 379,90")).toBeVisible();
-  await expect(plans.getByText(/No cartão, total de R\$\s3\.958,80/)).toBeVisible();
-  await expect(plans.getByText("Economize R$ 600,00 por ano")).toBeVisible();
-  await expect(plans.getByText("Grátis", { exact: true })).toHaveCount(0);
-  await expect(plans.getByRole("heading", { name: "Anual" }).or(plans.getByText("Anual", { exact: true }))).toBeVisible();
-  await plans.getByRole("button", { name: "Começar com o plano Anual" }).click();
-  await expect(page).toHaveURL(/\/signup/);
+  // Sem preços por enquanto: a contratação é pelo WhatsApp comercial.
+  // Os gráficos de exemplo têm valores em reais; preço de plano, não.
+  for (const price of ["329,90", "379,90", "3.958,80", "/mês"]) expect(body).not.toContain(price);
+  await expect(page.locator("#planos")).toHaveCount(0);
+  const contact = page.locator("#contato").getByRole("button", { name: "Falar pelo WhatsApp" });
+  await expect(contact).toHaveAttribute("href", /^https:\/\/wa\.me\/5514997122258\?text=/);
 
   await page.goto("/");
   await expect(page.getByRole("contentinfo")).toContainText("CNPJ");
@@ -44,15 +41,11 @@ test("landing mostra telas reais e gráficos avisados como exemplo, sem rolagem 
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("botões de compra ficam parados e sempre navegam, mesmo clicando logo ao abrir", async ({ page }) => {
-  const annual = page.locator("#planos").getByRole("button", { name: "Começar com o plano Anual" });
-  for (let attempt = 0; attempt < 8; attempt++) {
-    await page.goto("/");
-    await annual.click();
-    await expect(page).toHaveURL(/\/signup/);
-  }
+test("o botão de contato fica parado e leva ao WhatsApp, mesmo clicando logo ao abrir", async ({ page }) => {
+  const contact = page.locator("#contato").getByRole("button", { name: "Falar pelo WhatsApp" });
   await page.goto("/");
-  const moving = await annual.evaluate((button) => {
+  await expect(contact).toHaveAttribute("href", /wa\.me/);
+  const moving = await contact.evaluate((button) => {
     const found: string[] = [];
     for (let element: Element | null = button; element; element = element.parentElement) {
       const style = getComputedStyle(element);

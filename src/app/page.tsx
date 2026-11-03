@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brand, salesWhatsappHref } from "@/config/brand";
-import { annualSavingsCents, planMonthlyCents, planOfferLines, plansForSale } from "@/config/planFeatures";
 import { BrowserFrame, PhoneFrame } from "@/features/marketing/components/device-frames";
 import { SampleCharts } from "@/features/marketing/components/sample-charts";
-import { benefits, faq, hero, journey, pains, showcases } from "@/features/marketing/content";
-import { formatCents } from "@/lib/money";
-import { cn } from "@/lib/utils";
-import { getPublicPlans } from "@/server/plans";
+import { SampleServiceResult } from "@/features/marketing/components/sample-service-result";
+import { benefits, faq, hero, journey, LANDING_SCREENS, pains, profitPitch, showcases } from "@/features/marketing/content";
 import { isSignupOpen } from "@/server/signup";
-import type { Plan } from "@/types/database";
 
-// Preço e oferta mudam pelo painel, sem deploy: a página não pode ficar presa ao build.
+// O cadastro aberto ou fechado vem do servidor: a página não pode ficar presa ao build.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -24,65 +19,8 @@ export const metadata: Metadata = {
 
 const YELLOW_BUTTON = "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90";
 
-function PlanCard({ plan, savingsCents, signupOpen }: { plan: Plan; savingsCents: number; signupOpen: boolean }) {
-  const annual = plan.billing_interval === "year";
-  // O card não se move: animar aqui pode tirar o botão de compra de baixo do clique.
-  return (
-    <Card className={cn("transition-shadow hover:shadow-md", annual && "relative overflow-visible border-2 border-sidebar-primary shadow-xl")}>
-      <CardHeader>
-        {annual ? (
-          <span className="absolute -top-3 left-4 rounded-full bg-sidebar-primary px-3 py-0.5 text-xs font-semibold text-sidebar-primary-foreground">
-            Melhor escolha
-          </span>
-        ) : null}
-        <CardTitle>{plan.name}</CardTitle>
-        <p className={cn("font-semibold tracking-tight tabular-nums", annual ? "text-4xl" : "text-3xl")}>
-          {annual ? <span className="text-lg font-medium">12x de </span> : null}
-          {formatCents(planMonthlyCents(plan), plan.currency)}
-          {annual ? null : <span className="text-sm font-normal text-muted-foreground"> /mês</span>}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {annual
-            ? `No cartão, total de ${formatCents(plan.price_cents, plan.currency)}. Vale por 12 meses, sem renovação automática.`
-            : "Cobrado todo mês, por PIX, boleto ou cartão"}
-        </p>
-        {annual && savingsCents > 0 ? (
-          <p className="w-fit rounded-full bg-success/12 px-2.5 py-0.5 text-sm font-medium text-success dark:bg-success/20">
-            Economize {formatCents(savingsCents, plan.currency)} por ano
-          </p>
-        ) : null}
-        {plan.extra_seat_price_cents > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Membro extra: {formatCents(planMonthlyCents(plan, plan.extra_seat_price_cents), plan.currency)} /mês
-          </p>
-        ) : null}
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-5">
-        <ul className="flex flex-col gap-2 text-sm">
-          {planOfferLines(plan.features).map((line) => (
-            <li key={line} className="flex items-start gap-2">
-              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-              {line}
-            </li>
-          ))}
-        </ul>
-        {plan.custom_text ? <p className="whitespace-pre-line text-sm text-muted-foreground">{plan.custom_text}</p> : null}
-        <Button
-          className={cn("mt-auto", annual && YELLOW_BUTTON)}
-          variant={annual ? "default" : "outline"}
-          nativeButton={false}
-          render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o plano ${plan.name} do ${brand.name}.`)} target="_blank" rel="noreferrer" />}
-        >
-          {signupOpen ? `Começar com o plano ${plan.name}` : `Quero o plano ${plan.name}`}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default async function LandingPage() {
-  const plans = plansForSale(await getPublicPlans());
-  const savingsCents = annualSavingsCents(plans);
+  const contactHref = salesWhatsappHref(`Olá! Quero conhecer o ${brand.name} para a minha empresa.`);
   const signupOpen = isSignupOpen();
 
   return (
@@ -100,8 +38,8 @@ export default async function LandingPage() {
             <a href="#como-funciona" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
               Como funciona
             </a>
-            <a href="#planos" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
-              Planos
+            <a href="#contato" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
+              Contato
             </a>
             <a href="#duvidas" className="hidden px-2 text-sm text-muted-foreground hover:text-foreground md:block">
               Dúvidas
@@ -127,8 +65,8 @@ export default async function LandingPage() {
             <h1 style={{ "--lp-delay": "80ms" } as React.CSSProperties} className="lp-enter text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">{hero.title}</h1>
             <p style={{ "--lp-delay": "160ms" } as React.CSSProperties} className="lp-enter max-w-2xl text-pretty text-sidebar-foreground/80 lg:text-lg">{hero.description}</p>
             <div style={{ "--lp-delay": "240ms" } as React.CSSProperties} className="lp-fade flex flex-wrap justify-center gap-3">
-              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<a href="#planos" />}>
-                Ver planos <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<a href={contactHref} target="_blank" rel="noreferrer" />}>
+                Falar com a gente <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
               </Button>
               <Button
                 size="lg"
@@ -155,14 +93,14 @@ export default async function LandingPage() {
           <div style={{ "--lp-delay": "400ms" } as React.CSSProperties} className="lp-enter relative lg:mr-16">
             {/* No celular, a tela de computador ficaria pequena demais para ler. */}
             <BrowserFrame
-              src="/landing/inicio.jpg"
+              src={`${LANDING_SCREENS}/inicio.jpg`}
               alt="Tela de início com as visitas de hoje, os orçamentos em andamento, o saldo do mês e as contas a pagar."
               sizes="(max-width: 1200px) 100vw, 1100px"
               preload
               className="hidden sm:block"
             />
             <PhoneFrame
-              src="/landing/inicio-celular.jpg"
+              src={`${LANDING_SCREENS}/inicio-celular.jpg`}
               alt="Tela de início no celular, com as visitas de hoje, o saldo do mês e as contas a pagar."
               sizes="260px"
               className="mx-auto w-64 sm:absolute sm:-right-4 sm:-bottom-8 sm:hidden lg:-right-16 lg:block lg:w-52"
@@ -180,6 +118,33 @@ export default async function LandingPage() {
                 <p className="text-sm text-muted-foreground">{pain.description}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section id="lucro" className="scroll-mt-14 border-y bg-muted/40">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
+            <div className="flex flex-col gap-5">
+              <p className="text-sm font-semibold text-success">{profitPitch.eyebrow}</p>
+              <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{profitPitch.title}</h2>
+              <p className="text-pretty text-muted-foreground lg:text-lg">{profitPitch.description}</p>
+              <ul className="flex flex-col gap-2.5">
+                {profitPitch.points.map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <Check className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<a href="/demo" />}>
+                  Ver na demonstração <ArrowRight className="size-4" aria-hidden />
+                </Button>
+                <Button size="lg" variant="outline" nativeButton={false} render={<a href={contactHref} target="_blank" rel="noreferrer" />}>
+                  Falar com a gente
+                </Button>
+              </div>
+            </div>
+            <SampleServiceResult />
           </div>
         </section>
 
@@ -256,21 +221,16 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="planos" className="scroll-mt-14 border-t bg-muted/40">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16 lg:py-24">
-            <h2 className="text-3xl font-semibold tracking-tight">Planos</h2>
-            <p className="mt-2 text-muted-foreground">Técnico com acesso conta como membro; pessoa da equipe sem acesso, não.</p>
-            {plans.length === 0 ? (
-              <p className="mt-8 text-sm text-muted-foreground">
-                Não foi possível mostrar os planos agora. Fale com {brand.legal.supportEmail}.
-              </p>
-            ) : (
-              <div className="mx-auto mt-10 grid max-w-3xl items-stretch gap-6 md:grid-cols-2">
-                {plans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} savingsCents={savingsCents} signupOpen={signupOpen} />
-                ))}
-              </div>
-            )}
+        <section id="contato" className="scroll-mt-14 border-t bg-muted/40">
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 px-4 py-16 text-center lg:py-24">
+            <h2 className="text-3xl font-semibold tracking-tight text-balance">Quer usar na sua empresa?</h2>
+            <p className="max-w-xl text-pretty text-muted-foreground">
+              Fale com a gente pelo WhatsApp. Entendemos como sua equipe trabalha e mostramos a melhor forma de começar.
+            </p>
+            {/* O botão não se move: animar aqui pode tirá-lo de baixo do clique. */}
+            <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<a href={contactHref} target="_blank" rel="noreferrer" />}>
+              <MessageCircle className="size-4" aria-hidden /> Falar pelo WhatsApp
+            </Button>
           </div>
         </section>
 

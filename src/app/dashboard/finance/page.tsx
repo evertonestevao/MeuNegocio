@@ -13,6 +13,7 @@ import { formatDate, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { getFinanceService } from "@/server/home";
 import { getCompanyProfileService } from "@/server/quotes";
+import { getServiceCostService } from "@/server/serviceCosts";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -33,6 +34,14 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const today = todayInTimezone(profile.timezone);
   const month = isValidDate(`${params.m}-01`) ? `${params.m}-01` : `${today.slice(0, 7)}-01`;
   const overview = await (await getFinanceService()).getOverview({ companyId: active.id, role: active.role }, month);
+  const targetMarginPercent = profile.target_margin_percent ?? 20;
+  const results = await (await getServiceCostService()).getForQuotes(
+    { companyId: active.id, role: active.role },
+    overview.revenues.map((revenue) => ({ id: revenue.quote_id, totalCents: revenue.amount_cents, plannedCostCents: null })),
+    targetMarginPercent,
+  );
+  // Do maior resultado para o prejuízo: é onde o dono percebe o que vale a pena.
+  const ranked = overview.revenues.toSorted((a, b) => (results.get(b.quote_id)?.resultCents ?? 0) - (results.get(a.quote_id)?.resultCents ?? 0));
 
   const monthHref = (target: string) => `/dashboard/finance?m=${target.slice(0, 7)}`;
   const chartData = overview.series.map((item) => ({
@@ -173,14 +182,18 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Orçamentos fechados</CardTitle>
+            <CardTitle>Resultado por serviço</CardTitle>
+            <CardDescription>Serviços fechados no mês, descontados os gastos ligados e as horas da equipe. Meta de margem: {targetMarginPercent}%.</CardDescription>
           </CardHeader>
           <CardContent>
             {overview.revenues.length === 0 ? (
               <p className="text-sm text-muted-foreground">Feche um orçamento aprovado para lançar o faturamento.</p>
             ) : (
               <ul className="flex flex-col divide-y text-sm">
-                {overview.revenues.map((revenue) => (
+                {ranked.map((revenue) => {
+                  const result = results.get(revenue.quote_id);
+                  const tone = result?.status === "loss" ? "text-destructive" : result?.status === "low" ? "text-warning" : "text-success";
+                  return (
                   <li key={revenue.id}>
                     <Link href={`/dashboard/quotes/${revenue.quote_id}`} className="flex items-center justify-between gap-3 py-2 hover:underline">
                       <span className="flex min-w-0 flex-col">
@@ -188,13 +201,17 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                           #{formatQuoteNumber(revenue.quote_number)} · {revenue.quote_title ?? "Sem título"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {formatDate(revenue.competence_date)} · {revenue.client_name}
+                          {formatDate(revenue.competence_date)} · {revenue.client_name} · cobrado {formatCents(revenue.amount_cents)}
                         </span>
                       </span>
-                      <span className="shrink-0 font-medium tabular-nums">{formatCents(revenue.amount_cents)}</span>
+                      <span className="flex shrink-0 flex-col items-end">
+                        <span className={`font-semibold tabular-nums ${tone}`}>{formatCents(result?.resultCents ?? revenue.amount_cents)}</span>
+                        <span className="text-xs text-muted-foreground">{result?.marginPercent === null || result === undefined ? "" : `margem ${result.marginPercent}%`}</span>
+                      </span>
                     </Link>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </CardContent>

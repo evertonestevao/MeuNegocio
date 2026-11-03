@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
 import { parseMoneyToCents } from "@/lib/money";
+import type { PaymentMethod } from "@/types/finance";
 
 /** Validação de gastos: roda no navegador e de novo no servidor. */
 
@@ -25,6 +27,14 @@ export const expenseSchema = z.object({
   expenseDate: z.iso.date({ error: "Informe a data." }),
   employeeId: optionalUuid,
   notes: z.string().trim().max(1000, "Use até 1000 caracteres.").transform((value) => value || null),
+  quoteId: optionalUuid.default(""),
+  /** Escolhido na lista; sem ele, o nome digitado vira um fornecedor novo. */
+  supplierId: optionalUuid.default(""),
+  supplierName: z.string().trim().max(120, "Use até 120 caracteres.").default("").transform((value) => value || null),
+  paymentMethod: z
+    .union([z.enum(["pix", "cash", "debit", "credit", "boleto", "transfer", "other"]), z.literal("")])
+    .default("")
+    .transform((value) => (value || null) as PaymentMethod | null),
 });
 
 export type ExpenseInput = z.output<typeof expenseSchema>;
@@ -37,6 +47,10 @@ export function parseExpenseForm(formData: FormData): ExpenseInput {
     expenseDate: text(formData, "expenseDate"),
     employeeId: text(formData, "employeeId"),
     notes: text(formData, "notes"),
+    quoteId: text(formData, "quoteId"),
+    supplierId: text(formData, "supplierId"),
+    supplierName: text(formData, "supplierName"),
+    paymentMethod: text(formData, "paymentMethod"),
   });
 }
 
@@ -68,6 +82,46 @@ export function parseExpenseTemplateForm(formData: FormData): ExpenseTemplateInp
     endsOn: text(formData, "endsOn"),
     active: formData.get("active") === "on",
   });
+}
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  pix: "PIX",
+  cash: "Dinheiro",
+  debit: "Cartão de débito",
+  credit: "Cartão de crédito",
+  boleto: "Boleto",
+  transfer: "Transferência",
+  other: "Outro",
+};
+
+const optionalSupplierText = (max: number) =>
+  z.string().trim().max(max, `Use até ${max} caracteres.`).default("").transform((value) => value || null);
+
+export const supplierSchema = z.object({
+  name: z.string().trim().min(2, "Informe o nome do fornecedor.").max(120, "Use até 120 caracteres."),
+  document: optionalSupplierText(20)
+    .refine((value) => value === null || [11, 14].includes(value.replace(/\D/g, "").length), "Informe o CPF ou o CNPJ completo.")
+    .transform((value) => (value ? formatDocument(value) : null)),
+  phone: optionalSupplierText(30)
+    .refine((value) => value === null || isValidPhone(value), "Informe o telefone com DDD.")
+    .transform((value) => (value ? formatPhone(value) : null)),
+  notes: optionalSupplierText(500),
+});
+
+export type SupplierInput = z.output<typeof supplierSchema>;
+
+export function parseSupplierForm(formData: FormData): SupplierInput {
+  return supplierSchema.parse({
+    name: text(formData, "name"),
+    document: text(formData, "document"),
+    phone: text(formData, "phone"),
+    notes: text(formData, "notes"),
+  });
+}
+
+/** Mesmo nome, com ou sem acento e maiúsculas: usado para achar o fornecedor ao digitar. */
+export function supplierSearchKey(name: string): string {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 export const categoryNameSchema = z.string().trim().min(2, "Informe o nome da categoria.").max(80, "Use até 80 caracteres.");

@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getClientEnv } from "@/config/env";
 import { createDemoClient } from "./demo/client";
 import { getDemoProfile } from "./demo/mode";
+import { createClockTolerantFetch } from "./supabase-fetch";
 
 /**
  * Client Supabase para Server Components, Server Actions e Route Handlers.
@@ -23,6 +24,7 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      global: { fetch: createClockTolerantFetch() },
       cookies: {
         getAll() {
           return cookieStore.getAll();

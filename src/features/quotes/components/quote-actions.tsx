@@ -7,13 +7,11 @@ import { DialogForm } from "@/components/dialog-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/dates";
-import { centsToMoneyInput, formatCents } from "@/lib/money";
+import { formatCents } from "@/lib/money";
 import {
-  closeQuoteAction,
   deleteQuoteAction,
   duplicateQuoteAction,
   transitionQuoteAction,
@@ -22,6 +20,7 @@ import {
 import type { ActionState } from "@/server/actions/action-state";
 import type { Quote, Revenue } from "@/types/database";
 import type { QuoteDocument } from "@/types/quotes";
+import { CloseQuoteButton } from "./close-quote-button";
 import { downloadQuotePdf, quoteShareText, whatsappUrl } from "../pdf";
 
 type Action = (prev: ActionState | undefined, formData: FormData) => Promise<ActionState>;
@@ -192,23 +191,7 @@ export function QuoteActions({
         ) : null}
 
         {quote.status === "approved" && canClose ? (
-          <DialogForm
-            title="Fechar e faturar"
-            description="O valor entra no faturamento na data de competência."
-            action={closeQuoteAction}
-            submitLabel="Fechar e faturar"
-            trigger={(open) => <Button onClick={open}>Fechar e faturar</Button>}
-          >
-            <input type="hidden" name="quoteId" value={quote.id} />
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="close-amount">Valor (R$)</Label>
-              <MaskedInput mask="money" id="close-amount" name="amount" defaultValue={centsToMoneyInput(quote.total_cents)} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="close-date">Data de competência</Label>
-              <Input id="close-date" name="competenceDate" type="date" defaultValue={today} />
-            </div>
-          </DialogForm>
+          <CloseQuoteButton quoteId={quote.id} totalCents={quote.total_cents} today={today} />
         ) : null}
         {quote.status === "approved" && !canClose ? (
           <p className="text-sm text-muted-foreground">Aprovado. O fechamento é feito por owner ou admin.</p>

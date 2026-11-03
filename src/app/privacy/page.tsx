@@ -17,7 +17,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "3. Dados cadastrados pelas empresas",
-    body: "Clientes: nome, documento, observações, contatos (nome, função, telefone e e-mail) e locais de atendimento com endereço.\nEquipe: nome, função e horas trabalhadas. O proprietário e o administrador também podem registrar telefone, tipo de contrato, valores por hora, nome legal, documento e chave PIX, que ficam restritos a esses dois papéis.\nOrçamentos e agenda: itens, valores, observações, visitas e seus horários.",
+    body: "Fornecedores: nome, CNPJ ou CPF, telefone e observações, e o que foi pago a cada um.\nClientes: nome, documento, observações, contatos (nome, função, telefone e e-mail) e locais de atendimento com endereço.\nEquipe: nome, função e horas trabalhadas. O proprietário e o administrador também podem registrar telefone, tipo de contrato, valores por hora, nome legal, documento e chave PIX, que ficam restritos a esses dois papéis.\nOrçamentos e agenda: itens, valores, observações, visitas e seus horários.",
   },
   {
     title: "4. Fotos e assinaturas coletadas em campo",
@@ -54,5 +54,5 @@ const sections: LegalSection[] = [
 ];
 
 export default function PrivacyPage() {
-  return <LegalPage title="Política de Privacidade" updatedAt="02/11/2026" sections={sections} />;
+  return <LegalPage title="Política de Privacidade" updatedAt="03/11/2026" sections={sections} />;
 }

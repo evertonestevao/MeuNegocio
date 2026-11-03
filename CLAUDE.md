@@ -88,6 +88,15 @@ Ao criar um arquivo novo, pergunte: "isso é lógica de negócio (service), esta
 - Toda mudança que cria, altera ou remove uma funcionalidade, permissão, limite, rota ou integração **atualiza a seção correspondente de `FUNCIONALIDADES.md` no mesmo commit**, junto com a data de "Última atualização"
 - Mudança só interna (refatoração, teste, estilo) que não altera comportamento não precisa atualizar
 
+## Página inicial e demonstração
+
+A página inicial (`src/app/page.tsx`) vende o produto com telas reais e a demonstração (`/demo`) mostra o sistema com dados fictícios. As duas precisam acompanhar o sistema:
+
+- Mudou o layout ou um componente que aparece nas telas da página inicial (Início, Agenda, Orçamentos, Serviços, Financeiro, ordem de serviço no celular)? **No mesmo commit**, suba a versão em `LANDING_SCREENS` (`src/features/marketing/content.ts`, ex.: `/landing/v3` → `/landing/v4`) e regenere as imagens com o app no ar na porta 3000: `node scripts/generate-landing-screens.mjs`. Apague a pasta da versão anterior. A versão nova no caminho evita que o navegador mostre a imagem antiga do cache.
+- Funcionalidade nova que seja argumento de venda (algo que o cliente perceberia e citaria) entra nos textos de `src/features/marketing/content.ts` no mesmo commit: `benefits`, e quando fizer sentido `showcases`, `journey` e `faq`. Só o que o sistema faz hoje: nada de promessa.
+- A demonstração precisa mostrar a funcionalidade nova com dados que façam sentido (`src/server/demo/fixtures.json`) e continuar sem tocar no banco.
+- Confira as imagens geradas antes de commitar: sem faixa da demonstração, sem dado real, sem tela vazia.
+
 ## Testes
 
 - Toda function de `services` com regra de negócio (ex: `canAccessFeature`, cálculo de limite de plano) precisa de teste unitário

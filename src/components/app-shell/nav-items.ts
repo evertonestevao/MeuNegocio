@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Settings,
   Users,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import type { RoleCode } from "@/types/database";
@@ -39,6 +40,7 @@ export const navItems: NavItem[] = [
     roles: ["owner", "admin", "member"],
     mobileTab: true,
   },
+  { title: "Serviços", href: "/dashboard/services", icon: Wrench, roles: ["owner", "admin", "member"], mobileTab: true },
   { title: "Minhas visitas", href: "/dashboard/my-visits", icon: ClipboardCheck, roles: ["technician"], mobileTab: true },
   { title: "Agenda", href: "/dashboard/schedule", icon: CalendarDays, roles: ["owner", "admin", "member"], mobileTab: true },
   { title: "Orçamentos", href: "/dashboard/quotes", icon: FileText, roles: ["owner", "admin", "member"], mobileTab: true },
@@ -47,7 +49,7 @@ export const navItems: NavItem[] = [
   { title: "Equipe", href: "/dashboard/team", icon: HardHat, roles: ["owner", "admin", "member"] },
   { title: "Horas", href: "/dashboard/hours", icon: Clock, roles: ["owner", "admin"] },
   { title: "Gastos", href: "/dashboard/expenses", icon: Wallet, roles: ["owner", "admin"] },
-  { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"], mobileTab: true },
+  { title: "Financeiro", href: "/dashboard/finance", icon: ChartColumn, roles: ["owner", "admin"] },
   { title: "Membros", href: "/dashboard/members", icon: Users, roles: ["owner", "admin"] },
   {
     title: "Configurações",

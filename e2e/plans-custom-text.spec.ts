@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
 import { admin, makeSuperAdmin } from "./reseller-helpers";
 
-test("texto livre do plano sai do painel para a oferta, sem prazo de auditoria", async ({ page }) => {
+test("texto livre do plano sai do painel para a assinatura, sem prazo de auditoria", async ({ page }) => {
   const { data: plan, error } = await admin.from("plans").select("id, custom_text").eq("code", "pro").single();
   if (error || !plan) throw error ?? new Error("Plano pro não encontrado");
   const text = `Teste grátis por 7 dias ${Date.now()}`;
@@ -17,9 +17,6 @@ test("texto livre do plano sai do painel para a oferta, sem prazo de auditoria",
     await field.fill(text);
     await page.locator("form", { has: field }).getByRole("button", { name: "Salvar plano" }).click();
     await expect(page.getByText("Plano salvo")).toBeVisible();
-
-    await page.goto("/");
-    await expect(page.locator("#planos").getByText(text)).toBeVisible();
 
     await page.goto("/dashboard/billing");
     await expect(page.getByText(text)).toBeVisible();

@@ -81,6 +81,32 @@ export interface Expense {
   employee_id: string | null;
   template_id: string | null;
   notes: string | null;
+  /** Orçamento aprovado ou fechado a que o gasto pertence. */
+  quote_id?: string | null;
+  quote_number?: number | null;
+  supplier_id?: string | null;
+  /** Nome do fornecedor cadastrado, para exibir. */
+  supplier?: string | null;
+  payment_method?: PaymentMethod | null;
+}
+
+export type PaymentMethod = "pix" | "cash" | "debit" | "credit" | "boleto" | "transfer" | "other";
+
+export interface Supplier {
+  id: string;
+  name: string;
+  document: string | null;
+  phone: string | null;
+  notes: string | null;
+}
+
+/** Gasto resumido para as contas por fornecedor. */
+export interface SupplierSpend {
+  supplier_id: string;
+  amount_cents: number;
+  expense_date: string;
+  category_id: string;
+  category_name: string;
 }
 
 export interface ExpenseTemplate {
