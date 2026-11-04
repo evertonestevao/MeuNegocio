@@ -484,6 +484,91 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Numeração de orçamento: contador sumido ou atrasado não repete número (erro 23505 na tela).
+-- ---------------------------------------------------------------------------
+create temp table sec_quote_max on commit drop as
+  select coalesce(max(number), 0) + 2 as top from public.quotes where company_id = '5ec0c000-0000-4000-8000-000000000001';
+grant select on sec_quote_max to authenticated;
+do $$
+declare
+  v_top integer := (select top from sec_quote_max);
+  v_number integer;
+begin
+  insert into public.quotes (company_id, number) values
+    ('5ec0c000-0000-4000-8000-000000000001', v_top - 1), ('5ec0c000-0000-4000-8000-000000000001', v_top);
+  delete from public.company_counters where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  v_number := public.next_quote_number('5ec0c000-0000-4000-8000-000000000001');
+  if v_number <> v_top + 1 then raise exception 'FALHA numeração: sem contador, deu % em vez de %', v_number, v_top + 1; end if;
+  update public.company_counters set quote_number = 1 where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  v_number := public.next_quote_number('5ec0c000-0000-4000-8000-000000000001');
+  -- Nenhum orçamento usou o número anterior: o maior existente continua sendo v_top.
+  if v_number <> v_top + 1 then raise exception 'FALHA numeração: contador atrasado deu % em vez de %', v_number, v_top + 1; end if;
+end $$;
+
+-- O caminho da tela: o dono cria um orçamento novo com o contador atrasado.
+update public.company_counters set quote_number = 1 where company_id = '5ec0c000-0000-4000-8000-000000000001';
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+declare
+  v_quote uuid;
+begin
+  v_quote := public.save_quote('5ec0c000-0000-4000-8000-000000000001', null, null, null, 'Numeração', current_date + 15, 0, null, '[]'::jsonb);
+  if (select number from public.quotes where id = v_quote) <> (select top from sec_quote_max) + 1 then
+    raise exception 'FALHA numeração: orçamento novo repetiu número';
+  end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Custo do item no orçamento: só owner e admin veem; o membro não apaga ao editar; o link não mostra.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+create temp table sec_cost_quote on commit drop as
+  select public.save_quote('5ec0c000-0000-4000-8000-000000000001', null, null, null, 'Revenda', current_date + 15, 0, null,
+    '[{"description":"Serviço do parceiro","unit":"un","pricing_mode":"fixed","quantity":1,"people":1,"unit_price_cents":1020000,"cost_cents":850000}]'::jsonb) as id;
+do $$
+begin
+  if (select c.cost_cents from public.quote_item_costs c join public.quote_items i on i.id = c.quote_item_id
+      where i.quote_id = (select id from sec_cost_quote)) is distinct from 850000 then
+    raise exception 'FALHA custo do item: o dono não gravou o custo';
+  end if;
+end $$;
+
+reset role;
+-- Membro próprio deste bloco: blocos anteriores mudam a situação do membro padrão.
+insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data)
+values ('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{"full_name":"Membro custo"}');
+-- Só para montar o cenário: a trava de vagas do plano não é o que se testa aqui.
+set local session_replication_role = replica;
+insert into public.company_members (company_id, user_id, role) values ('5ec0c000-0000-4000-8000-000000000001', '5ec00000-0000-4000-8000-0000000000c1', 'member');
+set local session_replication_role = origin;
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+do $$
+begin
+  if exists (select 1 from public.quote_item_costs) then
+    raise exception 'FALHA custo do item: o membro enxerga custos';
+  end if;
+  -- O membro edita o rascunho (sem mandar custo): o custo do dono continua.
+  perform public.save_quote('5ec0c000-0000-4000-8000-000000000001', (select id from sec_cost_quote), null, null, 'Revenda editada', current_date + 15, 0, null,
+    '[{"description":"Serviço do parceiro","unit":"un","pricing_mode":"fixed","quantity":1,"people":1,"unit_price_cents":1100000,"cost_cents":1}]'::jsonb);
+end $$;
+reset role;
+do $$
+begin
+  if (select c.cost_cents from public.quote_item_costs c join public.quote_items i on i.id = c.quote_item_id
+      where i.quote_id = (select id from sec_cost_quote)) is distinct from 850000 then
+    raise exception 'FALHA custo do item: edição do membro mudou ou apagou o custo';
+  end if;
+  update public.quotes set status = 'sent', public_token = coalesce(public_token, md5(random()::text) || md5(random()::text)) where id = (select id from sec_cost_quote);
+  if public.get_public_quote((select public_token from public.quotes where id = (select id from sec_cost_quote)))::text ~ '850000|cost' then
+    raise exception 'FALHA custo do item: o link do cliente mostra o custo';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

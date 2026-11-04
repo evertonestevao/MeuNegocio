@@ -14,7 +14,7 @@ import { formatCents } from "@/lib/money";
 import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
-import { useQuoteEditor } from "../hooks/use-quote-editor";
+import { useQuoteEditor, type EditorLine } from "../hooks/use-quote-editor";
 import { quoteSchema } from "../schemas";
 
 const SELECT_CLASS =
@@ -29,6 +29,7 @@ export function QuoteEditor({
   clients,
   initial,
   aside,
+  canSeeCost = false,
 }: {
   quote: Quote | null;
   items: QuoteItem[];
@@ -36,8 +37,10 @@ export function QuoteEditor({
   clients: ClientPickerOption[];
   initial: { clientId: string | null; validUntil: string | null; notes: string };
   aside?: React.ReactNode;
+  /** Owner e admin: custo e acréscimo por item, que o cliente nunca vê. */
+  canSeeCost?: boolean;
 }) {
-  const editor = useQuoteEditor({ quote, items, catalog, initial });
+  const editor = useQuoteEditor({ quote, items, catalog, initial, canSeeCost });
   const readOnly = quote !== null && quote.status !== "draft";
   const client = clients.find((candidate) => candidate.id === editor.clientId);
   const activeCatalog = catalog.filter((item) => item.active);
@@ -143,7 +146,7 @@ export function QuoteEditor({
                   const hourly = line.pricingMode === "hourly";
                   const id = `line-${index}`;
                   return (
-                    <li key={line.key} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+                    <li key={line.key} className="@container flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
                       <div className="flex items-start gap-2">
                         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                           <Label htmlFor={`${id}-description`}>Descrição</Label>
@@ -166,7 +169,7 @@ export function QuoteEditor({
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[9.5rem_repeat(3,minmax(0,1fr))_6rem]">
+                      <div className="grid grid-cols-2 items-end gap-3 @2xl:grid-cols-[9.5rem_repeat(3,minmax(0,1fr))_6rem]">
                         <div className="flex min-w-0 flex-col gap-1.5">
                           <Label htmlFor={`${id}-mode`}>Cobrança</Label>
                           <select
@@ -228,13 +231,14 @@ export function QuoteEditor({
                             onChange={(event) => editor.updateLine(line.key, { unitPrice: event.target.value })}
                           />
                         </div>
-                        <div className="flex min-w-0 flex-col gap-1.5 sm:text-right">
+                        <div className="flex min-w-0 flex-col gap-1.5 @2xl:text-right">
                           <span className="text-sm font-medium">Total da linha</span>
-                          <span className="flex h-8 items-center text-sm font-medium tabular-nums sm:justify-end">
+                          <span className="flex h-8 items-center text-sm font-medium tabular-nums @2xl:justify-end">
                             {formatCents(editor.totals.lineTotal(line))}
                           </span>
                         </div>
                       </div>
+                      {canSeeCost ? <LineCost id={id} line={line} readOnly={readOnly} editor={editor} /> : null}
                     </li>
                   );
                 })}
@@ -320,7 +324,7 @@ export function QuoteEditor({
                     {editor.totals.estimate.margin === null ? "—" : `${editor.totals.estimate.margin}%`}
                   </span>
                 </div>
-                <span>Considera só os itens com custo no catálogo.</span>
+                <span>Considera só os itens com custo informado.</span>
               </div>
             ) : null}
             {readOnly ? null : (
@@ -331,6 +335,86 @@ export function QuoteEditor({
           </CardContent>
         </Card>
         {aside}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "A mais" da linha, numa faixa só para owner e admin. O valor digitado acima vira o custo, e o
+ * cliente recebe o valor com o "a mais", sem saber que ele existe.
+ */
+function LineCost({
+  id,
+  line,
+  readOnly,
+  editor,
+}: {
+  id: string;
+  line: EditorLine;
+  readOnly: boolean;
+  editor: ReturnType<typeof useQuoteEditor>;
+}) {
+  const gain = editor.totals.lineGain(line);
+  return (
+    <div className="mt-3 flex flex-col gap-2 rounded-xl border border-dashed bg-muted/40 p-3">
+      <p className="text-xs text-muted-foreground">
+        <span className="font-semibold">Só você vê.</span> Se o valor acima é o que você paga (ao parceiro, por exemplo), coloque quanto
+        quer a mais. O cliente vê só o valor final.
+      </p>
+      <div className="grid grid-cols-1 items-end gap-3 @2xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <Label htmlFor={`${id}-markup`}>A mais nesta linha</Label>
+          <div className="flex gap-1">
+            {line.markupMode === "amount" ? (
+              <MaskedInput
+                mask="money"
+                id={`${id}-markup`}
+                disabled={readOnly}
+                value={line.markup}
+                onChange={(event) => editor.updateLine(line.key, { markup: event.target.value })}
+                className="min-w-0 flex-1"
+              />
+            ) : (
+              <Input
+                id={`${id}-markup`}
+                inputMode="decimal"
+                disabled={readOnly}
+                placeholder="Ex.: 20"
+                value={line.markup}
+                onChange={(event) => editor.updateLine(line.key, { markup: event.target.value })}
+                className="min-w-0 flex-1"
+              />
+            )}
+            <div className="flex shrink-0 overflow-hidden rounded-lg border" role="group" aria-label="Tipo do valor a mais">
+              {(["percent", "amount"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={readOnly}
+                  aria-pressed={line.markupMode === mode}
+                  onClick={() => editor.updateLine(line.key, { markupMode: mode, markup: "" })}
+                  className={`min-w-11 px-3 text-sm ${line.markupMode === mode ? "bg-primary font-medium text-primary-foreground" : "bg-card"}`}
+                >
+                  {mode === "percent" ? "%" : "R$"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="rounded-lg bg-background px-3 py-2 text-sm @2xl:bg-transparent @2xl:px-0 @2xl:py-1.5">
+          {gain === null ? (
+            <span className="text-muted-foreground">Sem valor a mais: o cliente vê o valor digitado acima.</span>
+          ) : (
+            <>
+              <span className="text-muted-foreground">O cliente vê </span>
+              <strong className="tabular-nums">{formatCents(editor.totals.clientUnitPrice(line))}</strong>
+              <span className="text-muted-foreground"> por unidade. Você ganha </span>
+              <strong className={`tabular-nums ${gain.cents < 0 ? "text-destructive" : "text-success"}`}>{formatCents(gain.cents)}</strong>
+              {gain.margin !== null ? <span className="text-muted-foreground"> ({gain.margin}% do preço)</span> : null}
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

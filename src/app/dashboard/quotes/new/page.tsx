@@ -30,6 +30,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
       <QuoteEditor
         quote={null}
         items={[]}
+        canSeeCost={permissionService.canManageFinance(active.role)}
         catalog={catalog}
         clients={clients}
         initial={{

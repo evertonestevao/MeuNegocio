@@ -214,6 +214,8 @@ export interface QuoteItem {
   people: number;
   unit_price_cents: number;
   line_total_cents: number;
+  /** Custo do item neste orçamento. Só chega para owner e admin; o cliente nunca vê. */
+  cost_cents?: number | null;
 }
 
 export interface QuoteResponse {

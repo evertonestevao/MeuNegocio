@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimatedCostCents, lineTotalCents, marginPercent, subtotalCents, totalCents } from "./quoteCalc";
+import { estimatedCostCents, lineTotalCents, marginPercent, subtotalCents, totalCents, priceWithMarkup } from "./quoteCalc";
 
 const fixed = (quantity: number, unitPriceCents: number) =>
   ({ pricingMode: "fixed", quantity, people: 1, unitPriceCents }) as const;
@@ -47,5 +47,14 @@ describe("cálculo do orçamento", () => {
   it("margem sobre o preço", () => {
     expect(marginPercent(1000, 600)).toBe(40);
     expect(marginPercent(0, 600)).toBeNull();
+  });
+});
+
+describe("priceWithMarkup", () => {
+  it("aplica o acréscimo em % sobre o custo ou em reais por unidade", () => {
+    expect(priceWithMarkup(850_000, 20, "percent")).toBe(1_020_000);
+    expect(priceWithMarkup(850_000, 150_000, "amount")).toBe(1_000_000);
+    expect(priceWithMarkup(999, 12.5, "percent")).toBe(1124);
+    expect(priceWithMarkup(1_000, -200, "percent")).toBe(0);
   });
 });

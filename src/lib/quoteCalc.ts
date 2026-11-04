@@ -43,6 +43,17 @@ export function estimatedCostCents(lines: QuoteCostLine[]): number {
   );
 }
 
+export type MarkupMode = "percent" | "amount";
+
+/**
+ * Preço a partir do custo e do acréscimo: em % sobre o custo ou em reais por unidade. O acréscimo é
+ * só a conta de quem monta o orçamento; o cliente vê apenas o preço resultante.
+ */
+export function priceWithMarkup(costCents: number, markup: number, mode: MarkupMode): number {
+  const price = mode === "percent" ? costCents * (1 + markup / 100) : costCents + markup;
+  return Math.max(0, Math.round(price));
+}
+
 /** Margem em % sobre o preço; null sem preço para comparar. */
 export function marginPercent(priceCents: number, costCents: number): number | null {
   if (priceCents <= 0) return null;

@@ -142,6 +142,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       ) : null}
       <QuoteEditor
         key={quote.updated_at}
+        canSeeCost={permissionService.canManageFinance(active.role)}
         quote={quote}
         items={items}
         catalog={catalog}

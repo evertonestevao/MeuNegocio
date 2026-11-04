@@ -375,8 +375,8 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
-      'expense_categories', 'expense_templates', 'expenses', 'time_entries', 'time_entry_dismissals',
+      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
+      'expense_categories', 'expense_templates', 'expenses', 'suppliers', 'time_entries', 'time_entry_dismissals',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
       'commission_rules', 'reseller_clients', 'reseller_commissions', 'reseller_audit_log', 'reseller_referrals', 'reseller_commission_failures',
@@ -386,12 +386,12 @@ begin
     select 'authenticated', t, 'UPDATE' from unnest(array[
       'profiles', 'companies', 'company_members', 'company_invites', 'settings',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details',
-      'expense_categories', 'expense_templates', 'expenses',
+      'expense_categories', 'expense_templates', 'expenses', 'suppliers',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t
     union all
     select 'authenticated', t, 'INSERT' from unnest(array[
       'company_invites', 'settings', 'resellers', 'commission_rules',
-      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details', 'expense_categories', 'expense_templates', 'expenses']) t
+      'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details', 'expense_categories', 'expense_templates', 'expenses', 'suppliers']) t
   ),
   actual as (
     select grantee::text, table_name::text, privilege_type::text

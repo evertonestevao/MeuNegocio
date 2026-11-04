@@ -39,13 +39,19 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
     async listPlannedLines(companyId, quoteIds) {
       const { data, error } = await client
         .from("quote_items")
-        .select("quote_id, pricing_mode, quantity, people, catalog_item_id")
+        .select("id, quote_id, pricing_mode, quantity, people, catalog_item_id")
         .eq("company_id", companyId)
         .in("quote_id", quoteIds)
         .is("deleted_at", null);
       if (error) fail(error);
-      type Row = { quote_id: string; pricing_mode: "fixed" | "hourly"; quantity: number; people: number; catalog_item_id: string | null };
+      type Row = { id: string; quote_id: string; pricing_mode: "fixed" | "hourly"; quantity: number; people: number; catalog_item_id: string | null };
       const rows = (data ?? []) as Row[];
+      const itemCosts = new Map<string, number>();
+      if (rows.length > 0) {
+        const result = await client.from("quote_item_costs").select("quote_item_id, cost_cents").in("quote_item_id", rows.map((row) => row.id));
+        if (result.error) fail(result.error);
+        for (const row of (result.data ?? []) as { quote_item_id: string; cost_cents: number }[]) itemCosts.set(row.quote_item_id, row.cost_cents);
+      }
       const catalogIds = [...new Set(rows.flatMap((row) => (row.catalog_item_id ? [row.catalog_item_id] : [])))];
       const costs = new Map<string, number | null>();
       if (catalogIds.length > 0) {
@@ -64,7 +70,7 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
           pricingMode: row.pricing_mode,
           quantity: Number(row.quantity),
           people: row.people,
-          costCents: row.catalog_item_id ? (costs.get(row.catalog_item_id) ?? null) : null,
+          costCents: itemCosts.get(row.id) ?? (row.catalog_item_id ? (costs.get(row.catalog_item_id) ?? null) : null),
         }),
       );
     },

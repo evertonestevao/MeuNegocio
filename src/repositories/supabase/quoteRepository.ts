@@ -93,7 +93,18 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
         .is("deleted_at", null)
         .order("sort_order");
       if (error) fail(error);
-      return ((data ?? []) as QuoteItem[]).map((item) => ({ ...item, quantity: Number(item.quantity) }));
+      const items = (data ?? []) as QuoteItem[];
+      // A RLS só devolve custos para owner e admin: para o membro, a lista vem vazia.
+      const costs = new Map<string, number>();
+      if (items.length > 0) {
+        const result = await client
+          .from("quote_item_costs")
+          .select("quote_item_id, cost_cents")
+          .in("quote_item_id", items.map((item) => item.id));
+        if (result.error) fail(result.error);
+        for (const row of (result.data ?? []) as { quote_item_id: string; cost_cents: number }[]) costs.set(row.quote_item_id, row.cost_cents);
+      }
+      return items.map((item) => ({ ...item, quantity: Number(item.quantity), cost_cents: costs.get(item.id) ?? null }));
     },
 
     async listResponses(companyId, quoteId) {
@@ -138,6 +149,7 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
           quantity: item.quantity,
           people: item.people,
           unit_price_cents: item.unitPriceCents,
+          cost_cents: item.costCents ?? null,
         })),
       });
       if (error) fail(error);

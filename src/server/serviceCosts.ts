@@ -16,7 +16,8 @@ export function plannedCostCents(items: QuoteItem[], catalog: Pick<CatalogItem, 
     pricingMode: item.pricing_mode,
     quantity: Number(item.quantity),
     people: item.people,
-    costCents: item.catalog_item_id ? (costs.get(item.catalog_item_id) ?? null) : null,
+    // O custo digitado no orçamento vale mais que o do catálogo.
+    costCents: item.cost_cents ?? (item.catalog_item_id ? (costs.get(item.catalog_item_id) ?? null) : null),
   }));
   return lines.some((line) => line.costCents !== null) ? estimatedCostCents(lines) : null;
 }

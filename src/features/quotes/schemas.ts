@@ -13,6 +13,8 @@ export const quoteItemSchema = z.object({
   quantity: z.number({ error: "Informe a quantidade dos itens." }).positive("A quantidade precisa ser maior que zero.").max(999999),
   people: z.number().int().min(1, "Informe ao menos 1 pessoa.").max(999),
   unitPriceCents: z.number().int().min(0, "O valor não pode ser negativo."),
+  /** Só você vê: o que o item custa para a empresa. Não vai para o cliente. */
+  costCents: z.number().int().min(0, "O custo não pode ser negativo.").max(1_000_000_000).nullable().optional(),
 });
 
 export const quoteSchema = z.object({
