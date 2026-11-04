@@ -32,6 +32,22 @@ describe("resultado do serviço", () => {
     expect(cost.laborWithoutRate).toBe(false);
   });
 
+  it("desconta o imposto do serviço, ou o padrão da empresa quando o serviço não tem", () => {
+    const base = { revenueCents: 100_000, plannedCostCents: null, expenses: [expense(40_000)], labor: [], rates: [], targetMarginPercent: 20 };
+    const own = buildServiceCost({ ...base, serviceTaxRateBps: 843, companyTaxRateBps: 600 });
+    expect(own).toMatchObject({ taxSource: "service", taxRateBps: 843, taxCents: 8_430, totalCostCents: 40_000, resultCents: 51_570, marginPercent: 52 });
+    expect(buildServiceCost({ ...base, serviceTaxRateBps: null, companyTaxRateBps: 600 })).toMatchObject({ taxSource: "company", taxCents: 6_000, resultCents: 54_000 });
+    // Alíquota zero gravada no serviço (MEI) vale mais que o padrão da empresa.
+    expect(buildServiceCost({ ...base, serviceTaxRateBps: 0, companyTaxRateBps: 600 })).toMatchObject({ taxSource: "service", taxCents: 0 });
+    expect(buildServiceCost(base)).toMatchObject({ taxSource: "none", taxCents: 0, resultCents: 60_000 });
+  });
+
+  it("o imposto pode levar a margem para baixo da meta", () => {
+    const cost = buildServiceCost({ revenueCents: 10_000, plannedCostCents: null, expenses: [expense(7_500)], labor: [], rates: [], targetMarginPercent: 20, companyTaxRateBps: 600 });
+    expect(cost.resultCents).toBe(1_900);
+    expect(cost.status).toBe("low");
+  });
+
   it("aponta prejuízo, margem abaixo da meta e horas sem custo cadastrado", () => {
     expect(marginStatus(-1, -5, 20)).toBe("loss");
     expect(marginStatus(100, 10, 20)).toBe("low");
@@ -66,6 +82,9 @@ describe("serviço de custos", () => {
       listExpenses: vi.fn(async () => [expense(500, "mat", "q1"), expense(700, "mat", "q2")]),
       listLabor: vi.fn(async () => [labor("ana", 60, "q2")]),
       listRates: vi.fn(async () => [{ employee_id: "ana", hourly_cost_cents: 1_000, hourly_pay_cents: 0 }]),
+      listTaxRates: vi.fn(async () => [{ quote_id: "q2", tax_rate_bps: 1_000 }]),
+      getCompanyTaxRate: vi.fn(async (): Promise<number | null> => 600),
+      setTaxRate: vi.fn(async () => undefined),
     };
     return { repo, service: createServiceCostService(repo) };
   }
@@ -85,6 +104,23 @@ describe("serviço de custos", () => {
       await expect(service.listQuoteOptions({ companyId: "co", role })).rejects.toMatchObject({ code: "forbidden" });
       expect(repo.listExpenses).not.toHaveBeenCalled();
     }
+  });
+
+  it("cada serviço usa a própria alíquota, e quem não tem segue a da empresa", async () => {
+    const { service } = setup();
+    const results = await service.getForQuotes(OWNER, [{ id: "q1", totalCents: 1_000, plannedCostCents: null }, { id: "q2", totalCents: 1_000, plannedCostCents: null }], 20);
+    expect(results.get("q1")).toMatchObject({ taxSource: "company", taxCents: 60 });
+    expect(results.get("q2")).toMatchObject({ taxSource: "service", taxCents: 100 });
+  });
+
+  it("só owner e admin mudam o imposto do serviço, dentro de 0 a 40%", async () => {
+    const { service, repo } = setup();
+    await expect(service.setTaxRate({ companyId: "co", role: "member" }, "q1", 600)).rejects.toMatchObject({ code: "forbidden" });
+    await expect(service.setTaxRate(OWNER, "q1", 4_001)).rejects.toMatchObject({ code: "validation_error" });
+    await expect(service.setTaxRate(OWNER, "q1", 8.5)).rejects.toMatchObject({ code: "validation_error" });
+    expect(repo.setTaxRate).not.toHaveBeenCalled();
+    await service.setTaxRate({ companyId: "co", role: "admin" }, "q1", 843);
+    expect(repo.setTaxRate).toHaveBeenCalledWith("co", "q1", 843);
   });
 
   it("sem serviços, não consulta o banco", async () => {
@@ -109,6 +145,9 @@ describe("lista de serviços", () => {
       listExpenses: vi.fn(async () => [expense(400, "mat", "q1")]),
       listLabor: vi.fn(async (): Promise<LaborEntry[]> => []),
       listRates: vi.fn(async () => []),
+      listTaxRates: vi.fn(async () => []),
+      getCompanyTaxRate: vi.fn(async (): Promise<number | null> => null),
+      setTaxRate: vi.fn(async () => undefined),
     };
     return { repo, service: createServiceCostService(repo) };
   }

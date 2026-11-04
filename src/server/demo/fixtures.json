@@ -47,7 +47,9 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"target_margin_percent": 20
+"target_margin_percent": 20,
+"tax_regime": "simples",
+"tax_rate_bps": 800
 }
 ],
 "clients": [
@@ -306,7 +308,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "bb59cd92-e495-4507-9952-e5d23daa0262",
@@ -329,7 +332,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
@@ -352,7 +356,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "4b416710-538f-4e33-8b7f-883903d30776",
@@ -375,7 +380,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"tax_rate_bps": null
 },
 {
 "id": "2da438f7-8154-44ad-ba13-658601e2167c",
@@ -398,7 +404,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"tax_rate_bps": null
 },
 {
 "id": "e3ff69d8-c0c4-43e4-943b-d97935e9a1a5",
@@ -421,7 +428,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "e7655699-483e-47c5-a84a-8b39859aa4ed",
@@ -444,7 +452,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "d6ba4dd8-0bfb-4a63-aa8c-4da6118ca2ee",
@@ -467,7 +476,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "fd0becdf-ac54-402c-9484-7c9445a8e52e",
@@ -490,7 +500,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "70bed888-cf03-431a-aebb-0a05cbe3dea7",
@@ -513,7 +524,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "68bf0cc0-3cfb-42b8-8f09-a43b4f4a180f",
@@ -536,7 +548,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 },
 {
 "id": "28b00cd5-1523-41ed-b9bb-2ced663330a9",
@@ -559,7 +572,8 @@
 "created_by": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
-"updated_at": "2026-10-31T22:00:27.675988+00:00"
+"updated_at": "2026-10-31T22:00:27.675988+00:00",
+"tax_rate_bps": 800
 }
 ],
 "quote_items": [

@@ -8,10 +8,12 @@ import { z } from "zod";
 import { closeQuoteSchema, publicResponseSchema, quoteSchema } from "@/features/quotes/schemas";
 import { AppError } from "@/lib/errors";
 import { parseMoneyToCents } from "@/lib/money";
+import { taxRatePercentSchema } from "@/lib/tax";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
 import { canUsePublicApproval, getPublicQuoteRepository, getQuoteService } from "@/server/quotes";
+import { getServiceCostService } from "@/server/serviceCosts";
 import { createRateLimiter } from "@/server/rateLimit";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { createAuditService } from "@/services/auditService";
@@ -214,6 +216,31 @@ export async function respondPublicQuoteAction(
     refresh(quoteId);
     revalidatePath(`/orcamento/${token.data}`);
     return { success: decision === "approved" ? "Orçamento aprovado" : "Resposta registrada" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+/** Alíquota do imposto estimado deste serviço, no lugar do padrão da empresa. */
+export async function setServiceTaxRateAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const quoteId = quoteIdFrom(formData);
+    const rateBps = taxRatePercentSchema.parse(String(formData.get("taxRate") ?? ""));
+    await (await getServiceCostService()).setTaxRate(actor, quoteId, rateBps);
+    await recordAudit({
+      companyId: actor.companyId,
+      action: "quote.tax_rate_changed",
+      entityType: "quote",
+      entityId: quoteId,
+      metadata: { tax_rate_bps: rateBps },
+    });
+    refresh(quoteId);
+    revalidatePath("/dashboard/finance");
+    return { success: "Imposto do serviço salvo" };
   } catch (err) {
     return handleError(err);
   }

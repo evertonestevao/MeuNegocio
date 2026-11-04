@@ -569,6 +569,62 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Imposto do serviço: congela na aprovação; só owner e admin mudam, e só de serviço aprovado ou fechado.
+-- ---------------------------------------------------------------------------
+insert into public.clients (id, company_id, name) values ('5ec0e000-0000-4000-8000-000000000001', '5ec0c000-0000-4000-8000-000000000001', 'Cliente imposto');
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+update public.company_profiles set tax_regime = 'simples', tax_rate_bps = 843 where company_id = '5ec0c000-0000-4000-8000-000000000001';
+insert into public.company_profiles (company_id, tax_regime, tax_rate_bps)
+select '5ec0c000-0000-4000-8000-000000000001', 'simples', 843
+where not exists (select 1 from public.company_profiles where company_id = '5ec0c000-0000-4000-8000-000000000001');
+create temp table sec_tax_quote on commit drop as
+  select public.save_quote('5ec0c000-0000-4000-8000-000000000001', null, '5ec0e000-0000-4000-8000-000000000001', null, 'Imposto', current_date + 15, 0, null,
+    '[{"description":"Manutenção","unit":"un","pricing_mode":"fixed","quantity":1,"people":1,"unit_price_cents":100000}]'::jsonb) as id;
+do $$
+declare
+  v_quote constant uuid := (select id from sec_tax_quote);
+begin
+  begin
+    perform public.set_quote_tax_rate('5ec0c000-0000-4000-8000-000000000001', v_quote, 500);
+    raise exception 'FALHA imposto: rascunho aceitou alíquota própria' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 'send', current_date + 15);
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 'approve', null);
+  if (select tax_rate_bps from public.quotes where id = v_quote) is distinct from 843 then
+    raise exception 'FALHA imposto: a aprovação não congelou a alíquota da empresa';
+  end if;
+  update public.company_profiles set tax_rate_bps = 600 where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  if (select tax_rate_bps from public.quotes where id = v_quote) is distinct from 843 then
+    raise exception 'FALHA imposto: mudar a alíquota da empresa mexeu no serviço já aprovado';
+  end if;
+  begin
+    perform public.set_quote_tax_rate('5ec0c000-0000-4000-8000-000000000001', v_quote, 4001);
+    raise exception 'FALHA imposto: aceitou alíquota acima de 40%%' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+end $$;
+grant select on sec_tax_quote to authenticated;
+
+-- Membro (o do bloco anterior) e outra empresa não mudam.
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+select sec_test.must_fail('membro muda imposto do serviço',
+  format('select public.set_quote_tax_rate(%L, %L, 0)', '5ec0c000-0000-4000-8000-000000000001', (select id from sec_tax_quote)));
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('outra empresa muda imposto do serviço',
+  format('select public.set_quote_tax_rate(%L, %L, 0)', '5ec0c000-0000-4000-8000-000000000001', (select id from sec_tax_quote)));
+select sec_test.login('5ec00000-0000-4000-8000-000000000002', 'sec-admin@test.local');
+select public.set_quote_tax_rate('5ec0c000-0000-4000-8000-000000000001', (select id from sec_tax_quote), 500);
+reset role;
+do $$
+begin
+  if (select tax_rate_bps from public.quotes where id = (select id from sec_tax_quote)) is distinct from 500 then
+    raise exception 'FALHA imposto: o administrador não conseguiu ajustar a alíquota do serviço';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

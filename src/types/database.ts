@@ -141,6 +141,9 @@ export interface ClientPickerOption {
   locations: { id: string; name: string }[];
 }
 
+/** Regime tributário para o imposto estimado do serviço. */
+export type TaxRegime = "mei" | "simples" | "other";
+
 export interface CompanyProfile {
   company_id: string;
   cnpj: string | null;
@@ -152,6 +155,10 @@ export interface CompanyProfile {
   timezone: string;
   /** Margem que a empresa considera boa, em %. Abaixo dela o resultado aparece em alerta. */
   target_margin_percent?: number;
+  /** Regime para o imposto estimado do serviço; null é não informado. */
+  tax_regime?: TaxRegime | null;
+  /** Alíquota padrão em centésimos de ponto percentual (8,43% = 843). */
+  tax_rate_bps?: number;
 }
 
 export type CatalogKind = "product" | "service";
@@ -194,6 +201,8 @@ export interface Quote {
   approved_at: string | null;
   refused_at: string | null;
   closed_at: string | null;
+  /** Alíquota congelada na aprovação; null segue a da empresa. */
+  tax_rate_bps?: number | null;
   created_at: string;
   updated_at: string;
 }

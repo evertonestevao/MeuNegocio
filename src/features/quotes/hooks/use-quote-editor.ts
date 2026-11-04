@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { centsToMoneyInput, parseMoneyToCents } from "@/lib/money";
 import { estimatedCostCents, lineTotalCents, marginPercent, priceWithMarkup, subtotalCents, totalCents, type MarkupMode } from "@/lib/quoteCalc";
+import { taxCents } from "@/lib/tax";
 import type { CatalogItem, PricingMode, Quote, QuoteItem } from "@/types/database";
 import type { QuoteInput } from "../schemas";
 
@@ -59,8 +60,10 @@ export function useQuoteEditor(params: {
   catalog: CatalogItem[];
   initial: { clientId: string | null; validUntil: string | null; notes: string };
   canSeeCost: boolean;
+  /** Alíquota do imposto estimado: a do orçamento ou a padrão da empresa; null sem regime informado. */
+  taxRateBps?: number | null;
 }) {
-  const { quote, items, catalog, initial, canSeeCost } = params;
+  const { quote, items, catalog, initial, canSeeCost, taxRateBps = null } = params;
   const [clientId, setClientId] = useState(quote?.client_id ?? initial.clientId);
   const [locationId, setLocationId] = useState(quote?.location_id ?? null);
   const [title, setTitle] = useState(quote?.title ?? "");
@@ -154,11 +157,16 @@ export function useQuoteEditor(params: {
         const costTotal = estimatedCostCents([{ ...toCalcLine(line), costCents: parseMoneyToCents(line.unitPrice) ?? 0 }]);
         return { cents: total - costTotal, margin: marginPercent(total, costTotal) };
       },
-      estimate: canSeeCost ? { cost, profit: total - cost, margin: marginPercent(total, cost) } : null,
+      estimate: canSeeCost
+        ? (() => {
+            const tax = taxRateBps === null ? null : taxCents(total, taxRateBps);
+            return { cost, tax, profit: total - cost - (tax ?? 0), margin: marginPercent(total, cost + (tax ?? 0)) };
+          })()
+        : null,
     };
     // catalogCost depende só do catálogo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, discount, canSeeCost, catalog]);
+  }, [lines, discount, canSeeCost, catalog, taxRateBps]);
 
   function toInput(): QuoteInput {
     return {

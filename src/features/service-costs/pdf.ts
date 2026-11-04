@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
+import { formatTaxRate } from "@/lib/tax";
 import type { ServiceCost } from "@/services/serviceCostService";
 
 export interface ServiceCostPdfInput {
@@ -54,7 +55,7 @@ export async function downloadServiceCostPdf(input: ServiceCostPdfInput): Promis
   let y = 40;
   const cards: Array<[string, string, Rgb]> = [
     ["VALOR COBRADO", formatCents(cost.revenueCents), INK],
-    ["CUSTOS", formatCents(cost.totalCostCents), INK],
+    [cost.taxCents > 0 ? "CUSTOS E IMPOSTO" : "CUSTOS", formatCents(cost.totalCostCents + cost.taxCents), INK],
     [
       "RESULTADO",
       formatCents(cost.resultCents),
@@ -84,8 +85,18 @@ export async function downloadServiceCostPdf(input: ServiceCostPdfInput): Promis
     );
     y += 5;
   }
+  if (cost.taxSource !== "none") {
+    pdf.text(`Imposto estimado: ${formatCents(cost.taxCents)} (${formatTaxRate(cost.taxRateBps)} do valor cobrado).`, margin, y);
+    y += 5;
+  }
   font("normal", 8, MUTED);
-  pdf.text("Resultado = valor cobrado menos gastos ligados ao serviço e horas da equipe. Não desconta impostos nem despesas fixas.", margin, y);
+  pdf.text(
+    cost.taxSource === "none"
+      ? "Resultado = valor cobrado menos gastos ligados ao serviço e horas da equipe. Não desconta impostos nem despesas fixas."
+      : "Resultado = valor cobrado menos gastos ligados, horas da equipe e imposto estimado. Não desconta despesas fixas.",
+    margin,
+    y,
+  );
   y += 6;
 
   const table = (title: string, head: string[], body: string[][], foot?: string[]) => {
@@ -107,7 +118,7 @@ export async function downloadServiceCostPdf(input: ServiceCostPdfInput): Promis
   };
 
   if (cost.categories.length > 0) {
-    table("Custos por categoria", ["Categoria", "Valor"], cost.categories.map((category) => [category.name, formatCents(category.totalCents)]), ["Total", formatCents(cost.totalCostCents)]);
+    table("Custos por categoria", ["Categoria", "Valor"], cost.categories.map((category) => [category.name, formatCents(category.totalCents)]), ["Total", formatCents(cost.totalCostCents + cost.taxCents)]);
   }
   if (cost.expenses.length > 0) {
     table(

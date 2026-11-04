@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { formatDocument, formatPhone, isValidCnpjLength, isValidPhone } from "@/lib/masks";
+import { TAX_REGIMES, taxRatePercentSchema } from "@/lib/tax";
 import type { ActorContext } from "@/server/actor";
 import type { CompanyProfile } from "@/types/database";
 import { permissionService } from "./permissionService";
@@ -38,7 +39,18 @@ export const companyProfileSchema = z.object({
     z.coerce.number({ error: "Informe a meta de margem." }).int("Use um número inteiro.").min(0, "Use de 0 a 100.").max(100, "Use de 0 a 100.").default(20),
   ),
   timezone: z.enum(COMPANY_TIMEZONES, { error: "Escolha o fuso." }),
-});
+  taxRegime: z.preprocess(
+    (value) => (value === "" || value === undefined ? null : value),
+    z.enum(TAX_REGIMES, { error: "Escolha o regime." }).nullable(),
+  ),
+  /** Em % na tela ("8,43"); sai em centésimos de ponto (843). */
+  taxRate: taxRatePercentSchema.optional().transform((value) => value ?? 0),
+}).transform(({ taxRegime, taxRate, ...rest }) => ({
+  ...rest,
+  taxRegime,
+  // O MEI paga valor fixo por mês: não há percentual por serviço.
+  taxRateBps: taxRegime === "mei" || taxRegime === null ? 0 : taxRate,
+}));
 
 export type CompanyProfileInput = z.output<typeof companyProfileSchema>;
 
@@ -56,6 +68,8 @@ export const DEFAULT_COMPANY_PROFILE = {
   quote_default_notes: null,
   timezone: "America/Sao_Paulo",
   target_margin_percent: 20,
+  tax_regime: null,
+  tax_rate_bps: 0,
 } as const;
 
 export function createCompanyProfileService(repo: CompanyProfileRepository) {

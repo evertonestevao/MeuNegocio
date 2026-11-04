@@ -13,6 +13,7 @@ import { formatCents } from "@/lib/money";
 import type { MarginStatus, ServiceCost } from "@/services/serviceCostService";
 import { formatHours, type ServiceCostPdfInput } from "../pdf";
 import { ServiceCostPdfButton } from "./service-cost-pdf-button";
+import { ServiceTaxForm } from "./service-tax-form";
 
 const RESULT_TONE: Record<MarginStatus, MetricTone> = { good: "success", low: "warning", loss: "danger", none: "info" };
 
@@ -49,7 +50,7 @@ export function ServiceCostSection({
           <h3 id="service-cost-title" className="font-heading text-xl font-extrabold tracking-tight">
             Custos e resultado do serviço
           </h3>
-          <p className="text-sm text-muted-foreground">Gastos ligados a este orçamento e horas da equipe nas visitas dele. Só você e o administrador veem.</p>
+          <p className="text-sm text-muted-foreground">Gastos ligados a este orçamento, horas da equipe nas visitas dele e imposto estimado. Só você e o administrador veem.</p>
         </div>
         <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:flex-1">
           <NewExpenseButton options={expenseOptions} defaultDate={today} defaultQuoteId={quoteId} label="Lançar gasto" />
@@ -62,9 +63,9 @@ export function ServiceCostSection({
         <MetricCard
           icon={Wallet}
           tone="warning"
-          label="Custos"
-          value={formatCents(cost.totalCostCents)}
-          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}`}
+          label={cost.taxCents > 0 ? "Custos e imposto" : "Custos"}
+          value={formatCents(cost.totalCostCents + cost.taxCents)}
+          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}${cost.taxCents > 0 ? ` · imposto ${formatCents(cost.taxCents)}` : ""}`}
         />
         <div className="col-span-2 sm:col-span-1">
           <MetricCard
@@ -78,9 +79,11 @@ export function ServiceCostSection({
         </div>
       </div>
 
+      <ServiceTaxForm quoteId={quoteId} rateBps={cost.taxRateBps} taxCents={cost.taxCents} source={cost.taxSource} />
+
       {difference !== null ? (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm">
-          Previsto no orçamento: <strong className="tabular-nums">{formatCents(cost.plannedCostCents!)}</strong>. Realizado:{" "}
+          Custo previsto no orçamento: <strong className="tabular-nums">{formatCents(cost.plannedCostCents!)}</strong>. Realizado:{" "}
           <strong className="tabular-nums">{formatCents(cost.totalCostCents)}</strong>{" "}
           <span className={difference > 0 ? "text-destructive" : "text-success"}>
             ({difference > 0 ? `${formatCents(difference)} acima` : difference < 0 ? `${formatCents(-difference)} abaixo` : "igual"} do previsto)
@@ -100,7 +103,7 @@ export function ServiceCostSection({
           </CardHeader>
           <CardContent>
             {cost.categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum custo ainda. Lance os gastos do serviço e as horas da equipe entram sozinhas.</p>
+              <p className="text-sm text-muted-foreground">Nenhum custo ainda. Lance os gastos do serviço; as horas da equipe e o imposto entram sozinhos.</p>
             ) : (
               <ul className="flex flex-col gap-3 text-sm">
                 {cost.categories.map((category) => (
@@ -111,7 +114,7 @@ export function ServiceCostSection({
                     </div>
                     <span className="h-2.5 overflow-hidden rounded-full bg-muted">
                       <span
-                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : "bg-chart-2"}`}
+                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : category.categoryId === "tax" ? "bg-chart-3" : "bg-chart-2"}`}
                         style={{ width: `${largest ? Math.round((category.totalCents / largest) * 100) : 0}%` }}
                       />
                     </span>

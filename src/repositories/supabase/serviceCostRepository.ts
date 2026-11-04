@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
-import type { LaborEntry, LaborRate, PlannedLine, ServiceCostRepository, ServiceQuoteRow, ServiceVisit } from "@/services/serviceCostService";
+import { companyTaxRate } from "@/lib/tax";
+import type { LaborEntry, LaborRate, PlannedLine, QuoteTaxRate, ServiceCostRepository, ServiceQuoteRow, ServiceVisit } from "@/services/serviceCostService";
+import type { CompanyProfile } from "@/types/database";
 import type { Expense } from "@/types/finance";
 
 function fail(error: unknown): never {
@@ -147,6 +149,37 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
         .is("deleted_at", null);
       if (error) fail(error);
       return (data ?? []) as LaborRate[];
+    },
+
+    async listTaxRates(companyId, quoteIds) {
+      const { data, error } = await client
+        .from("quotes")
+        .select("id, tax_rate_bps")
+        .eq("company_id", companyId)
+        .in("id", quoteIds)
+        .is("deleted_at", null);
+      if (error) fail(error);
+      return ((data ?? []) as { id: string; tax_rate_bps: number | null }[]).map((row): QuoteTaxRate => ({ quote_id: row.id, tax_rate_bps: row.tax_rate_bps }));
+    },
+
+    async getCompanyTaxRate(companyId) {
+      const { data, error } = await client
+        .from("company_profiles")
+        .select("tax_regime, tax_rate_bps")
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .maybeSingle<Pick<CompanyProfile, "tax_regime" | "tax_rate_bps">>();
+      if (error) fail(error);
+      return data ? companyTaxRate(data) : null;
+    },
+
+    async setTaxRate(companyId, quoteId, rateBps) {
+      const { error } = await client.rpc("set_quote_tax_rate", { p_company_id: companyId, p_quote_id: quoteId, p_tax_rate_bps: rateBps });
+      if (error) {
+        if (error.code === "42501") throw new AppError("forbidden", "Só o proprietário e o administrador alteram o imposto do serviço", error);
+        if (error.code === "P0001") throw new AppError("conflict", error.message, error);
+        throw new AppError("internal_error", "Falha ao salvar o imposto do serviço", error);
+      }
     },
   };
 }

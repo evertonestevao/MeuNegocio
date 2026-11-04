@@ -1,5 +1,6 @@
 import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
+import { MAX_TAX_RATE_BPS, taxCents } from "@/lib/tax";
 import type { ActorContext } from "@/server/actor";
 import type { Expense } from "@/types/finance";
 import { totalsByCategory, type CategoryTotal } from "./expenseService";
@@ -8,7 +9,8 @@ import { permissionService } from "./permissionService";
 /**
  * Custos e resultado de um serviço (orçamento aprovado ou fechado). Os gastos são os mesmos do
  * caixa, ligados ao orçamento; a mão de obra vem das horas das visitas do orçamento. A hora do CLT
- * já sai no salário do mês: aqui ela é custo apropriado ao serviço, não uma saída a mais.
+ * já sai no salário do mês: aqui ela é custo apropriado ao serviço, não uma saída a mais. O imposto
+ * é estimado pela alíquota do serviço; a guia paga de verdade entra no caixa como gasto "Impostos".
  */
 
 export interface LaborEntry {
@@ -58,6 +60,12 @@ export interface PlannedLine {
   costCents: number | null;
 }
 
+export interface QuoteTaxRate {
+  quote_id: string;
+  /** Congelada na aprovação ou ajustada pelo dono; null segue a da empresa. */
+  tax_rate_bps: number | null;
+}
+
 export interface ServiceCostRepository {
   listQuoteOptions(companyId: string): Promise<ServiceQuoteOption[]>;
   listServiceQuotes(companyId: string, stage: ServiceStage): Promise<ServiceQuoteRow[]>;
@@ -66,6 +74,10 @@ export interface ServiceCostRepository {
   listExpenses(companyId: string, quoteIds: string[]): Promise<Expense[]>;
   listLabor(companyId: string, quoteIds: string[]): Promise<LaborEntry[]>;
   listRates(companyId: string, employeeIds: string[]): Promise<LaborRate[]>;
+  listTaxRates(companyId: string, quoteIds: string[]): Promise<QuoteTaxRate[]>;
+  /** Alíquota padrão da empresa; null sem regime informado. */
+  getCompanyTaxRate(companyId: string): Promise<number | null>;
+  setTaxRate(companyId: string, quoteId: string, rateBps: number): Promise<void>;
 }
 
 export type MarginStatus = "good" | "low" | "loss" | "none";
@@ -78,11 +90,18 @@ export interface LaborLine {
   costCents: number;
 }
 
+/** De onde veio a alíquota: do próprio serviço, do padrão atual da empresa, ou não informada. */
+export type TaxSource = "service" | "company" | "none";
+
 export interface ServiceCost {
   revenueCents: number;
   expenseCents: number;
   laborCents: number;
+  /** Gastos e horas. O imposto fica à parte: o previsto no orçamento não o inclui. */
   totalCostCents: number;
+  taxRateBps: number;
+  taxCents: number;
+  taxSource: TaxSource;
   resultCents: number;
   marginPercent: number | null;
   status: MarginStatus;
@@ -113,6 +132,9 @@ export function buildServiceCost(input: {
   labor: LaborEntry[];
   rates: LaborRate[];
   targetMarginPercent: number;
+  /** Alíquota do serviço; null quando segue a da empresa. */
+  serviceTaxRateBps?: number | null;
+  companyTaxRateBps?: number | null;
 }): ServiceCost {
   const rates = new Map(input.rates.map((rate) => [rate.employee_id, rate]));
   const byPerson = new Map<string, LaborLine>();
@@ -134,19 +156,26 @@ export function buildServiceCost(input: {
   const expenseCents = input.expenses.reduce((sum, expense) => sum + expense.amount_cents, 0);
   const laborCents = labor.reduce((sum, line) => sum + line.costCents, 0);
   const totalCostCents = expenseCents + laborCents;
-  const resultCents = input.revenueCents - totalCostCents;
-  const margin = marginPercent(input.revenueCents, totalCostCents);
+  const serviceRate = input.serviceTaxRateBps ?? null;
+  const companyRate = input.companyTaxRateBps ?? null;
+  const taxSource: TaxSource = serviceRate !== null ? "service" : companyRate !== null ? "company" : "none";
+  const taxRateBps = serviceRate ?? companyRate ?? 0;
+  const tax = taxCents(input.revenueCents, taxRateBps);
+  const resultCents = input.revenueCents - totalCostCents - tax;
+  const margin = marginPercent(input.revenueCents, totalCostCents + tax);
   const categories = totalsByCategory(input.expenses);
-  if (laborCents > 0) {
-    categories.push({ categoryId: "labor", name: "Mão de obra (horas)", totalCents: laborCents });
-    categories.sort((a, b) => b.totalCents - a.totalCents);
-  }
+  if (laborCents > 0) categories.push({ categoryId: "labor", name: "Mão de obra (horas)", totalCents: laborCents });
+  if (tax > 0) categories.push({ categoryId: "tax", name: "Imposto (estimado)", totalCents: tax });
+  categories.sort((a, b) => b.totalCents - a.totalCents);
 
   return {
     revenueCents: input.revenueCents,
     expenseCents,
     laborCents,
     totalCostCents,
+    taxRateBps,
+    taxCents: tax,
+    taxSource,
     resultCents,
     marginPercent: margin,
     status: marginStatus(resultCents, margin, input.targetMarginPercent),
@@ -202,8 +231,14 @@ export function createServiceCostService(repo: ServiceCostRepository) {
   async function load(companyId: string, quotes: ServiceQuoteRef[], targetMarginPercent: number) {
     const ids = quotes.map((quote) => quote.id);
     if (ids.length === 0) return new Map<string, ServiceCost>();
-    const [expenses, labor] = await Promise.all([repo.listExpenses(companyId, ids), repo.listLabor(companyId, ids)]);
+    const [expenses, labor, taxRates, companyTaxRateBps] = await Promise.all([
+      repo.listExpenses(companyId, ids),
+      repo.listLabor(companyId, ids),
+      repo.listTaxRates(companyId, ids),
+      repo.getCompanyTaxRate(companyId),
+    ]);
     const rates = await repo.listRates(companyId, [...new Set(labor.map((entry) => entry.employee_id))]);
+    const serviceTaxRates = new Map(taxRates.map((row) => [row.quote_id, row.tax_rate_bps]));
     return new Map(
       quotes.map((quote) => [
         quote.id,
@@ -214,6 +249,8 @@ export function createServiceCostService(repo: ServiceCostRepository) {
           labor: labor.filter((entry) => entry.quote_id === quote.id),
           rates,
           targetMarginPercent,
+          serviceTaxRateBps: serviceTaxRates.get(quote.id) ?? null,
+          companyTaxRateBps,
         }),
       ]),
     );
@@ -278,6 +315,15 @@ export function createServiceCostService(repo: ServiceCostRepository) {
     async getForQuotes(actor: ActorContext, quotes: ServiceQuoteRef[], targetMarginPercent: number) {
       requireFinance(actor);
       return load(actor.companyId, quotes, targetMarginPercent);
+    },
+
+    /** Alíquota deste serviço, no lugar do padrão da empresa. O banco confere a empresa e a situação. */
+    async setTaxRate(actor: ActorContext, quoteId: string, rateBps: number) {
+      requireFinance(actor);
+      if (!Number.isInteger(rateBps) || rateBps < 0 || rateBps > MAX_TAX_RATE_BPS) {
+        throw new AppError("validation_error", "Informe a alíquota de 0 a 40%, com até duas casas.");
+      }
+      await repo.setTaxRate(actor.companyId, quoteId, rateBps);
     },
   };
 }

@@ -85,8 +85,8 @@ export function ServiceListItemCard({
               <dd className="font-semibold tabular-nums">{formatCents(cost.revenueCents)}</dd>
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">
-              <dt className="text-muted-foreground">Custos</dt>
-              <dd className="font-semibold tabular-nums">{formatCents(cost.totalCostCents)}</dd>
+              <dt className="text-muted-foreground">{cost.taxCents > 0 ? "Custos e imposto" : "Custos"}</dt>
+              <dd className="font-semibold tabular-nums">{formatCents(cost.totalCostCents + cost.taxCents)}</dd>
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">
               <dt className="text-muted-foreground">Resultado</dt>

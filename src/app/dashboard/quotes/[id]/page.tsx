@@ -12,6 +12,7 @@ import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/f
 import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
+import { companyTaxRate } from "@/lib/tax";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
@@ -143,6 +144,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       <QuoteEditor
         key={quote.updated_at}
         canSeeCost={permissionService.canManageFinance(active.role)}
+        taxRateBps={quote.tax_rate_bps ?? companyTaxRate(profile)}
         quote={quote}
         items={items}
         catalog={catalog}

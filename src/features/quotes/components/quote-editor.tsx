@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATALOG_UNITS } from "@/features/catalog/schemas";
 import { formatCents } from "@/lib/money";
+import { formatTaxRate } from "@/lib/tax";
 import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
@@ -30,6 +31,7 @@ export function QuoteEditor({
   initial,
   aside,
   canSeeCost = false,
+  taxRateBps = null,
 }: {
   quote: Quote | null;
   items: QuoteItem[];
@@ -39,8 +41,10 @@ export function QuoteEditor({
   aside?: React.ReactNode;
   /** Owner e admin: custo e acréscimo por item, que o cliente nunca vê. */
   canSeeCost?: boolean;
+  /** Só para quem vê o custo: alíquota do imposto estimado; null sem regime informado. */
+  taxRateBps?: number | null;
 }) {
-  const editor = useQuoteEditor({ quote, items, catalog, initial, canSeeCost });
+  const editor = useQuoteEditor({ quote, items, catalog, initial, canSeeCost, taxRateBps });
   const readOnly = quote !== null && quote.status !== "draft";
   const client = clients.find((candidate) => candidate.id === editor.clientId);
   const activeCatalog = catalog.filter((item) => item.active);
@@ -314,6 +318,12 @@ export function QuoteEditor({
                   <span>Custo estimado</span>
                   <span className="tabular-nums">{formatCents(editor.totals.estimate.cost)}</span>
                 </div>
+                {editor.totals.estimate.tax !== null && taxRateBps !== null ? (
+                  <div className="flex justify-between gap-2">
+                    <span>Imposto estimado ({formatTaxRate(taxRateBps)})</span>
+                    <span className="tabular-nums">{formatCents(editor.totals.estimate.tax)}</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-2">
                   <span>Lucro estimado</span>
                   <span className="tabular-nums">{formatCents(editor.totals.estimate.profit)}</span>
@@ -324,7 +334,10 @@ export function QuoteEditor({
                     {editor.totals.estimate.margin === null ? "—" : `${editor.totals.estimate.margin}%`}
                   </span>
                 </div>
-                <span>Considera só os itens com custo informado.</span>
+                <span>
+                  Considera só os itens com custo informado.
+                  {taxRateBps === null ? " Sem imposto: informe o regime da empresa em Configurações." : null}
+                </span>
               </div>
             ) : null}
             {readOnly ? null : (

@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-03
+**Última atualização:** 2026-11-04
 
 ## Sumário
 
@@ -436,10 +436,10 @@ Outras regras:
 - **Só rascunho é editável.** Os demais são somente leitura; "Duplicar" cria um rascunho novo com número e link próprios.
 - **Excluir:** owner e admin, em rascunho, recusado ou expirado. Enviado precisa antes ser recusado ou expirado; aprovado e fechado não podem ser excluídos.
 - **Limite do plano:** `max_quotes_month` vale ao criar e duplicar. Orçamentos excluídos continuam contando no mês. Acima do limite nada é apagado, e os rascunhos existentes seguem editáveis.
-- **Custo, lucro e margem** estimados aparecem só para owner e admin e nunca vão para o PDF nem para o link. O custo de cada item vem do catálogo e pode ser trocado no orçamento.
+- **Custo, imposto, lucro e margem** estimados aparecem só para owner e admin e nunca vão para o PDF nem para o link. O custo de cada item vem do catálogo e pode ser trocado no orçamento. O imposto usa a alíquota padrão da empresa (seção 25) sobre o total; sem regime informado, não entra e a tela avisa.
 - **Valor a mais por item** (owner e admin, faixa "Só você vê"): quando o valor unitário digitado é o que a empresa paga (a um parceiro, por exemplo), o campo "A mais nesta linha", em % sobre esse valor ou em R$ por unidade, forma o preço que o cliente vê. O cliente recebe só o preço final no PDF, no link e no WhatsApp. O valor digitado fica guardado como custo do item em `quote_item_costs`, que só owner e admin leem; ao reabrir, o "a mais" aparece em R$. A linha mostra quanto a empresa ganha. Sem "a mais", vale o custo do catálogo. Quando o membro edita o rascunho, ele vê só o preço final e o custo continua. Duplicar leva os custos.
 - **PDF** gerado no navegador (`jspdf`). **WhatsApp** por link `wa.me`, sem provedor, para o contato principal.
-- **Dados para orçamentos** (Configurações, owner e admin): CNPJ, telefone, e-mail, endereço, validade padrão, observações padrão e fuso. Todos os papéis leem, porque o documento precisa deles.
+- **Dados para orçamentos** (Configurações, owner e admin): CNPJ, telefone, e-mail, endereço, validade padrão, observações padrão, fuso, meta de margem, regime tributário e alíquota do imposto. Todos os papéis leem, porque o documento precisa deles.
 
 **Link de aprovação** (`/orcamento/[token]`, recurso `public_approval` do plano):
 
@@ -577,15 +577,19 @@ Para orçamentos aprovados ou fechados. Só owner e admin: membro e técnico nã
 | Função | Regras |
 |---|---|
 | **Serviços** (`/dashboard/services`, logo abaixo de Início e aba fixa no celular) | Em andamento (aprovados) e Concluídos (fechados). Cada serviço mostra visitas feitas, a próxima visita e, para owner e admin, cobrado, custos, resultado e margem, com "Lançar gasto" e "Concluir e faturar". Alerta quando o custo passa do previsto ou a margem fica abaixo da meta. O membro vê o andamento, sem valores. |
-| **Custos do serviço** (na página do orçamento) | Valor cobrado, custos e resultado, com a margem em % comparada à meta da empresa: verde na meta ou acima, laranja abaixo, vermelho no prejuízo. |
+| **Custos do serviço** (na página do orçamento) | Valor cobrado, custos e imposto, e resultado, com a margem em % comparada à meta da empresa: verde na meta ou acima, laranja abaixo, vermelho no prejuízo. |
+| **Imposto estimado** | Alíquota sobre o valor cobrado, descontada do resultado e mostrada como categoria de custo. Vem do padrão da empresa e fica gravada no orçamento quando ele é aprovado (pela tela ou pelo link): mudar o padrão depois não mexe em serviço já aprovado. Owner e admin podem trocar a alíquota de um serviço aprovado ou fechado ("Alterar alíquota"), de 0 a 40% com até duas casas; a troca entra na auditoria. Orçamentos aprovados antes desta função seguem o padrão atual da empresa até alguém definir a alíquota deles. |
+| **Regime e alíquota padrão** (Configurações › Dados para orçamentos) | Não informado, MEI, Simples Nacional ou outro regime, e a alíquota em %. Sem regime, o resultado não desconta imposto e o serviço mostra o aviso. No MEI a alíquota é zero: o DAS mensal fixo entra como gasto recorrente. No Simples Nacional, vale a alíquota efetiva informada pelo contador; o cálculo automático pelo faturamento dos últimos 12 meses (RBT12) ainda não existe. |
 | **Gastos do serviço** | São os mesmos gastos do caixa (`expenses`), com o campo opcional "Serviço (orçamento)" e "Fornecedor". "Lançar gasto" já vem com o orçamento escolhido. Só gasto pontual pode ser ligado, e só a orçamento aprovado ou fechado da mesma empresa (trava no banco). |
 | **Mão de obra** | Horas lançadas nas visitas do orçamento vezes o custo por hora de cada pessoa (em Equipe); sem ele, o valor pago por hora ao prestador. A hora do CLT é custo apropriado: o salário continua saindo uma vez só, no caixa do mês. Horas sem custo cadastrado geram aviso. |
 | **Previsto x realizado** | Compara o custo previsto no orçamento (o custo de cada item, ou o do catálogo) com o custo real. |
-| **Relatório do serviço** | PDF de uso interno com resultado, custos por categoria, gastos e horas. |
-| **Resultado por serviço** (Financeiro) | Serviços fechados no mês, do maior resultado ao prejuízo, com a margem. |
+| **Relatório do serviço** | PDF de uso interno com resultado, imposto estimado, custos por categoria, gastos e horas. |
+| **Resultado por serviço** (Financeiro) | Serviços fechados no mês, do maior resultado ao prejuízo, com a margem, já descontado o imposto estimado. |
 | **Meta de margem** (Configurações › Dados para orçamentos) | De 0 a 100%, padrão 20%. |
 
-O resultado não desconta impostos nem despesas fixas: é a margem do serviço, não o lucro líquido da empresa.
+O resultado desconta o imposto estimado, mas não as despesas fixas: é a margem do serviço, não o lucro líquido da empresa. O imposto do serviço é estimativa: a guia paga de verdade entra no caixa como gasto da categoria "Impostos", e só ela conta no saldo do Financeiro. As duas coisas não se somam.
+
+Testes: `src/services/serviceCostService.test.ts`, `src/lib/tax.test.ts` e o bloco "Imposto do serviço" em `supabase/tests/security_regression_test.sql`.
 
 ## 26. Demonstração
 

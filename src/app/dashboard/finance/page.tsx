@@ -183,7 +183,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Card>
           <CardHeader>
             <CardTitle>Resultado por serviço</CardTitle>
-            <CardDescription>Serviços fechados no mês, descontados os gastos ligados e as horas da equipe. Meta de margem: {targetMarginPercent}%.</CardDescription>
+            <CardDescription>Serviços fechados no mês, descontados os gastos ligados, as horas da equipe e o imposto estimado. Meta de margem: {targetMarginPercent}%.</CardDescription>
           </CardHeader>
           <CardContent>
             {overview.revenues.length === 0 ? (

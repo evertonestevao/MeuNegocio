@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v3";
+export const LANDING_SCREENS = "/landing/v4";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -72,7 +72,7 @@ export const showcases: {
     eyebrow: "Serviços",
     title: "Saiba quanto sobrou em cada serviço",
     description:
-      "Os serviços aprovados ficam em uma tela só. Lance os gastos de cada um, e as horas da equipe entram sozinhas no custo. Você vê o resultado antes de faturar.",
+      "Os serviços aprovados ficam em uma tela só. Lance os gastos de cada um; as horas da equipe e o imposto entram sozinhos no custo. Você vê o resultado antes de faturar.",
     points: ["Custo previsto contra o realizado", "Alerta quando a margem cai abaixo da sua meta", "Conclua e fature direto da lista"],
     image: `${LANDING_SCREENS}/servicos.jpg`,
     alt: "Tela de serviços em andamento, com visitas, valor cobrado, custos e resultado de cada serviço.",
@@ -116,6 +116,7 @@ export const sampleServiceResult = {
     { label: "Material", detail: "Casa do Eletricista", cents: 112000 },
     { label: "Horas da equipe", detail: "2 técnicos, 12h no total", cents: 72000 },
     { label: "Combustível", detail: "3 idas ao cliente", cents: 18000 },
+    { label: "Imposto (estimado)", detail: "Simples Nacional, 8% do valor", cents: 38400 },
   ],
 };
 
@@ -125,7 +126,7 @@ export const profitPitch = {
   description: `Quando a compra de material, o combustível e as horas da equipe não ficam ligados ao serviço, o lucro vira palpite. No ${brand.name}, cada gasto e cada hora entram no serviço certo, e você vê o resultado antes de faturar.`,
   points: [
     "Lance o gasto na hora, já no serviço, com o fornecedor e a forma de pagamento",
-    "As horas da equipe entram sozinhas no custo",
+    "As horas da equipe e o imposto entram sozinhos no custo",
     "Custo previsto contra o realizado, com alerta de margem",
   ],
 };
@@ -182,7 +183,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: PiggyBank,
     title: "Resultado por serviço",
     description:
-      "Gastos lançados no serviço e horas da equipe viram o custo de cada trabalho. Veja a margem, compare com o previsto e saiba quais serviços dão lucro.",
+      "Gastos lançados no serviço, horas da equipe e o imposto estimado viram o custo de cada trabalho. Veja a margem, compare com o previsto e saiba quais serviços dão lucro.",
   },
   {
     icon: ClipboardList,
@@ -240,6 +241,10 @@ export const faq = [
   {
     question: "Emite nota fiscal?",
     answer: "Não. O sistema controla orçamentos, serviços e o caixa da empresa. A nota continua sendo emitida por fora.",
+  },
+  {
+    question: "O imposto entra na conta do lucro?",
+    answer: "Sim. Você informa o regime da empresa e a alíquota que o contador passa, e o imposto estimado sai do resultado de cada serviço. Dá para mudar a alíquota de um serviço específico. A guia oficial continua sendo apurada pelo contador.",
   },
   {
     question: "O registro de horas substitui o ponto eletrônico?",

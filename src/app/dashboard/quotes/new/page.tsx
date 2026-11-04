@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { addDays, todayInTimezone } from "@/lib/dates";
+import { companyTaxRate } from "@/lib/tax";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
@@ -31,6 +32,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         quote={null}
         items={[]}
         canSeeCost={permissionService.canManageFinance(active.role)}
+        taxRateBps={companyTaxRate(profile)}
         catalog={catalog}
         clients={clients}
         initial={{
