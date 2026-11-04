@@ -375,7 +375,7 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
+      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'company_monthly_revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
       'expense_categories', 'expense_templates', 'expenses', 'suppliers', 'time_entries', 'time_entry_dismissals',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',

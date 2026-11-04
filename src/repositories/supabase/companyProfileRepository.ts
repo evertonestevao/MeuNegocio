@@ -27,8 +27,6 @@ export function createSupabaseCompanyProfileRepository(client: SupabaseClient): 
         quote_default_notes: input.quoteDefaultNotes,
         target_margin_percent: input.targetMarginPercent,
         timezone: input.timezone,
-        tax_regime: input.taxRegime,
-        tax_rate_bps: input.taxRateBps,
       });
       if (error) throw new AppError("internal_error", "Falha ao salvar os dados da empresa", error);
     },

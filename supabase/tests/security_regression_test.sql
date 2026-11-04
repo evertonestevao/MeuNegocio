@@ -625,6 +625,97 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Simples Nacional pelo RBT12: faixas, valor informado no lugar do lançado, Fator R, início de
+-- atividade e congelamento na aprovação. Contas conferidas à mão pela tabela da LC 123.
+-- ---------------------------------------------------------------------------
+update public.company_profiles
+set tax_regime = 'simples', tax_rate_auto = true, simples_annex = 'III', fator_r = false, activity_started_on = null
+where company_id = '5ec0c000-0000-4000-8000-000000000001';
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+-- 12 meses de R$ 25.000,00: RBT12 de R$ 300.000,00, faixa 2 do Anexo III = 8,08%.
+select public.save_monthly_revenues('5ec0c000-0000-4000-8000-000000000001', (
+  select jsonb_agg(jsonb_build_object('month', (date_trunc('month', current_date) - make_interval(months => i))::date, 'amount_cents', 2500000))
+  from generate_series(1, 12) as i
+));
+reset role;
+create function sec_test.tax_rate() returns integer language sql as $$
+  select public.effective_tax_rate_bps('5ec0c000-0000-4000-8000-000000000001');
+$$;
+do $$
+begin
+  if sec_test.tax_rate() <> 808 then raise exception 'FALHA RBT12: 12 meses de 25 mil deram % em vez de 808', sec_test.tax_rate(); end if;
+  -- Lançado no sistema no mês passado: o informado continua valendo.
+  insert into public.revenues (company_id, quote_id, amount_cents, competence_date)
+  values ('5ec0c000-0000-4000-8000-000000000001', (select id from sec_tax_quote), 1000000, (date_trunc('month', current_date) - interval '1 month')::date + 4);
+  if sec_test.tax_rate() <> 808 then raise exception 'FALHA RBT12: o lançado passou por cima do informado'; end if;
+end $$;
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select public.save_monthly_revenues('5ec0c000-0000-4000-8000-000000000001',
+  jsonb_build_array(jsonb_build_object('month', (date_trunc('month', current_date) - interval '1 month')::date, 'amount_cents', null)));
+do $$
+begin
+  begin
+    perform public.save_monthly_revenues('5ec0c000-0000-4000-8000-000000000001',
+      jsonb_build_array(jsonb_build_object('month', date_trunc('month', current_date)::date, 'amount_cents', 100)));
+    raise exception 'FALHA RBT12: aceitou faturamento do mês corrente' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  if (public.get_company_tax('5ec0c000-0000-4000-8000-000000000001') ->> 'rate_bps')::integer is distinct from 792 then
+    raise exception 'FALHA RBT12: sem o informado, o mês com R$ 10 mil lançados não entrou';
+  end if;
+end $$;
+reset role;
+do $$
+begin
+  -- RBT12 de R$ 285.000,00: Anexo V faixa 2 = 16,42%; com Fator R vai para o Anexo III (7,92%).
+  update public.company_profiles set simples_annex = 'V' where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  if sec_test.tax_rate() <> 1642 then raise exception 'FALHA RBT12: Anexo V deu %', sec_test.tax_rate(); end if;
+  update public.company_profiles set fator_r = true where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  if sec_test.tax_rate() <> 792 then raise exception 'FALHA RBT12: Fator R não levou ao Anexo III'; end if;
+  -- 3 meses de atividade (25 mil, 25 mil e 10 mil): média × 12 = R$ 240.000,00, 7,30%.
+  update public.company_profiles set simples_annex = 'III', fator_r = false,
+    activity_started_on = (date_trunc('month', current_date) - interval '3 months')::date + 9
+  where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  if sec_test.tax_rate() <> 730 then raise exception 'FALHA RBT12: início de atividade deu %', sec_test.tax_rate(); end if;
+  -- Primeiro mês de atividade: primeira faixa.
+  update public.company_profiles set activity_started_on = current_date where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  if sec_test.tax_rate() <> 600 then raise exception 'FALHA RBT12: primeiro mês deu %', sec_test.tax_rate(); end if;
+  update public.company_profiles set activity_started_on = null where company_id = '5ec0c000-0000-4000-8000-000000000001';
+  -- Automático só no Simples, com anexo.
+  begin
+    update public.company_profiles set tax_regime = 'other' where company_id = '5ec0c000-0000-4000-8000-000000000001';
+    raise exception 'FALHA RBT12: automático fora do Simples' using errcode = 'P0002';
+  exception when check_violation then null;
+  end;
+end $$;
+-- A aprovação congela a alíquota calculada do mês.
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+create temp table sec_auto_quote on commit drop as
+  select public.save_quote('5ec0c000-0000-4000-8000-000000000001', null, '5ec0e000-0000-4000-8000-000000000001', null, 'Automático', current_date + 15, 0, null,
+    '[{"description":"Manutenção","unit":"un","pricing_mode":"fixed","quantity":1,"people":1,"unit_price_cents":100000}]'::jsonb) as id;
+do $$
+begin
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', (select id from sec_auto_quote), 'send', current_date + 15);
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', (select id from sec_auto_quote), 'approve', null);
+  if (select tax_rate_bps from public.quotes where id = (select id from sec_auto_quote)) is distinct from 792 then
+    raise exception 'FALHA RBT12: a aprovação não congelou a alíquota calculada';
+  end if;
+end $$;
+-- Faturamento é só de owner e admin.
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+select sec_test.must_fail('membro lê o cálculo do imposto', format('select public.get_company_tax(%L)', '5ec0c000-0000-4000-8000-000000000001'));
+select sec_test.must_fail('membro informa faturamento',
+  format('select public.save_monthly_revenues(%L, %L::jsonb)', '5ec0c000-0000-4000-8000-000000000001', '[]'));
+do $$
+begin
+  if exists (select 1 from public.company_monthly_revenues) then raise exception 'FALHA RBT12: o membro lê o faturamento informado'; end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

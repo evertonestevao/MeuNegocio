@@ -50,6 +50,8 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "quote.closed": "Orçamento fechado",
   "quote.close_undone": "Fechamento desfeito",
   "quote.tax_rate_changed": "Imposto do serviço alterado",
+  "company.tax_updated": "Impostos da empresa alterados",
+  "company.revenue_informed": "Faturamento informado para o imposto",
   "quote.approved_by_client": "Orçamento aprovado pelo cliente",
   "quote.refused_by_client": "Orçamento recusado pelo cliente",
   "subscription.activated": "Assinatura ativada",

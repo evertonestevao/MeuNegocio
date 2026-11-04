@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { addDays, todayInTimezone } from "@/lib/dates";
-import { companyTaxRate } from "@/lib/tax";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
+import { getTaxService } from "@/server/tax";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -17,7 +17,8 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
   if (!active) return null;
   if (!permissionService.canManageQuotes(active.role)) redirect("/dashboard");
 
-  const { clients, catalog, profile } = await loadQuoteEditorData({ companyId: active.id, role: active.role });
+  const actor = { companyId: active.id, role: active.role };
+  const [{ clients, catalog, profile }, taxRateBps] = await Promise.all([loadQuoteEditorData(actor), (await getTaxService()).getRate(actor)]);
   const clientId = clients.some((option) => option.id === client) ? (client as string) : null;
 
   return (
@@ -32,7 +33,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         quote={null}
         items={[]}
         canSeeCost={permissionService.canManageFinance(active.role)}
-        taxRateBps={companyTaxRate(profile)}
+        taxRateBps={taxRateBps}
         catalog={catalog}
         clients={clients}
         initial={{

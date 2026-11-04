@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
-import { companyTaxRate } from "@/lib/tax";
 import type { LaborEntry, LaborRate, PlannedLine, QuoteTaxRate, ServiceCostRepository, ServiceQuoteRow, ServiceVisit } from "@/services/serviceCostService";
-import type { CompanyProfile } from "@/types/database";
+import type { CompanyTax } from "@/types/tax";
 import type { Expense } from "@/types/finance";
 
 function fail(error: unknown): never {
@@ -163,14 +162,10 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
     },
 
     async getCompanyTaxRate(companyId) {
-      const { data, error } = await client
-        .from("company_profiles")
-        .select("tax_regime, tax_rate_bps")
-        .eq("company_id", companyId)
-        .is("deleted_at", null)
-        .maybeSingle<Pick<CompanyProfile, "tax_regime" | "tax_rate_bps">>();
+      // Informada ou calculada pelo RBT12: a regra é do banco.
+      const { data, error } = await client.rpc("get_company_tax", { p_company_id: companyId });
       if (error) fail(error);
-      return data ? companyTaxRate(data) : null;
+      return (data as CompanyTax | null)?.rate_bps ?? null;
     },
 
     async setTaxRate(companyId, quoteId, rateBps) {

@@ -1,7 +1,6 @@
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TAX_REGIME_LABEL, TAX_REGIMES, taxRateInput } from "@/lib/tax";
 import { COMPANY_TIMEZONES } from "@/services/companyProfileService";
 import type { CompanyProfile } from "@/types/database";
 
@@ -82,39 +81,6 @@ export function CompanyProfileFields({ profile }: { profile: Omit<CompanyProfile
       />
       <p className="text-xs text-muted-foreground">Abaixo dela, o resultado do serviço aparece em alerta. Só você e o administrador veem.</p>
     </div>
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-tax-regime">Regime tributário</Label>
-        <select
-          id="profile-tax-regime"
-          name="taxRegime"
-          defaultValue={profile.tax_regime ?? ""}
-          className="border-input h-11 rounded-lg md:h-9 border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        >
-          <option value="">Não informado</option>
-          {TAX_REGIMES.map((regime) => (
-            <option key={regime} value={regime}>
-              {TAX_REGIME_LABEL[regime]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-tax-rate">Imposto sobre o valor cobrado (%)</Label>
-        <Input
-          id="profile-tax-rate"
-          name="taxRate"
-          inputMode="decimal"
-          placeholder="Ex.: 6 ou 8,43"
-          defaultValue={profile.tax_rate_bps ? taxRateInput(profile.tax_rate_bps) : ""}
-          className="max-w-32"
-        />
-      </div>
-    </div>
-    <p className="-mt-2 text-xs text-muted-foreground">
-      Descontado do resultado de cada serviço como estimativa; você pode mudar a de um serviço específico. No Simples Nacional, use a
-      alíquota efetiva do mês, que o contador informa. No MEI não há percentual: lance o DAS mensal como gasto fixo.
-    </p>
     </>
   );
 }

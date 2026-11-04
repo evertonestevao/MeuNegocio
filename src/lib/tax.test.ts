@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companyTaxRate, formatTaxRate, parseTaxRate, taxCents, taxRateInput } from "./tax";
+import { formatTaxRate, parseTaxRate, taxCents, taxRateInput } from "./tax";
 
 describe("imposto estimado", () => {
   it("calcula sobre o valor cobrado e arredonda no centavo", () => {
@@ -18,12 +18,5 @@ describe("imposto estimado", () => {
     expect(formatTaxRate(843)).toBe("8,43%");
     expect(formatTaxRate(800)).toBe("8%");
     expect(taxRateInput(1_550)).toBe("15,5");
-  });
-
-  it("padrão da empresa: nenhum sem regime, zero no MEI", () => {
-    expect(companyTaxRate({ tax_regime: null, tax_rate_bps: 600 })).toBeNull();
-    expect(companyTaxRate({})).toBeNull();
-    expect(companyTaxRate({ tax_regime: "mei", tax_rate_bps: 600 })).toBe(0);
-    expect(companyTaxRate({ tax_regime: "simples", tax_rate_bps: 600 })).toBe(600);
   });
 });

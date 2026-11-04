@@ -1,6 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEMO_READ_ONLY_CODE, DEMO_READ_ONLY_MESSAGE, type DemoProfile } from "@/config/demo";
+import { addMonths } from "@/lib/calendar";
+import { effectiveAnnex, rbt12Cents, simplesRate } from "@/lib/simplesNacional";
+import type { CompanyTax, SimplesAnnex } from "@/types/tax";
 import rawFixtures from "./fixtures.json";
 
 /**
@@ -246,6 +249,50 @@ function demoPublicQuoteRow(token: string): Row | null {
   };
 }
 
+/** Faturamento fictício dos meses de antes do sistema, informado pela empresa da demonstração. */
+const DEMO_INFORMED_CENTS = 2_200_000;
+
+/** get_company_tax com os dados fixos: meses lançados vêm das receitas; os anteriores, informados. */
+function demoCompanyTax(tables: Record<string, Row[]>): CompanyTax {
+  const profile = tables.company_profiles[0];
+  const month = `${todayInBrazil(new Date()).slice(0, 7)}-01`;
+  const months = Array.from({ length: 12 }, (_, index) => {
+    const start = addMonths(month, -(index + 1));
+    const launched = tables.revenues
+      .filter((revenue) => !revenue.deleted_at && String(revenue.competence_date).startsWith(start.slice(0, 7)))
+      .reduce((sum, revenue) => sum + Number(revenue.amount_cents), 0);
+    return { month: start, launched_cents: launched, informed_cents: launched === 0 ? DEMO_INFORMED_CENTS : null };
+  });
+  const annex = profile.simples_annex as SimplesAnnex;
+  const applied = effectiveAnnex(annex, profile.fator_r === true);
+  const revenue = months.reduce((sum, item) => sum + (item.informed_cents ?? item.launched_cents), 0);
+  const rbt12 = rbt12Cents(months.map((item) => item.informed_cents ?? item.launched_cents));
+  const rate = simplesRate(applied, rbt12);
+  return {
+    regime: "simples",
+    manual_rate_bps: Number(profile.tax_rate_bps),
+    auto: profile.tax_rate_auto === true,
+    annex,
+    fator_r: profile.fator_r === true,
+    activity_started_on: null,
+    rate_bps: rate.rateBps,
+    detail: {
+      month,
+      annex,
+      effective_annex: applied,
+      revenue_cents: revenue,
+      months: 12,
+      rbt12_cents: rbt12,
+      bracket: rate.bracket,
+      nominal_bps: rate.nominalBps,
+      deduction_cents: rate.deductionCents,
+      rate_bps: rate.rateBps,
+      over_limit: rate.overLimit,
+    },
+    months,
+  };
+}
+
 function callRpc(name: string, args: Row): Result {
   const { rpc } = fixtures() as unknown as { rpc: { hours: { entries: unknown[] } & Row; myVisits: Row[]; sheets: Record<string, unknown> } };
   const ok = (data: unknown): Result => ({ data, error: null });
@@ -258,6 +305,8 @@ function callRpc(name: string, args: Row): Result {
       return ok(null);
     case "get_public_quote":
       return ok(demoPublicQuoteRow(String(args.p_token)));
+    case "get_company_tax":
+      return ok(demoCompanyTax((fixtures() as unknown as { tables: Record<string, Row[]> }).tables));
     case "my_pending_invites":
       return ok([]);
     case "get_hours_month": {

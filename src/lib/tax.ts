@@ -53,13 +53,3 @@ export function formatTaxRate(rateBps: number): string {
 export function taxRateInput(rateBps: number): string {
   return (rateBps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2, useGrouping: false });
 }
-
-/**
- * Alíquota padrão da empresa. Sem regime informado, não há padrão (null): o resultado fica sem
- * imposto e a tela avisa. O MEI paga valor fixo por mês, que entra como gasto fixo, não por serviço.
- */
-export function companyTaxRate(profile: { tax_regime?: TaxRegime | null; tax_rate_bps?: number | null }): number | null {
-  if (!profile.tax_regime) return null;
-  if (profile.tax_regime === "mei") return 0;
-  return profile.tax_rate_bps ?? 0;
-}

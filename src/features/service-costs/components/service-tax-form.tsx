@@ -39,7 +39,7 @@ export function ServiceTaxForm({ quoteId, rateBps, taxCents, source }: { quoteId
         {source === "none" ? (
           <span>
             Imposto não descontado.{" "}
-            <Link href="/dashboard/settings" className="font-medium text-primary hover:underline">
+            <Link href="/dashboard/settings/impostos" className="font-medium text-primary hover:underline">
               Informe o regime da empresa
             </Link>{" "}
             ou a alíquota deste serviço.

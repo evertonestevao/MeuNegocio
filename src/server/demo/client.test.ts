@@ -56,6 +56,16 @@ describe("client da demonstração", () => {
     expect((await client.rpc("is_super_admin")).data).toBe(false);
     expect((await client.rpc("resellers_enabled")).data).toBe(false);
   });
+
+  it("calcula o imposto pelo faturamento dos 12 meses anteriores", async () => {
+    const { data, error } = await client.rpc("get_company_tax", { p_company_id: "demo" });
+    expect(error).toBeNull();
+    expect(data.months).toHaveLength(12);
+    expect(data.auto).toBe(true);
+    expect(data.detail.rbt12_cents).toBe(data.months.reduce((sum: number, month: { launched_cents: number; informed_cents: number | null }) => sum + (month.informed_cents ?? month.launched_cents), 0));
+    expect(data.rate_bps).toBe(data.detail.rate_bps);
+    expect(data.rate_bps).toBeGreaterThan(0);
+  });
 });
 
 describe("datas da demonstração", () => {

@@ -3,6 +3,8 @@
  * Fonte única — não redeclarar essas interfaces em outros arquivos.
  */
 
+import type { SimplesAnnex } from "./tax";
+
 export type RoleCode = "owner" | "admin" | "member" | "technician";
 
 export type InviteStatus = "pending" | "accepted" | "revoked" | "expired";
@@ -159,6 +161,11 @@ export interface CompanyProfile {
   tax_regime?: TaxRegime | null;
   /** Alíquota padrão em centésimos de ponto percentual (8,43% = 843). */
   tax_rate_bps?: number;
+  /** Simples Nacional: alíquota calculada pelo RBT12 no lugar de tax_rate_bps. */
+  tax_rate_auto?: boolean;
+  simples_annex?: SimplesAnnex | null;
+  fator_r?: boolean;
+  activity_started_on?: string | null;
 }
 
 export type CatalogKind = "product" | "service";

@@ -12,7 +12,6 @@ import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/f
 import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
-import { companyTaxRate } from "@/lib/tax";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
@@ -20,6 +19,7 @@ import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService } from "@/serv
 import { getEmployeeService, getVisitService } from "@/server/schedule";
 import { getExpenseService } from "@/server/finance";
 import { getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
+import { getTaxService } from "@/server/tax";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
@@ -39,10 +39,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const { quote, items, responses, revenue } = detail;
 
   const visits = await (await getVisitService()).list(actor, { quoteId: quote.id });
-  const [{ clients, catalog, profile }, clientDetail, allowsPublicLink] = await Promise.all([
+  const [{ clients, catalog, profile }, clientDetail, allowsPublicLink, companyTaxRateBps] = await Promise.all([
     loadQuoteEditorData(actor),
     quote.client_id ? (await getClientService()).getDetail(actor, quote.client_id) : Promise.resolve(null),
     canUsePublicApproval(active.id),
+    // A alíquota guardada no orçamento vale mais; sem ela, a de hoje da empresa.
+    quote.tax_rate_bps === null || quote.tax_rate_bps === undefined ? (await getTaxService()).getRate(actor) : Promise.resolve(null),
   ]);
   const location = clientDetail?.locations.find((candidate) => candidate.id === quote.location_id) ?? null;
   const primaryContact = clientDetail?.contacts[0] ?? null;
@@ -144,7 +146,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       <QuoteEditor
         key={quote.updated_at}
         canSeeCost={permissionService.canManageFinance(active.role)}
-        taxRateBps={quote.tax_rate_bps ?? companyTaxRate(profile)}
+        taxRateBps={quote.tax_rate_bps ?? companyTaxRateBps}
         quote={quote}
         items={items}
         catalog={catalog}

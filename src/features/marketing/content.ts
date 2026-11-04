@@ -244,7 +244,7 @@ export const faq = [
   },
   {
     question: "O imposto entra na conta do lucro?",
-    answer: "Sim. Você informa o regime da empresa e a alíquota que o contador passa, e o imposto estimado sai do resultado de cada serviço. Dá para mudar a alíquota de um serviço específico. A guia oficial continua sendo apurada pelo contador.",
+    answer: "Sim. No Simples Nacional, o sistema pode calcular a alíquota do mês pelo faturamento dos últimos 12 meses e pelo anexo da sua atividade, ou você informa a alíquota que o contador passa. O imposto estimado sai do resultado de cada serviço, e dá para mudar a de um serviço específico. A guia oficial continua sendo apurada pelo contador.",
   },
   {
     question: "O registro de horas substitui o ponto eletrônico?",

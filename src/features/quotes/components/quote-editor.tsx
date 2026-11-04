@@ -336,7 +336,7 @@ export function QuoteEditor({
                 </div>
                 <span>
                   Considera só os itens com custo informado.
-                  {taxRateBps === null ? " Sem imposto: informe o regime da empresa em Configurações." : null}
+                  {taxRateBps === null ? " Sem imposto: informe o regime da empresa em Configurações › Impostos." : null}
                 </span>
               </div>
             ) : null}
