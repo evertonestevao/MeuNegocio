@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, Building2, Search } from "lucide-react";
+import { ChevronRight, Building2, FileUp, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,12 @@ export default async function ClientsPage({
           <h2 className="font-heading text-2xl font-extrabold tracking-tight">Clientes</h2>
           <p className="text-sm text-muted-foreground">Empresas atendidas, com contatos e locais de serviço.</p>
         </div>
-        <NewClientButton />
+        <div className="flex flex-wrap gap-2 max-sm:[&>*]:flex-1">
+          <Button variant="outline" render={<Link href="/dashboard/clients/importar" />} nativeButton={false}>
+            <FileUp className="size-4" /> Importar planilha
+          </Button>
+          <NewClientButton />
+        </div>
       </div>
 
       <form action="/dashboard/clients" className="flex max-w-md gap-2" role="search">
@@ -62,7 +67,14 @@ export default async function ClientsPage({
         <EmptyState
           icon={Building2}
           title={search ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
-          description={search ? "Tente outro nome ou documento." : "Cadastre o primeiro cliente para criar orçamentos e visitas."}
+          description={search ? "Tente outro nome ou documento." : "Cadastre o primeiro cliente ou traga sua lista de uma planilha, com contato e endereço."}
+          action={
+            search ? undefined : (
+              <Button variant="outline" render={<Link href="/dashboard/clients/importar" />} nativeButton={false}>
+                <FileUp className="size-4" /> Importar planilha
+              </Button>
+            )
+          }
         />
       ) : (
         <>

@@ -165,3 +165,18 @@ export async function removeLocationAction(
     return handleError(err);
   }
 }
+
+/** Clientes da planilha, já conferidos na prévia; o serviço confere de novo e grava tudo de uma vez. */
+export async function importClientsAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const rows: unknown = JSON.parse(String(formData.get("rows") ?? "[]"));
+    const { imported, skipped } = await (await getClientService()).importMany(actor, rows);
+    await recordAudit({ companyId: actor.companyId, action: "client.imported", entityType: "client", metadata: { imported, skipped } });
+    refresh();
+    const plural = imported === 1 ? "1 cliente importado" : `${imported} clientes importados`;
+    return { success: skipped > 0 ? `${plural}. ${skipped} já estavam cadastrados e ficaram de fora.` : `${plural}.` };
+  } catch (err) {
+    return handleError(err);
+  }
+}

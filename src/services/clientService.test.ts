@@ -66,6 +66,8 @@ function makeRepo() {
     updateLocation: vi.fn(async () => undefined),
     softDeleteLocation: vi.fn(async () => undefined),
     locationHasHistory: vi.fn(async () => false),
+    listIdentities: vi.fn(async (): Promise<{ name: string; document: string | null }[]> => [{ name: "Hotel Central", document: "12345678000190" }]),
+    importMany: vi.fn(async (_companyId: string, rows: unknown[]) => rows.length),
   } satisfies ClientRepository;
 }
 
@@ -200,5 +202,24 @@ describe("validação dos formulários", () => {
     expect(() => parseContactForm(form({ name: "Ana", email: "x" }))).toThrow();
     expect(() => parseContactForm(form({ name: "" }))).toThrow();
     expect(parseContactForm(form({ name: "Ana", isPrimary: "on" })).isPrimary).toBe(true);
+  });
+});
+
+describe("importação de clientes", () => {
+  const row = (name: string, document: string | null = null) => ({ name, document, notes: null, contact: null, location: null });
+
+  it("pula quem já está cadastrado e grava o resto de uma vez", async () => {
+    const repo = makeRepo();
+    const result = await makeService(repo).importMany(OWNER, [row("Padaria"), row("Hotel com outro nome", "12.345.678/0001-90"), row("Mercado")]);
+    expect(result).toEqual({ imported: 2, skipped: 1 });
+    expect(repo.importMany).toHaveBeenCalledWith("co-1", [row("Padaria"), row("Mercado")]);
+  });
+
+  it("respeita o limite de clientes do plano e confere cada linha de novo", async () => {
+    const repo = makeRepo();
+    await expect(makeService(repo, 2).importMany(OWNER, [row("Padaria"), row("Mercado")])).rejects.toMatchObject({ code: "conflict" });
+    await expect(makeService(repo).importMany(OWNER, [row("A")])).rejects.toThrow();
+    await expect(makeService(repo).importMany(TECHNICIAN, [row("Padaria")])).rejects.toMatchObject({ code: "forbidden" });
+    expect(repo.importMany).not.toHaveBeenCalled();
   });
 });

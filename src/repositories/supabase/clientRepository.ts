@@ -83,6 +83,18 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
       }));
     },
 
+    async listIdentities(companyId) {
+      const { data, error } = await client.from("clients").select("name, document").eq("company_id", companyId).is("deleted_at", null).limit(20000);
+      if (error) fail(error);
+      return (data ?? []) as { name: string; document: string | null }[];
+    },
+
+    async importMany(companyId, rows) {
+      const { data, error } = await client.rpc("import_clients", { p_company_id: companyId, p_rows: rows });
+      if (error) fail(error);
+      return data as number;
+    },
+
     async get(companyId, clientId) {
       const { data, error } = await client
         .from("clients")

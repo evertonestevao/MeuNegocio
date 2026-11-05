@@ -4,6 +4,8 @@ import { AppError } from "@/lib/errors";
 import type { Client, ClientContact, ClientLocation, ClientListItem, ClientPickerOption } from "@/types/database";
 import { permissionService } from "./permissionService";
 import { normalizePageParams, type PageParams, type Paginated } from "./tenantService";
+import { z } from "zod";
+import { importRowSchema, MAX_IMPORT_ROWS, previewImport, type ImportRow } from "@/features/clients/import";
 
 /**
  * Clientes, contatos e locais de atendimento. Toda operação recebe a empresa ativa e o papel
@@ -36,6 +38,11 @@ export interface ClientRepository {
   softDeleteLocation(companyId: string, locationId: string): Promise<void>;
   /** Local usado em orçamento ou visita não pode ser removido. */
   locationHasHistory(companyId: string, locationId: string): Promise<boolean>;
+
+  /** Nome e documento de todos os clientes, para não importar duplicado. */
+  listIdentities(companyId: string): Promise<{ name: string; document: string | null }[]>;
+  /** Grava tudo numa transação: ou entram todos, ou nenhum. */
+  importMany(companyId: string, rows: ImportRow[]): Promise<number>;
 }
 
 interface ClientServiceDeps {
@@ -113,6 +120,33 @@ export function createClientService({ repo, getClientLimit }: ClientServiceDeps)
         repo.listLocations(actor.companyId, clientId),
       ]);
       return { client, contacts, locations };
+    },
+
+    /** Nome e documento de todos os clientes, para a prévia da importação. */
+    async listIdentities(actor: ActorContext) {
+      requireManage(actor);
+      return repo.listIdentities(actor.companyId);
+    },
+
+    /**
+     * Importa clientes de uma planilha. Confere de novo cada linha e os duplicados (outra pessoa
+     * pode ter cadastrado no meio tempo), que são pulados, e o limite de clientes do plano.
+     */
+    async importMany(actor: ActorContext, input: unknown): Promise<{ imported: number; skipped: number }> {
+      requireManage(actor);
+      const rows = z.array(importRowSchema).min(1, "Nenhum cliente para importar.").max(MAX_IMPORT_ROWS, `Importe até ${MAX_IMPORT_ROWS} clientes por vez.`).parse(input);
+      const existing = await repo.listIdentities(actor.companyId);
+      const fresh = previewImport(
+        [["Nome", "CPF/CNPJ"], ...rows.map((row) => [row.name, row.document ?? ""])],
+        existing,
+      ).flatMap((line, index) => (line.status === "ready" ? [rows[index]] : []));
+      if (fresh.length === 0) return { imported: 0, skipped: rows.length };
+      const limit = await getClientLimit(actor.companyId);
+      if (limit !== null && existing.length + fresh.length > limit) {
+        throw new AppError("conflict", `Seu plano permite até ${limit} clientes. Hoje são ${existing.length}; importe no máximo ${Math.max(0, limit - existing.length)}.`);
+      }
+      const imported = await repo.importMany(actor.companyId, fresh);
+      return { imported, skipped: rows.length - imported };
     },
 
     async create(actor: ActorContext, input: ClientInput): Promise<Client> {

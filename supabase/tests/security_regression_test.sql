@@ -951,6 +951,44 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Importação de clientes: tudo ou nada; contato principal e local junto; respeita as policies.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+declare
+  v_before integer := (select count(*) from public.clients where company_id = '5ec0c000-0000-4000-8000-000000000001');
+begin
+  begin
+    perform public.import_clients('5ec0c000-0000-4000-8000-000000000001', '[
+      {"name":"Importado Um","document":null,"notes":null,"contact":null,"location":null},
+      {"name":"","document":null,"notes":null,"contact":null,"location":null}
+    ]'::jsonb);
+    raise exception 'FALHA importação: aceitou cliente sem nome' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  if (select count(*) from public.clients where company_id = '5ec0c000-0000-4000-8000-000000000001') <> v_before then
+    raise exception 'FALHA importação: linha com erro deixou parte gravada';
+  end if;
+
+  if public.import_clients('5ec0c000-0000-4000-8000-000000000001', '[
+    {"name":"Importado Um","document":"12345678000190","notes":"manhã","contact":{"name":"João","phone":"(14) 99999-0000","email":"joao@x.com"},"location":{"name":"Principal","address":"Rua A, 10 - Bauru/SP"}},
+    {"name":"Importado Dois","document":null,"notes":null,"contact":null,"location":null}
+  ]'::jsonb) <> 2 then
+    raise exception 'FALHA importação: não importou os dois clientes';
+  end if;
+  if not exists (
+    select 1 from public.clients c
+    join public.client_contacts cc on cc.client_id = c.id and cc.is_primary and cc.phone = '(14) 99999-0000'
+    join public.client_locations l on l.client_id = c.id and l.address = 'Rua A, 10 - Bauru/SP'
+    where c.company_id = '5ec0c000-0000-4000-8000-000000000001' and c.name = 'Importado Um'
+  ) then
+    raise exception 'FALHA importação: contato principal ou local não gravado';
+  end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$
