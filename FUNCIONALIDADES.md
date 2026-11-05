@@ -461,6 +461,7 @@ Outras regras:
 - **Depois de aprovar**, o link mostra ao cliente a assinatura, o nome, a data e a observação dele, com "Baixar PDF" e "Imprimir". O PDF, do link e do escritório, termina com o bloco "Aprovação do cliente": assinatura, nome, data e observação. No link, a assinatura abre por link temporário gerado pelo servidor só para a pasta do próprio orçamento.
 - Rate limit por IP: 10 respostas a cada 10 minutos e 60 visualizações por minuto. A escrita passa pelo servidor.
 - A resposta aparece no orçamento e entra na auditoria.
+- **Aviso por e-mail:** quando o cliente aprova ou recusa pelo link, o proprietário e os administradores da empresa recebem um e-mail, um para cada um, com quem respondeu, o valor, a observação ou o motivo e o link para o orçamento ("Cerâmica Vale Verde aprovou o orçamento Nº 0012"). O que o cliente digita é escapado no HTML. Falha no envio não desfaz a resposta: vai só para o monitoramento de erros. Sai pelo provedor de e-mail configurado (`EMAIL_PROVIDER`): no modo `console`, só aparece no log do servidor; com `resend`, envia de verdade.
 
 Toda escrita passa por funções do banco; o client só lê estas tabelas. Isolamento e permissões testados em `supabase/tests/rls_test.sql`.
 

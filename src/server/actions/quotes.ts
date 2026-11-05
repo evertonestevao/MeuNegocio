@@ -12,7 +12,8 @@ import { taxRatePercentSchema } from "@/lib/tax";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
-import { getPublicQuoteService, getQuoteService } from "@/server/quotes";
+import { getPublicQuoteService, getQuoteNotificationService, getQuoteService } from "@/server/quotes";
+import { reportError } from "@/adapters/errorReporting";
 import { getServiceCostService } from "@/server/serviceCosts";
 import { createRateLimiter } from "@/server/rateLimit";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
@@ -214,6 +215,10 @@ export async function respondPublicQuoteAction(
       entityId: quoteId,
       metadata: {},
     });
+    // Melhor-esforço: o cliente já respondeu; falha de e-mail fica só no monitoramento.
+    await getQuoteNotificationService()
+      .notifyResponse({ companyId, quoteId, decision, name, comment })
+      .catch((err) => reportError(err, { source: "quote-response-email" }));
     refresh(quoteId);
     revalidatePath(`/orcamento/${token.data}`);
     return { success: decision === "approved" ? "Orçamento aprovado" : "Resposta registrada" };

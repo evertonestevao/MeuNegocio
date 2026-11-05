@@ -15,6 +15,9 @@ import { createBillingService } from "@/services/billingService";
 import { createCatalogService, type CatalogService } from "@/services/catalogService";
 import { createCompanyProfileService, type CompanyProfileService } from "@/services/companyProfileService";
 import { createPublicQuoteService, type PublicQuoteService } from "@/services/publicQuoteService";
+import { createQuoteNotificationService, type QuoteNotificationService } from "@/services/quoteNotificationService";
+import { createSupabaseQuoteNotificationRepository } from "@/repositories/supabase/quoteNotificationRepository";
+import { getEmailProvider } from "@/adapters/email";
 import { createQuoteService, type PublicQuoteRepository, type QuoteService } from "@/services/quoteService";
 import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
@@ -87,6 +90,15 @@ export function getPublicQuoteService(): PublicQuoteService {
     },
     canUsePublicApproval,
     newId: randomUUID,
+  });
+}
+
+/** Aviso por e-mail à empresa quando o cliente responde pelo link. */
+export function getQuoteNotificationService(): QuoteNotificationService {
+  return createQuoteNotificationService({
+    readers: createSupabaseQuoteNotificationRepository(getSupabaseAdminClient()),
+    provider: getEmailProvider(),
+    appUrl: getServerEnv().APP_URL,
   });
 }
 
