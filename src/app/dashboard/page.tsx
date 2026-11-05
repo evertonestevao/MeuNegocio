@@ -84,7 +84,7 @@ export default async function DashboardPage() {
   const { finance, forecast } = home;
   const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
   const nextVisit = home.today.find((visit) => visit.status === "scheduled" || visit.status === "in_progress");
-  const monthMax = finance ? Math.max(finance.monthRevenueCents, finance.monthExpenseCents) : 0;
+  const monthMax = finance ? Math.max(finance.monthRevenueCents, finance.monthReceivedCents, finance.monthExpenseCents) : 0;
   const weekData = home.week.map((day, index) => ({
     dia: index === 0 ? "Hoje" : WEEKDAY_SHORT[new Date(`${day.date}T12:00:00Z`).getUTCDay()],
     execucao: day.execution,
@@ -93,7 +93,8 @@ export default async function DashboardPage() {
   const weekTotal = home.week.reduce((total, day) => total + day.execution + day.assessment, 0);
   const trendData = (finance?.trend ?? []).map((item) => ({
     mes: formatMonth(item.month).slice(0, 3),
-    faturamento: item.revenueCents / 100,
+    faturado: item.revenueCents / 100,
+    recebido: (item.receivedCents ?? 0) / 100,
     gastos: item.expenseCents / 100,
   }));
   const monthName = formatMonth(today).split(" ")[0].toLowerCase();
@@ -136,11 +137,11 @@ export default async function DashboardPage() {
           <>
             <MetricCard
               icon={Scale}
-              tone={finance.balanceCents < 0 ? "danger" : "success"}
+              tone={finance.cashCents < 0 ? "danger" : "success"}
               toneValue
-              label={`Saldo de ${monthName}`}
-              value={formatCents(finance.balanceCents)}
-              hint={`Faturou ${formatCents(finance.monthRevenueCents)} · gastou ${formatCents(finance.monthExpenseCents)}`}
+              label={`Caixa de ${monthName}`}
+              value={formatCents(finance.cashCents)}
+              hint={`Recebeu ${formatCents(finance.monthReceivedCents)} · gastou ${formatCents(finance.monthExpenseCents)}`}
             />
             <MetricCard
               icon={Wallet}
@@ -152,6 +153,22 @@ export default async function DashboardPage() {
           </>
         ) : null}
       </div>
+
+      {finance && (finance.overdueCount > 0 || finance.receivableSoonCount > 0) ? (
+        <Link
+          href="/dashboard/finance/recebimentos"
+          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm hover:underline ${finance.overdueCount > 0 ? "bg-destructive/10" : "bg-info/10"}`}
+        >
+          <span>
+            {finance.overdueCount > 0
+              ? `${finance.overdueCount === 1 ? "1 recebimento atrasado" : `${finance.overdueCount} recebimentos atrasados`}: ${formatCents(finance.overdueCents)}.`
+              : null}
+            {finance.overdueCount > 0 && finance.receivableSoonCount > 0 ? " " : null}
+            {finance.receivableSoonCount > 0 ? `A receber nos próximos 7 dias: ${formatCents(finance.receivableSoonCents)}.` : null}
+          </span>
+          <span className="font-medium text-primary">Ver contas a receber</span>
+        </Link>
+      ) : null}
 
       <div className={`grid items-start gap-4 ${finance ? "lg:grid-cols-2" : ""}`}>
         <BarChartCard
@@ -169,13 +186,15 @@ export default async function DashboardPage() {
         />
         {finance ? (
           <BarChartCard
-            title="Faturamento e gastos"
-            description="Últimos 6 meses. Faturamento conta só orçamentos fechados."
+            title="Faturado, recebido e gastos"
+            description="Últimos 6 meses. Faturado é o que foi vendido; recebido, o que entrou."
             data={trendData}
             xKey="mes"
             series={[
-              { key: "faturamento", label: "Faturamento" },
+              // Gastos na segunda posição: mantém a cor de sempre; recebido ganha a terceira.
+              { key: "faturado", label: "Faturado" },
               { key: "gastos", label: "Gastos" },
+              { key: "recebido", label: "Recebido" },
             ]}
             valueFormat={{ style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 }}
             yAxisWidth={64}
@@ -247,12 +266,13 @@ export default async function DashboardPage() {
                 </Link>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 text-sm">
-                <MonthBar label="Faturamento" cents={finance.monthRevenueCents} max={monthMax} barClass="bg-chart-revenue" />
+                <MonthBar label="Faturado" cents={finance.monthRevenueCents} max={monthMax} barClass="bg-chart-revenue" />
+                <MonthBar label="Recebido" cents={finance.monthReceivedCents} max={monthMax} barClass="bg-success" />
                 <MonthBar label="Gastos" cents={finance.monthExpenseCents} max={monthMax} barClass="bg-chart-expense" />
                 <div className="flex items-baseline justify-between gap-3 border-t pt-3">
-                  <span className="font-medium">Saldo do mês</span>
-                  <strong className={`font-heading text-2xl font-extrabold tabular-nums ${finance.balanceCents < 0 ? "text-destructive" : "text-success"}`}>
-                    {formatCents(finance.balanceCents)}
+                  <span className="font-medium">Caixa do mês</span>
+                  <strong className={`font-heading text-2xl font-extrabold tabular-nums ${finance.cashCents < 0 ? "text-destructive" : "text-success"}`}>
+                    {formatCents(finance.cashCents)}
                   </strong>
                 </div>
               </CardContent>

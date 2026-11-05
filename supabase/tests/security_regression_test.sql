@@ -773,6 +773,90 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Recebimentos: as parcelas somam o fechado; baixa parcial deixa o restante a receber; desfazer o
+-- fechamento tira as parcelas; só owner e admin leem e dão baixa.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+declare
+  v_quote constant uuid := (select id from sec_auto_quote);
+  v_entry uuid;
+  v_rest uuid;
+  -- A data da empresa, no fuso dela: perto da meia-noite, current_date (UTC) já é amanhã.
+  v_today constant date := public.company_today('5ec0c000-0000-4000-8000-000000000001');
+begin
+  begin
+    perform public.close_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 100000, v_today,
+      '[{"amount_cents":30000,"due_date":"2026-01-01","method":"pix","received":true},{"amount_cents":60000,"due_date":"2026-02-01","method":"boleto","received":false}]'::jsonb);
+    raise exception 'FALHA recebimentos: aceitou parcelas que não somam o fechado' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  perform public.close_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 100000, v_today, jsonb_build_array(
+    jsonb_build_object('amount_cents', 40000, 'due_date', v_today, 'method', 'pix', 'received', true),
+    jsonb_build_object('amount_cents', 60000, 'due_date', v_today + 30, 'method', 'boleto', 'received', false)
+  ));
+  if (select count(*) from public.receivables where quote_id = v_quote) <> 2
+     or (select sum(received_cents) from public.receivables where quote_id = v_quote) <> 40000 then
+    raise exception 'FALHA recebimentos: o fechamento não gravou as parcelas';
+  end if;
+
+  select id into v_rest from public.receivables where quote_id = v_quote and received_on is null;
+  begin
+    perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_rest, v_today + 1, 1000, null, null);
+    raise exception 'FALHA recebimentos: aceitou recebimento no futuro' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  begin
+    perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_rest, v_today, 60001, null, null);
+    raise exception 'FALHA recebimentos: aceitou receber mais que a parcela' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  -- Recebeu 25 mil de 60 mil: os 35 mil restantes viram parcela nova.
+  perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_rest, v_today, 25000, 'cash', v_today + 60);
+  if (select sum(amount_cents) from public.receivables where quote_id = v_quote) <> 100000
+     or (select amount_cents from public.receivables where quote_id = v_quote and received_on is null) <> 35000
+     or (select due_date from public.receivables where quote_id = v_quote and received_on is null) <> v_today + 60 then
+    raise exception 'FALHA recebimentos: baixa parcial não deixou o restante a receber';
+  end if;
+
+  select id into v_entry from public.receivables where quote_id = v_quote and received_cents = 25000;
+  perform public.undo_receive_installment('5ec0c000-0000-4000-8000-000000000001', v_entry);
+  if (select received_on from public.receivables where id = v_entry) is not null then
+    raise exception 'FALHA recebimentos: desfazer a baixa não voltou a parcela';
+  end if;
+  begin
+    perform public.reschedule_installment('5ec0c000-0000-4000-8000-000000000001',
+      (select id from public.receivables where quote_id = v_quote and received_cents = 40000), v_today + 5, null);
+    raise exception 'FALHA recebimentos: reagendou parcela já recebida' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+end $$;
+-- Membro não lê nem dá baixa.
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+do $$
+begin
+  if exists (select 1 from public.receivables) then raise exception 'FALHA recebimentos: o membro lê as parcelas'; end if;
+end $$;
+reset role;
+create temp table sec_receivable on commit drop as
+  select id from public.receivables where quote_id = (select id from sec_auto_quote) and received_on is null limit 1;
+grant select on sec_receivable to authenticated;
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+select sec_test.must_fail('membro dá baixa em parcela',
+  format('select public.receive_installment(%L, %L, public.company_today(%L), 1, null, null)', '5ec0c000-0000-4000-8000-000000000001', (select id from sec_receivable), '5ec0c000-0000-4000-8000-000000000001'));
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+begin
+  perform public.undo_close_quote('5ec0c000-0000-4000-8000-000000000001', (select id from sec_auto_quote));
+  if exists (select 1 from public.receivables where quote_id = (select id from sec_auto_quote)) then
+    raise exception 'FALHA recebimentos: desfazer o fechamento deixou parcelas';
+  end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

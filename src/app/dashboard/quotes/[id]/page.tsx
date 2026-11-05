@@ -10,15 +10,18 @@ import { getDemoProfile } from "@/server/demo/mode";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { ReceivableList } from "@/features/receivables/components/receivable-list";
 import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
+import { formatCents } from "@/lib/money";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
 import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService, getQuoteSignatureUrl } from "@/server/quotes";
 import { getEmployeeService, getVisitService } from "@/server/schedule";
 import { getExpenseService } from "@/server/finance";
+import { getReceivableService } from "@/server/receivables";
 import { getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
 import { getTaxService } from "@/server/tax";
 import { getActiveTenant } from "@/server/tenant";
@@ -64,6 +67,9 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const today = todayInTimezone(profile.timezone);
   const showCosts = (quote.status === "approved" || quote.status === "closed") && permissionService.canManageFinance(active.role);
   const targetMarginPercent = profile.target_margin_percent ?? 20;
+  // Parcelas do serviço fechado: o que já entrou e o que falta receber.
+  const receivables =
+    quote.status === "closed" && permissionService.canManageFinance(active.role) ? await (await getReceivableService()).listByQuote(actor, quote.id) : null;
   const costs = showCosts
     ? await (async () => {
         const costService = await getServiceCostService();
@@ -142,6 +148,19 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             {visits.map((visit) => (
               <VisitRow key={visit.id} visit={visit} showDate showClient={false} />
             ))}
+          </CardContent>
+        </Card>
+      ) : null}
+      {receivables ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recebimentos</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Recebido {formatCents(receivables.reduce((sum, item) => sum + (item.received_cents ?? 0), 0))} de {formatCents(revenue?.amount_cents ?? quote.total_cents)}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ReceivableList items={receivables} today={today} showQuote={false} empty="Nenhuma parcela registrada." />
           </CardContent>
         </Card>
       ) : null}

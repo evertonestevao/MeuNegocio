@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v6";
+export const LANDING_SCREENS = "/landing/v7";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -80,11 +80,11 @@ export const showcases: {
   },
   {
     eyebrow: "Financeiro",
-    title: "O saldo do mês sem precisar montar planilha",
-    description: "Serviços fechados, gastos, salários e pagamento de prestadores entram no mesmo lugar. A previsão fica separada do saldo, para você não contar com o que ainda não fechou.",
-    points: ["Faturamento contra gastos em 6 meses", "Gastos por categoria", "Recorrências lançadas todo mês"],
+    title: "O que vendeu, o que entrou e o que falta receber",
+    description: "Serviço fechado não é dinheiro no bolso. Registre à vista, entrada + parcelas ou cartão, dê baixa quando o dinheiro entrar e veja o caixa de verdade do mês, ao lado do faturado.",
+    points: ["Contas a receber com aviso de atraso", "Faturado, recebido e gastos em 6 meses", "Gastos por categoria"],
     image: `${LANDING_SCREENS}/financeiro.jpg`,
-    alt: "Tela do financeiro com faturamento, gastos, saldo, gráfico de 6 meses e gastos por categoria.",
+    alt: "Tela do financeiro com faturado, recebido, gastos, caixa do mês, contas a receber e gráfico de 6 meses.",
     device: "browser",
   },
 ];
@@ -207,7 +207,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: Wallet,
     title: "Gastos e financeiro",
     description:
-      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e por fornecedor, e faturamento contra gastos dos últimos 6 meses. Saiba de quem você mais compra cada coisa.",
+      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e por fornecedor, contas a receber parcela a parcela e o caixa de verdade do mês. Saiba de quem você mais compra cada coisa.",
   },
   {
     icon: ShieldCheck,

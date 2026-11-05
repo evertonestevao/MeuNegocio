@@ -14,6 +14,8 @@ const OFFICE_ROUTES = [
   "/dashboard/hours",
   "/dashboard/expenses",
   "/dashboard/finance",
+  "/dashboard/finance/recebimentos",
+  "/dashboard/finance/recebimentos?tab=recebidos",
   "/dashboard/members",
   "/dashboard/billing",
   "/dashboard/audit",

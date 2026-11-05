@@ -375,7 +375,7 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'company_monthly_revenues', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
+      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'company_monthly_revenues', 'receivables', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
       'expense_categories', 'expense_templates', 'expenses', 'suppliers', 'time_entries', 'time_entry_dismissals',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
@@ -692,7 +692,7 @@ begin
   perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 'approve');
 
   begin
-    perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 100, current_date);
+    perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 100, current_date, null);
     raise exception 'FALHA orçamento: member fechou';
   exception when insufficient_privilege then null;
   end;
@@ -738,7 +738,7 @@ begin
   if n <> 1 then raise exception 'FALHA catálogo: owner não leu custo'; end if;
 
   select id into v_id from public.quotes where status = 'approved' limit 1;
-  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date);
+  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date, null);
   select count(*) into n from public.revenues where quote_id = v_id;
   if n <> 1 then raise exception 'FALHA orçamento: fechar não criou receita'; end if;
 
@@ -755,7 +755,7 @@ begin
     if sqlerrm like 'FALHA%' then raise; end if;
   end;
 
-  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date);
+  perform public.close_quote('c1c1c1c1-0000-4000-8000-000000000001', v_id, 4503, current_date, null);
 end $$;
 
 -- Member não lê receita; técnico não lê nada; outra empresa não lê nem age.
@@ -766,6 +766,8 @@ declare n int;
 begin
   select count(*) into n from public.revenues;
   if n <> 0 then raise exception 'FALHA orçamento: member leu receita'; end if;
+  select count(*) into n from public.receivables;
+  if n <> 0 then raise exception 'FALHA recebimentos: member leu parcela'; end if;
 end $$;
 
 select set_config('request.jwt.claims',

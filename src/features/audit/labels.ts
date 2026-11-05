@@ -50,6 +50,9 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "quote.closed": "Orçamento fechado",
   "quote.close_undone": "Fechamento desfeito",
   "quote.tax_rate_changed": "Imposto do serviço alterado",
+  "receivable.received": "Recebimento registrado",
+  "receivable.receive_undone": "Recebimento desfeito",
+  "receivable.rescheduled": "Parcela reagendada",
   "company.tax_updated": "Impostos da empresa alterados",
   "company.revenue_informed": "Faturamento informado para o imposto",
   "quote.approved_by_client": "Orçamento aprovado pelo cliente",
@@ -84,6 +87,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
 };
 
 export const AUDIT_ENTITY_LABEL: Record<string, string> = {
+  receivable: "Parcela a receber",
   catalog_item: "Catálogo",
   client: "Cliente",
   client_contact: "Contato",

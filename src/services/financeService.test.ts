@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
-import type { Expense, ExpenseTemplate, RevenueListItem } from "@/types/finance";
+import type { Expense, ExpenseTemplate, Receivable, RevenueListItem } from "@/types/finance";
 import { buildFinanceOverview, buildForecast, buildWeekLoad, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
@@ -19,13 +19,15 @@ function makeReaders() {
     listExpenseTemplates: vi.fn<FinanceReaders["listExpenseTemplates"]>(async () => []),
     listOpenQuotes: vi.fn(async (): Promise<QuoteListItem[]> => []),
     listVisits: vi.fn(async (): Promise<VisitListItem[]> => []),
+    listOpenReceivables: vi.fn(async (): Promise<Receivable[]> => []),
+    listReceivedReceivables: vi.fn(async (): Promise<Receivable[]> => []),
   } satisfies FinanceReaders;
 }
 
 describe("financeiro", () => {
   it("saldo é faturamento menos gastos do mês", () => {
     const overview = buildFinanceOverview({
-      month: "2026-10-01",
+      month: "2026-10-01", today: "2026-10-31",
       revenues: [revenue("2026-10-05", 1000), revenue("2026-09-05", 500)],
       expenses: [expense("2026-10-02", 300), expense("2026-09-02", 100)],
       openQuotes: [],
@@ -37,14 +39,33 @@ describe("financeiro", () => {
     expect(overview.expenseChange).toBe(200);
   });
 
+  it("faturado é o vendido; recebido e caixa são o dinheiro que entrou", () => {
+    const parcel = (received_on: string | null, due_date: string, amount_cents: number) =>
+      ({ received_on, received_cents: received_on ? amount_cents : null, due_date, amount_cents }) as Receivable;
+    const overview = buildFinanceOverview({
+      month: "2026-10-01",
+      today: "2026-10-20",
+      revenues: [revenue("2026-10-05", 3000)],
+      expenses: [expense("2026-10-02", 500)],
+      openQuotes: [],
+      received: [parcel("2026-10-05", "2026-10-05", 1000), parcel("2026-09-10", "2026-09-10", 400)],
+      open: [parcel(null, "2026-10-15", 1000), parcel(null, "2026-11-05", 1000), parcel(null, "2027-01-05", 1000)],
+    });
+    expect(overview).toMatchObject({ revenueCents: 3000, receivedCents: 1000, balanceCents: 2500, cashCents: 500, receivedChange: 150 });
+    expect(overview.series.at(-1)).toMatchObject({ revenueCents: 3000, receivedCents: 1000, expenseCents: 500 });
+    expect(overview.receivables).toMatchObject({ openCents: 3000, overdueCents: 1000, overdueCount: 1 });
+    // Atrasadas e as dos próximos 30 dias; a de janeiro fica de fora.
+    expect(overview.receivables.upcoming.map((item) => item.due_date)).toEqual(["2026-10-15", "2026-11-05"]);
+  });
+
   it("saldo pode ficar negativo", () => {
-    const overview = buildFinanceOverview({ month: "2026-10-01", revenues: [], expenses: [expense("2026-10-02", 300)], openQuotes: [] });
+    const overview = buildFinanceOverview({ month: "2026-10-01", today: "2026-10-31", revenues: [], expenses: [expense("2026-10-02", 300)], openQuotes: [] });
     expect(overview.balanceCents).toBe(-300);
   });
 
   it("a previsão não entra no saldo", () => {
     const overview = buildFinanceOverview({
-      month: "2026-10-01",
+      month: "2026-10-01", today: "2026-10-31",
       revenues: [],
       expenses: [],
       openQuotes: [
@@ -57,14 +78,14 @@ describe("financeiro", () => {
   });
 
   it("série cobre 6 meses, terminando no mês escolhido", () => {
-    const { series } = buildFinanceOverview({ month: "2026-02-01", revenues: [revenue("2025-09-15", 10)], expenses: [], openQuotes: [] });
+    const { series } = buildFinanceOverview({ month: "2026-02-01", today: "2026-10-31", revenues: [revenue("2025-09-15", 10)], expenses: [], openQuotes: [] });
     expect(series.map((item) => item.month)).toEqual(["2025-09-01", "2025-10-01", "2025-11-01", "2025-12-01", "2026-01-01", "2026-02-01"]);
     expect(series[0].revenueCents).toBe(10);
   });
 
   it("categorias só do mês, da maior para a menor", () => {
     const { categories } = buildFinanceOverview({
-      month: "2026-10-01",
+      month: "2026-10-01", today: "2026-10-31",
       revenues: [],
       expenses: [expense("2026-10-01", 100, "a"), expense("2026-10-02", 900, "b"), expense("2026-09-02", 5000, "c")],
       openQuotes: [],
@@ -84,8 +105,8 @@ describe("financeiro", () => {
   it("member e técnico não recebem o financeiro", async () => {
     const readers = makeReaders();
     const service = createFinanceService(readers);
-    await expect(service.getOverview(MEMBER, "2026-10-01")).rejects.toMatchObject({ code: "forbidden" });
-    await expect(service.getOverview(TECHNICIAN, "2026-10-01")).rejects.toMatchObject({ code: "forbidden" });
+    await expect(service.getOverview(MEMBER, "2026-10-01", "2026-10-31")).rejects.toMatchObject({ code: "forbidden" });
+    await expect(service.getOverview(TECHNICIAN, "2026-10-01", "2026-10-31")).rejects.toMatchObject({ code: "forbidden" });
     expect(readers.listRevenues).not.toHaveBeenCalled();
   });
 });

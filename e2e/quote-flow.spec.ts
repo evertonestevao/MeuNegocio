@@ -75,8 +75,21 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await expect(page.getByRole("button", { name: "Concluir e faturar" })).toBeVisible();
   await page.getByText("#0001 · Ampliação elétrica").click();
   await page.getByRole("button", { name: "Fechar e faturar" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Fechar e faturar" }).click();
+  // Entrada de R$ 10,00 já paga e o restante em 2 parcelas a receber.
+  const closeDialog = page.getByRole("dialog");
+  await closeDialog.getByText("Entrada + parcelas").click();
+  await closeDialog.getByLabel("Entrada (R$)").fill("10,00");
+  await closeDialog.getByLabel("Restante em quantas vezes").fill("2");
+  await closeDialog.getByRole("button", { name: "Fechar e faturar" }).click();
   await expect(page.getByText("Faturado")).toBeVisible();
+
+  // O faturado entra inteiro; o dinheiro, parcela a parcela.
+  const receipts = page.locator("[data-slot=card]").filter({ has: page.getByText("Recebimentos", { exact: true }) });
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
+  await expect(receipts.getByRole("button", { name: "Recebido" })).toHaveCount(2);
+  await receipts.getByRole("button", { name: "Recebido" }).first().click();
+  await page.getByRole("dialog").getByRole("button", { name: "Registrar" }).click();
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
 
   // Custos do serviço: o gasto lançado aqui entra no resultado e também no caixa do mês.
   await expect(page.getByRole("heading", { name: "Custos e resultado do serviço" })).toBeVisible();

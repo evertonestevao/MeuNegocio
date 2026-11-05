@@ -48,7 +48,7 @@ export function shiftDates<T>(value: T, offsetDays: number): T {
  * Valores por mês não podem andar por dias: no dia 1, tudo ficaria no mês anterior e o financeiro
  * zerado. Andam por meses, mantêm o dia e, no mês atual, nunca passam de hoje.
  */
-export function shiftToCurrentMonth(date: string, today: string): string {
+export function shiftToCurrentMonth(date: string, today: string, capAtToday = true): string {
   const [baseYear, baseMonth] = BASELINE.split("-").map(Number);
   const [todayYear, todayMonth] = today.split("-").map(Number);
   const [year, month, day] = date.slice(0, 10).split("-").map(Number);
@@ -58,7 +58,7 @@ export function shiftToCurrentMonth(date: string, today: string): string {
   const targetMonth = total % 12;
   const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
   const shifted = new Date(Date.UTC(targetYear, targetMonth, Math.min(day, lastDay))).toISOString().slice(0, 10);
-  return shifted > today ? today : shifted;
+  return capAtToday && shifted > today ? today : shifted;
 }
 
 const MONTHLY_DATE_COLUMNS: Record<string, string> = { revenues: "competence_date", expenses: "expense_date" };
@@ -76,6 +76,13 @@ function fixtures() {
         row[column] = shiftToCurrentMonth(String(original[table][index][column]), today);
       });
     }
+    // Parcelas andam com o faturamento, por meses. O vencimento pode ficar no futuro; a data de
+    // recebimento, não.
+    tables.receivables.forEach((row, index) => {
+      const source = original.receivables[index];
+      row.due_date = shiftToCurrentMonth(String(source.due_date), today, false);
+      if (source.received_on) row.received_on = shiftToCurrentMonth(String(source.received_on), today);
+    });
     cache = { offset, fixtures: shifted };
   }
   return cache.fixtures;

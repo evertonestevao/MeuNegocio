@@ -30,10 +30,27 @@ export const quoteSchema = z.object({
 export type QuoteInput = z.output<typeof quoteSchema>;
 export type QuoteItemInput = z.output<typeof quoteItemSchema>;
 
-export const closeQuoteSchema = z.object({
-  amountCents: z.number({ error: "Informe um valor válido." }).int().positive("Informe um valor maior que zero."),
-  competenceDate: z.iso.date({ error: "Informe a data de competência." }),
+const PAYMENT_METHODS = ["pix", "cash", "debit", "credit", "boleto", "transfer", "other"] as const;
+
+export const installmentSchema = z.object({
+  amount_cents: z.number({ error: "Informe o valor de cada parcela." }).int().positive("Cada parcela precisa ter valor maior que zero."),
+  due_date: z.iso.date({ error: "Informe o vencimento de cada parcela." }),
+  method: z.enum(PAYMENT_METHODS).nullable(),
+  received: z.boolean(),
 });
+
+export const closeQuoteSchema = z
+  .object({
+    amountCents: z.number({ error: "Informe um valor válido." }).int().positive("Informe um valor maior que zero."),
+    competenceDate: z.iso.date({ error: "Informe a data de competência." }),
+    installments: z.array(installmentSchema).min(1, "Informe como o cliente vai pagar.").max(60, "Use até 60 parcelas."),
+  })
+  .refine((value) => value.installments.reduce((sum, item) => sum + item.amount_cents, 0) === value.amountCents, {
+    message: "As parcelas precisam somar o valor fechado.",
+    path: ["installments"],
+  });
+
+export type CloseQuoteInput = z.output<typeof closeQuoteSchema>;
 
 export const publicResponseSchema = z
   .object({

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, HandCoins, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EXPENSE_KIND_LABEL } from "@/features/expenses/schemas";
 import { formatQuoteNumber } from "@/features/quotes/status";
+import { ReceivableList } from "@/features/receivables/components/receivable-list";
 import { addMonths, formatMonth, isValidDate } from "@/lib/calendar";
 import { formatDate, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
@@ -20,26 +21,27 @@ import { permissionService } from "@/services/permissionService";
 export const metadata: Metadata = { title: "Financeiro" };
 
 function MonthlyRows({ series, selected, monthHref }: {
-  series: { month: string; revenueCents: number; expenseCents: number }[];
+  series: { month: string; revenueCents: number; receivedCents: number; expenseCents: number }[];
   selected: string;
   monthHref: (month: string) => string;
 }) {
   return (
     <ul className="flex flex-col divide-y text-sm">
       {series.toReversed().map((item) => {
-        const balance = item.revenueCents - item.expenseCents;
+        // Caixa: o que entrou menos o que saiu. O faturado aparece ao lado, para comparar.
+        const balance = item.receivedCents - item.expenseCents;
         return (
           <li key={item.month}>
             <Link scroll={false} href={monthHref(item.month)} className="flex items-center justify-between gap-3 py-2 hover:underline">
               <span className="flex min-w-0 flex-col">
                 <span className={item.month === selected ? "font-semibold" : undefined}>{formatMonth(item.month)}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  Faturamento {formatCents(item.revenueCents)} · gastos {formatCents(item.expenseCents)}
+                  Faturado {formatCents(item.revenueCents)} · recebido {formatCents(item.receivedCents)} · gastos {formatCents(item.expenseCents)}
                 </span>
               </span>
               <span className="flex shrink-0 flex-col items-end">
                 <span className={`font-semibold tabular-nums ${balance < 0 ? "text-destructive" : "text-success"}`}>{formatCents(balance)}</span>
-                <span className="text-xs text-muted-foreground">saldo</span>
+                <span className="text-xs text-muted-foreground">caixa</span>
               </span>
             </Link>
           </li>
@@ -63,7 +65,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const profile = await (await getCompanyProfileService()).get(active.id);
   const today = todayInTimezone(profile.timezone);
   const month = isValidDate(`${params.m}-01`) ? `${params.m}-01` : `${today.slice(0, 7)}-01`;
-  const overview = await (await getFinanceService()).getOverview({ companyId: active.id, role: active.role }, month);
+  const overview = await (await getFinanceService()).getOverview({ companyId: active.id, role: active.role }, month, today);
   const targetMarginPercent = profile.target_margin_percent ?? 20;
   const results = await (await getServiceCostService()).getForQuotes(
     { companyId: active.id, role: active.role },
@@ -76,7 +78,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const monthHref = (target: string) => `/dashboard/finance?m=${target.slice(0, 7)}`;
   const chartData = overview.series.map((item) => ({
     mes: formatMonth(item.month).slice(0, 3),
-    faturamento: item.revenueCents / 100,
+    faturado: item.revenueCents / 100,
+    recebido: item.receivedCents / 100,
     gastos: item.expenseCents / 100,
   }));
   const largestCategory = overview.categories[0]?.totalCents ?? 0;
@@ -85,7 +88,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="font-heading text-2xl font-extrabold tracking-tight">Financeiro</h2>
-        <p className="text-sm text-muted-foreground">Faturamento (orçamentos fechados) e gastos, lado a lado.</p>
+        <p className="text-sm text-muted-foreground">Faturado é o que foi vendido (serviços fechados); recebido é o dinheiro que entrou. Gastos e caixa, lado a lado.</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -98,19 +101,18 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-        <MetricCard icon={TrendingUp} tone="info" label="Faturamento" value={formatCents(overview.revenueCents)} hint={changeHint(overview.revenueChange)} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <MetricCard icon={TrendingUp} tone="info" label="Faturado" value={formatCents(overview.revenueCents)} hint={changeHint(overview.revenueChange)} />
+        <MetricCard icon={HandCoins} tone="success" label="Recebido" value={formatCents(overview.receivedCents)} hint={changeHint(overview.receivedChange)} />
         <MetricCard icon={TrendingDown} tone="warning" label="Gastos" value={formatCents(overview.expenseCents)} hint={changeHint(overview.expenseChange)} />
-        <div className="col-span-2 sm:col-span-1">
-          <MetricCard
-            icon={Scale}
-            tone={overview.balanceCents < 0 ? "danger" : "success"}
-            toneValue
-            label="Saldo do mês"
-            value={formatCents(overview.balanceCents)}
-            hint={overview.revenueCents === 0 && overview.expenseCents === 0 ? "Sem movimento neste mês" : overview.balanceCents >= 0 ? "Sobrou dinheiro neste mês" : "Gastos maiores que o faturamento"}
-          />
-        </div>
+        <MetricCard
+          icon={Scale}
+          tone={overview.cashCents < 0 ? "danger" : "success"}
+          toneValue
+          label="Caixa do mês"
+          value={formatCents(overview.cashCents)}
+          hint={`Recebido − gastos. Pelo faturado: ${formatCents(overview.balanceCents)}`}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -121,8 +123,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             data={chartData}
             xKey="mes"
             series={[
-              { key: "faturamento", label: "Faturamento" },
+              // Gastos na segunda posição: mantém a cor de sempre; recebido ganha a terceira.
+              { key: "faturado", label: "Faturado" },
               { key: "gastos", label: "Gastos" },
+              { key: "recebido", label: "Recebido" },
             ]}
             valueFormat={{ style: "currency", currency: "BRL", maximumFractionDigits: 0 }}
             yAxisWidth={72}
@@ -145,6 +149,32 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+              <CardTitle>Contas a receber</CardTitle>
+              <Link href="/dashboard/finance/recebimentos" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
+                Ver todas
+              </Link>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <span>
+                  A receber <strong className="tabular-nums">{formatCents(overview.receivables.openCents)}</strong>
+                </span>
+                {overview.receivables.overdueCents > 0 ? (
+                  <span className="text-destructive">
+                    Atrasado <strong className="tabular-nums">{formatCents(overview.receivables.overdueCents)}</strong>
+                  </span>
+                ) : null}
+              </p>
+              <ReceivableList
+                items={overview.receivables.upcoming}
+                today={today}
+                empty="Nada atrasado nem vencendo nos próximos 30 dias."
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Gastos por categoria</CardTitle>

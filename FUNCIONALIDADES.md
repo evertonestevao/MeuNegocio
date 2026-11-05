@@ -262,10 +262,10 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 ## 11. Início e navegação
 
-- **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem saldo do mês, a pagar em 7 dias e o que vence hoje. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturamento e gastos dos últimos 6 meses (owner e admin).
+- **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. Owner e admin também veem o caixa do mês (recebido − gastos), a pagar em 7 dias, o que vence hoje e um aviso de recebimentos atrasados e dos que vencem em 7 dias, com link para Contas a receber. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturado, recebido e gastos dos últimos 6 meses (owner e admin).
 - **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
 - **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início, Serviços, Agenda e Orçamentos, ou Minhas visitas para o técnico) e "Mais", com os demais itens, tema e sair.
-- **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturamento, gastos e saldo.
+- **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturado, recebido, gastos e caixa.
   Os itens aparecem conforme o papel:
 
   | Item | Quem vê |
@@ -427,8 +427,8 @@ Telas em `/dashboard/quotes`. O técnico não acessa.
 | Enviado | Aprovado | Owner, admin, member, ou o cliente pelo link | Pode ser registrado à mão quando o cliente responde por telefone. |
 | Enviado | Expirado | Owner, admin, member, ou o job | O job roda de hora em hora e usa o fuso da empresa. |
 | Expirado | Rascunho | Owner, admin, member | Reabrir pede nova validade. |
-| Aprovado | Fechado | Owner, admin | Pede valor (> 0) e data de competência e cria a receita. |
-| Fechado | Aprovado | Owner, admin | "Desfazer fechamento" apaga a receita. |
+| Aprovado | Fechado | Owner, admin | Pede valor (> 0), data de competência e como o cliente vai pagar; cria a receita e as parcelas a receber (seção 24). |
+| Fechado | Aprovado | Owner, admin | "Desfazer fechamento" apaga a receita e as parcelas, inclusive as já recebidas. |
 
 Outras regras:
 
@@ -563,14 +563,20 @@ Tela em `/dashboard/finance`, só para owner e admin.
 
 | Função | Regras |
 |---|---|
-| **Resumo do mês** | Faturamento, gastos e saldo, com a variação sobre o mês anterior. O saldo pode ficar negativo. |
-| **Faturamento** | Vem só de orçamentos fechados, na data de competência. Desfazer o fechamento tira o valor. |
-| **Últimos 6 meses** | Gráfico de faturamento e gastos e, logo abaixo, "Mês a mês" com faturamento, gastos e saldo de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
+| **Resumo do mês** | Faturado, recebido, gastos e caixa do mês, com a variação sobre o mês anterior. **Faturado** é o que foi vendido; **recebido**, o dinheiro que entrou; **caixa**, recebido − gastos (pode ficar negativo). O resultado pelo faturado (faturado − gastos) aparece junto do caixa. |
+| **Faturado** | Vem só de orçamentos fechados, na data de competência. Desfazer o fechamento tira o valor. É a base do resultado do serviço, da margem e do imposto. |
+| **Como o cliente paga** (no fechamento) | À vista (forma e se já foi recebido), entrada + parcelas (valor e forma da entrada, restante em N vezes mês a mês a partir de uma data, com a forma), cartão parcelado (N parcelas no crédito, a receber a partir do primeiro repasse) ou personalizado (cada parcela com valor, vencimento, forma e se já foi recebida). Os centavos que sobram da divisão vão na primeira parcela. As parcelas precisam somar o valor fechado, conferido na tela e no banco; até 60. Parcela marcada como recebida entra no caixa no vencimento, sem passar de hoje. |
+| **Contas a receber** (cartão no Financeiro e `/dashboard/finance/recebimentos`) | No Financeiro: total a receber, atrasado e as parcelas atrasadas ou que vencem em 30 dias. Na página: a receber, atrasado e em 7 dias, a lista "A receber" (da mais antiga para a mais nova) e "Recebidos" por mês. Cada parcela mostra o orçamento, o cliente, a forma e a situação (atrasada há N dias, vence hoje, vence em, recebida em). Na página do orçamento fechado, "Recebimentos" mostra as parcelas dele e quanto já entrou. |
+| **Registrar recebimento** | Data (até hoje, no fuso da empresa), valor e forma. Valor menor que a parcela deixa o restante como parcela nova a receber, na data escolhida. Dá para desfazer a baixa e para mudar vencimento e forma de uma parcela a receber; o valor não muda, porque a soma é o faturado. Tudo entra na auditoria. |
+| **Serviços fechados antes** | Viraram uma parcela única, recebida na data de competência: nenhum valor mudou. |
+| **Últimos 6 meses** | Gráfico de faturado, recebido e gastos e, logo abaixo, "Mês a mês" com faturado, recebido, gastos e caixa de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
 | **Gastos por categoria** | Só do mês escolhido, da maior para a menor. |
 | **Previsão** | Aprovados a fechar e enviados aguardando resposta. Fica separada e não entra no saldo. |
 | **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |
 
-Código: `src/services/financeService.ts`, `src/app/dashboard/finance/page.tsx`.
+Só owner e admin leem as parcelas (`receivables`) e dão baixa; a escrita é pelas funções do banco. Testes em `supabase/tests/security_regression_test.sql` (bloco "Recebimentos"), `src/lib/installments.test.ts` e `src/services/receivableService.test.ts`.
+
+Código: `src/services/financeService.ts`, `src/services/receivableService.ts`, `src/lib/installments.ts`, `src/app/dashboard/finance/`.
 
 ## 25. Custos e resultado por serviço
 

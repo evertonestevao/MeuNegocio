@@ -121,3 +121,25 @@ export interface ExpenseTemplate {
   ends_on: string | null;
   active: boolean;
 }
+
+/** Parcela a receber de um serviço fechado. Recebida quando tem received_on. */
+export interface Receivable {
+  id: string;
+  quote_id: string;
+  amount_cents: number;
+  due_date: string;
+  method: PaymentMethod | null;
+  received_on: string | null;
+  received_cents: number | null;
+  quote_number: number;
+  quote_title: string | null;
+  client_name: string | null;
+}
+
+/** Parcela que o fechamento grava. */
+export interface InstallmentInput {
+  amount_cents: number;
+  due_date: string;
+  method: PaymentMethod | null;
+  received: boolean;
+}

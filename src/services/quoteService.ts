@@ -1,4 +1,4 @@
-import type { QuoteInput } from "@/features/quotes/schemas";
+import type { CloseQuoteInput, QuoteInput } from "@/features/quotes/schemas";
 import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
 import type { ActorContext } from "@/server/actor";
@@ -24,7 +24,8 @@ export interface QuoteRepository {
   getRevenue(companyId: string, quoteId: string): Promise<Revenue | null>;
   save(companyId: string, quoteId: string | null, input: QuoteInput): Promise<string>;
   transition(companyId: string, quoteId: string, action: QuoteTransition, validUntil: string | null): Promise<void>;
-  close(companyId: string, quoteId: string, amountCents: number, competenceDate: string): Promise<void>;
+  /** O faturamento e as parcelas a receber, na mesma transação. */
+  close(companyId: string, quoteId: string, input: CloseQuoteInput): Promise<void>;
   undoClose(companyId: string, quoteId: string): Promise<void>;
   duplicate(companyId: string, quoteId: string): Promise<string>;
   softDelete(companyId: string, quoteId: string): Promise<void>;
@@ -132,9 +133,9 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
       await repo.transition(actor.companyId, quoteId, action, validUntil);
     },
 
-    async close(actor: ActorContext, quoteId: string, amountCents: number, competenceDate: string) {
+    async close(actor: ActorContext, quoteId: string, input: CloseQuoteInput) {
       requireClose(actor);
-      await repo.close(actor.companyId, quoteId, amountCents, competenceDate);
+      await repo.close(actor.companyId, quoteId, input);
     },
 
     async undoClose(actor: ActorContext, quoteId: string) {

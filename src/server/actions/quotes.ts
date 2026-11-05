@@ -97,18 +97,19 @@ export async function closeQuoteAction(
   try {
     const actor = await getActor();
     const quoteId = quoteIdFrom(formData);
-    const { amountCents, competenceDate } = closeQuoteSchema.parse({
+    const input = closeQuoteSchema.parse({
       amountCents: parseMoneyToCents(String(formData.get("amount") ?? "")) ?? undefined,
       competenceDate: formData.get("competenceDate"),
+      installments: JSON.parse(String(formData.get("installments") ?? "[]")),
     });
     const service = await getQuoteService();
-    await service.close(actor, quoteId, amountCents, competenceDate);
+    await service.close(actor, quoteId, input);
     await recordAudit({
       companyId: actor.companyId,
       action: "quote.closed",
       entityType: "quote",
       entityId: quoteId,
-      metadata: { amount_cents: amountCents, competence_date: competenceDate },
+      metadata: { amount_cents: input.amountCents, competence_date: input.competenceDate, installments: input.installments.length },
     });
     refresh(quoteId);
     return { success: "Orçamento fechado e lançado no faturamento" };

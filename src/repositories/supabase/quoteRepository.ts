@@ -166,12 +166,13 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
       if (error) fail(error);
     },
 
-    async close(companyId, quoteId, amountCents, competenceDate) {
+    async close(companyId, quoteId, { amountCents, competenceDate, installments }) {
       const { error } = await client.rpc("close_quote", {
         p_company_id: companyId,
         p_quote_id: quoteId,
         p_amount_cents: amountCents,
         p_competence_date: competenceDate,
+        p_installments: installments,
       });
       if (error) fail(error);
     },

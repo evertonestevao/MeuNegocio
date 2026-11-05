@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseExpenseRepository } from "@/repositories/supabase/expenseRepository";
 import { createSupabaseQuoteRepository } from "@/repositories/supabase/quoteRepository";
+import { createSupabaseReceivableRepository } from "@/repositories/supabase/receivableRepository";
 import { createSupabaseRevenueRepository } from "@/repositories/supabase/revenueRepository";
 import { createSupabaseVisitRepository } from "@/repositories/supabase/visitRepository";
 import { createFinanceService, type FinanceService } from "@/services/financeService";
@@ -12,11 +13,14 @@ export async function getFinanceService(): Promise<FinanceService> {
   const quotes = createSupabaseQuoteRepository(client);
   const revenues = createSupabaseRevenueRepository(client);
   const visits = createSupabaseVisitRepository(client);
+  const receivables = createSupabaseReceivableRepository(client);
   return createFinanceService({
     listRevenues: revenues.list,
     listExpenses: expenses.list,
     listExpenseTemplates: expenses.listTemplates,
     listOpenQuotes: quotes.listOpen,
     listVisits: (companyId, from, to) => visits.list(companyId, { from, to }),
+    listOpenReceivables: receivables.listOpen,
+    listReceivedReceivables: receivables.listReceived,
   });
 }

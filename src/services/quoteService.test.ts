@@ -46,6 +46,12 @@ function makeService(repo = makeRepo(), limit: number | null = null) {
   });
 }
 
+const CLOSE = {
+  amountCents: 100,
+  competenceDate: "2026-10-01",
+  installments: [{ amount_cents: 100, due_date: "2026-10-01", method: "pix" as const, received: true }],
+};
+
 describe("permissões de orçamento", () => {
   it("técnico não acessa nada", async () => {
     const service = makeService();
@@ -60,7 +66,7 @@ describe("permissões de orçamento", () => {
     const service = makeService(repo);
     await service.save(MEMBER, null, INPUT);
     await service.transition(MEMBER, "q", "send");
-    await expect(service.close(MEMBER, "q", 100, "2026-10-01")).rejects.toMatchObject({ code: "forbidden" });
+    await expect(service.close(MEMBER, "q", CLOSE)).rejects.toMatchObject({ code: "forbidden" });
     await expect(service.undoClose(MEMBER, "q")).rejects.toMatchObject({ code: "forbidden" });
     await expect(service.remove(MEMBER, "q")).rejects.toMatchObject({ code: "forbidden" });
     expect(repo.close).not.toHaveBeenCalled();
@@ -76,8 +82,8 @@ describe("permissões de orçamento", () => {
 
   it("owner fecha", async () => {
     const repo = makeRepo();
-    await makeService(repo).close(OWNER, "q", 100, "2026-10-01");
-    expect(repo.close).toHaveBeenCalledWith("co-1", "q", 100, "2026-10-01");
+    await makeService(repo).close(OWNER, "q", CLOSE);
+    expect(repo.close).toHaveBeenCalledWith("co-1", "q", CLOSE);
   });
 });
 
@@ -129,9 +135,9 @@ describe("validação", () => {
   });
 
   it("fechar exige valor positivo e data", () => {
-    expect(closeQuoteSchema.safeParse({ amountCents: 0, competenceDate: "2026-10-01" }).success).toBe(false);
-    expect(closeQuoteSchema.safeParse({ amountCents: 1, competenceDate: "" }).success).toBe(false);
-    expect(closeQuoteSchema.safeParse({ amountCents: 1, competenceDate: "2026-10-01" }).success).toBe(true);
+    expect(closeQuoteSchema.safeParse({ ...CLOSE, amountCents: 0 }).success).toBe(false);
+    expect(closeQuoteSchema.safeParse({ ...CLOSE, competenceDate: "" }).success).toBe(false);
+    expect(closeQuoteSchema.safeParse({ ...CLOSE, amountCents: 1, installments: [{ ...CLOSE.installments[0], amount_cents: 1 }] }).success).toBe(true);
   });
 
   it("resposta pública exige nome, e motivo na recusa", () => {
