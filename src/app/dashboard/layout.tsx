@@ -14,6 +14,9 @@ import { getTermsService } from "@/server/terms";
 import { createUserService } from "@/services/userService";
 import { getAreaLinks, getNoCompanyDestination } from "@/modules/resellers/areaAccess";
 import { TenantProvider } from "@/providers/tenant-provider";
+import { TrialBanner } from "@/features/billing/components/trial-banner";
+import { getCompanyAccess } from "@/server/billing";
+import { permissionService } from "@/services/permissionService";
 
 /**
  * Layout autenticado: gate de termos vigentes (LGPD) + empresa ativa,
@@ -56,6 +59,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]);
 
   const demoProfile = await getDemoProfile();
+  // Sem assinatura válida (teste acabou, cancelada, nunca assinou): a tela de assinar. A demonstração
+  // não tem assinatura de verdade e nunca bloqueia.
+  const access = demoProfile ? null : await getCompanyAccess(active.id);
+  if (access && !access.hasAccess) redirect("/assinar");
   const canCreateCompany = isSignupOpen() || areaLinks.some((link) => link.href === "/admin/planos");
   const cookieStore = await cookies();
   const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "true";
@@ -72,6 +79,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         canCreateCompany={canCreateCompany}
       >
         {demoProfile ? <DemoBanner profile={demoProfile} signupOpen={isSignupOpen()} /> : null}
+        {access?.inCardlessTrial && access.trialEndsAt ? (
+          <TrialBanner endsAt={access.trialEndsAt} canSubscribe={permissionService.canManageBilling(active.role)} />
+        ) : null}
         {children}
       </AppShell>
     </TenantProvider>

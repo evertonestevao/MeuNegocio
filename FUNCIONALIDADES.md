@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-04
+**Última atualização:** 2026-11-05
 
 ## Sumário
 
@@ -191,8 +191,18 @@ Seed inicial dos planos (depois de aplicado, quem manda é o super admin, em `/a
 **Anual parcelado:** no Asaas é um link parcelado, ou seja, uma compra única. Dá 12 meses de acesso desde a confirmação do primeiro pagamento e depois volta ao plano padrão, até contratar de novo. Cada parcela confirmada gera sua comissão, cobrindo 1 mês. Não há cancelamento pela tela: a desistência passa pelo suporte, e o estorno integral de qualquer parcela encerra o plano na hora. Como o valor não muda depois de contratado, o Anual não vende membro extra, e o convite é recusado quando as 10 vagas acabam. No Stripe, o parcelamento não existe: o plano anual seria cobrado de uma vez e renovaria.
 
 Só os dois acima estão à venda, com o Anual em destaque e a economia calculada sobre o Mensal. O
-plano gratuito (`free`) não aparece na oferta, mas continua valendo para a empresa sem assinatura. O
-Empresarial foi desativado.
+plano gratuito (`free`) não aparece na oferta e não é um plano de uso: a empresa sem assinatura válida
+não entra no painel (ver "Teste grátis e tela de assinar"). Ele só guarda os limites que o banco aplica
+a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
+
+**Teste grátis e tela de assinar** (`/assinar`):
+
+- Empresa sem assinatura válida (nova, teste vencido, cancelada depois do período pago ou estornada) vai para `/assinar` em qualquer tela do painel. Os dados ficam guardados; ao assinar, tudo volta como estava. A demonstração nunca é bloqueada.
+- **Proprietário:** escolhe o plano (Mensal primeiro, Anual com a economia) e vê o que está incluso. O botão grande é **"Começar agora: 7 dias grátis"**, com o cartão: "Nada é cobrado hoje. A primeira cobrança de R$ X será em dd/mm/aaaa. Cancele antes e não paga nada." No fim da tela: "Ainda na dúvida se quer assinar? **Teste por 7 dias sem cartão**".
+- **Teste com cartão** só no Mensal e só em meio de pagamento que adia a primeira cobrança (Stripe; e o de testes). No Asaas, o checkout atual cobra na hora: o botão vira "Assinar o plano Mensal", com "Cobrança agora", até o adiamento ser validado no sandbox. O Anual sempre cobra na hora, em até 12x. Na ativação com teste, a assinatura fica "em teste" até a primeira cobrança.
+- **Teste sem cartão:** 7 dias do plano Mensal completo, sem gateway e sem renovação. Uma vez por empresa: quem já testou ou já assinou (mesmo no histórico) não ganha outro. Durante o teste, o painel mostra "Faltam N dias do seu teste grátis (até dd/mm)", com "Assinar agora" para o proprietário, e `/dashboard/billing` mostra o teste. Não há o que cancelar: ele termina sozinho, sem cobrança.
+- **Administrador, membro e técnico** veem que quem assina é o proprietário, e que os dados continuam guardados.
+- **Link do orçamento** de empresa sem assinatura continua abrindo para o cliente, só para ver e baixar: no lugar de aprovar, "Para aprovar este orçamento, fale direto com a empresa".
 
 **Painel de planos** (`/admin/planos`, só super admin, revalidado no servidor em toda tela e ação):
 
@@ -214,8 +224,8 @@ Empresarial foi desativado.
 |---|---|---|
 | **Ver plano e uso de vagas** (`/dashboard/billing`, em Configurações › Assinatura) | Owner | — |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
-| **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois a empresa passa para o Free. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
-| **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e a empresa passa para o Free. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
+| **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois o acesso pausa até assinar de novo, com os dados guardados. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
+| **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e o acesso pausa até assinar de novo. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
 | **Cobrança por seat** | Automático | Ao convidar, revogar ou remover membros, os extras são sincronizados com o gateway: item com quantidade (Stripe) ou novo valor total da assinatura (Asaas). |
 | **Webhook de pagamento** (`POST /api/webhooks/[gateway]`, com `/payment` mantida para webhooks já cadastrados) | Gateway | Autenticidade verificada por cada provedor (HMAC no Stripe, token no Asaas). Os eventos atualizam `subscriptions` de forma idempotente e entram na auditoria. Em uma reassinatura, a assinatura anterior da empresa vai para o histórico e a nova assume. |
 | **Limites por plano** | Código e banco | `canAccessFeature()` e `getFeatureLimit()` são o ponto único de checagem no código. Triggers repetem no banco os limites de membros, clientes e orçamentos e a criação de ordem de serviço e de horas. Quem passou do limite por downgrade não perde nada, só não cria mais. |
@@ -293,7 +303,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 | `/` | Landing page: proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, bloco "Você sabe quanto sobrou no último serviço?" com exemplo fictício de resultado de um serviço, funções, contato pelo WhatsApp comercial (sem planos nem preços por enquanto), dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. |
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
-| `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, passagem para o Free, membros extras e como pedir. |
+| `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, o que acontece sem assinatura (dados guardados, acesso pausado), membros extras e como pedir. |
 | `/demo` | Demonstração sem login: abre as telas reais de `/dashboard` com uma empresa fictícia (seção 26). |
 | `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 

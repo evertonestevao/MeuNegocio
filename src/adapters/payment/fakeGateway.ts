@@ -15,6 +15,7 @@ import type { PaymentGateway } from "./PaymentGateway";
 export function createFakeGateway(): PaymentGateway {
   return {
     name: "fake",
+    supportsTrial: true,
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
       return {

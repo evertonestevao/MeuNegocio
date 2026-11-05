@@ -2,7 +2,8 @@ import "server-only";
 import { getPaymentGateway } from "@/adapters/payment";
 import { getServerEnv } from "@/config/env";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
-import { createBillingService, type BillingService } from "@/services/billingService";
+import { createBillingService, type AccessState, type BillingService } from "@/services/billingService";
+import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
 
 /**
@@ -16,6 +17,14 @@ export function getExternalPriceId(key: "pro" | "enterprise" | "extra_seat" | st
   const suffix = key.toUpperCase();
   const value = env[`PAYMENT_PRICE_${suffix}`] ?? env[`STRIPE_PRICE_${suffix}`];
   return typeof value === "string" && value ? value : null;
+}
+
+/**
+ * A empresa pode usar o sistema agora? service_role só para ler a assinatura: membro e técnico
+ * não leem subscriptions pela RLS, e também precisam saber se o acesso está pausado.
+ */
+export function getCompanyAccess(companyId: string): Promise<AccessState> {
+  return createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient())).getAccessState(companyId);
 }
 
 export async function getServerBillingService(): Promise<BillingService> {

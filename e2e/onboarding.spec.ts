@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, uniqueEmail } from "./helpers";
+import { PASSWORD, startCardlessTrial, uniqueEmail } from "./helpers";
 
 test("onboarding recusa dado inválido sem perder o digitado e grava os dados da empresa", async ({ page }) => {
   await page.goto("/signup");
@@ -26,7 +26,7 @@ test("onboarding recusa dado inválido sem perder o digitado e grava os dados da
 
   await page.getByLabel("Validade padrão do orçamento (dias)").fill("30");
   await page.getByRole("button", { name: "Criar empresa" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
+  await startCardlessTrial(page);
   await expect(page.locator("main").getByText("Empresa Onboarding E2E")).toBeVisible();
 
   await page.goto("/dashboard/settings");

@@ -20,6 +20,8 @@ export interface BillingRepository {
   countActiveMembers(companyId: string): Promise<number>;
   /** Convites pendentes também reservam seat (o convidado vai entrar). */
   countPendingInvites(companyId: string): Promise<number>;
+  /** A empresa já teve alguma assinatura, inclusive teste ou histórico apagado? Teste grátis é um só. */
+  hasEverSubscribed(companyId: string): Promise<boolean>;
 }
 
 /** Fotografia do uso de seats de uma empresa. */
@@ -43,6 +45,29 @@ export interface PaymentEventResult {
 
 /** Plano usado quando a empresa não tem assinatura ativa. */
 export const DEFAULT_PLAN_CODE = "free";
+
+/** Teste grátis: dias e plano, com tudo liberado. */
+export const TRIAL_DAYS = 7;
+export const TRIAL_PLAN_CODE = "pro";
+
+/** Teste sem cartão: assinatura em teste, sem gateway, que não renova e acaba no fim do período. */
+export function isCardlessTrial(subscription: Subscription | null): boolean {
+  return subscription !== null && subscription.status === "trialing" && !subscription.renews && !subscription.external_subscription_id;
+}
+
+/** Como a empresa está: com acesso, em teste (e até quando) ou sem assinatura, e se ainda pode testar. */
+export interface AccessState {
+  hasAccess: boolean;
+  /** Teste sem cartão em andamento: termina em trialEndsAt. */
+  inCardlessTrial: boolean;
+  trialEndsAt: string | null;
+  /** Ainda não usou o teste grátis. */
+  trialAvailable: boolean;
+}
+
+export function trialEndsAt(now: Date = new Date()): string {
+  return new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
 
 /** Status de assinatura que dão acesso às features do plano. */
 const ACCESS_STATUSES: ReadonlySet<Subscription["status"]> = new Set([
@@ -141,7 +166,8 @@ export function createBillingService(repo: BillingRepository) {
       await repo.insertSubscription({
         company_id: event.companyId,
         plan_id: event.planId,
-        status: "active",
+        // Teste com cartão: o gateway só cobra no fim do teste.
+        status: event.trialEndsAt ? "trialing" : "active",
         external_subscription_id: event.externalSubscriptionId,
         external_customer_id: event.externalCustomerId,
         current_period_start: event.currentPeriodStart,
@@ -269,7 +295,45 @@ export function createBillingService(repo: BillingRepository) {
     return usage;
   }
 
+  /** Sem assinatura válida, a empresa vê a tela de assinar; o teste grátis só aparece uma vez. */
+  async function getAccessState(companyId: string, now: Date = new Date()): Promise<AccessState> {
+    const subscription = await repo.getActiveSubscription(companyId);
+    const hasAccess = subscription !== null && hasPlanAccess(subscription, now);
+    const cardless = hasAccess && isCardlessTrial(subscription);
+    return {
+      hasAccess,
+      inCardlessTrial: cardless,
+      trialEndsAt: cardless ? subscription!.current_period_end : null,
+      trialAvailable: !(await repo.hasEverSubscribed(companyId)),
+    };
+  }
+
+  /**
+   * Teste de 7 dias sem cartão, com o plano completo. Um por empresa. Grava com service_role:
+   * quem chama já conferiu que o ator é o proprietário.
+   */
+  async function startCardlessTrial(companyId: string, now: Date = new Date()): Promise<Subscription> {
+    if (await repo.hasEverSubscribed(companyId)) {
+      throw new AppError("conflict", "Esta empresa já usou o teste grátis. Assine para continuar.");
+    }
+    const plan = await repo.getPlanByCode(TRIAL_PLAN_CODE);
+    if (!plan) throw new AppError("internal_error", "Plano do teste não encontrado", TRIAL_PLAN_CODE);
+    return repo.insertSubscription({
+      company_id: companyId,
+      plan_id: plan.id,
+      status: "trialing",
+      current_period_start: now.toISOString(),
+      current_period_end: trialEndsAt(now),
+      cancel_at_period_end: false,
+      renews: false,
+      external_subscription_id: null,
+      external_customer_id: null,
+    });
+  }
+
   return {
+    getAccessState,
+    startCardlessTrial,
     getEffectivePlan,
     canAccessFeature,
     getFeatureLimit,

@@ -255,6 +255,10 @@ export const faq = [
     answer: "Não. Ele serve para gestão e pagamento de prestadores e não substitui o ponto eletrônico de funcionários CLT.",
   },
   {
+    question: "Dá para testar antes de assinar?",
+    answer: "Sim, por 7 dias, com tudo liberado e sem cartão. Se no fim não quiser assinar, nada é cobrado e seus dados continuam guardados.",
+  },
+  {
     question: "Como funciona o pagamento e o cancelamento?",
     answer: "No plano anual, você paga em até 12x no cartão e tem 12 meses de acesso, sem renovação automática. No mensal, a cobrança é todo mês, por PIX, boleto ou cartão, e ao cancelar o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
   },

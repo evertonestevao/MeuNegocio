@@ -25,6 +25,12 @@ export interface PaymentGateway {
   /** Nome do provedor, gravado em subscriptions p/ rastreio (neutro no schema). */
   readonly name: string;
 
+  /**
+   * Consegue guardar o cartão e só cobrar depois do teste (CreateCheckoutParams.trialDays)? Sem
+   * isso, a tela não promete "nada é cobrado hoje".
+   */
+  readonly supportsTrial: boolean;
+
   /** Cria a sessão de pagamento hospedada pelo provedor e devolve a URL. */
   createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession>;
 

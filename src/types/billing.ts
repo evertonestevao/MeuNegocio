@@ -22,6 +22,8 @@ export interface CreateCheckoutParams {
   customer: { email: string; name: string | null };
   successUrl: string;
   cancelUrl: string;
+  /** Teste com cartão: a primeira cobrança só depois destes dias. Só em gateway com supportsTrial. */
+  trialDays?: number;
 }
 
 /** Request de webhook como chega na rota: cada gateway lê o próprio header. */
@@ -75,6 +77,8 @@ export interface NormalizedPaymentEvent {
   cancelAtPeriodEnd: boolean;
   /** Compra parcelada: não renova e vale até currentPeriodEnd. */
   nonRenewing?: boolean;
+  /** Teste com cartão: a primeira cobrança é nesta data. */
+  trialEndsAt?: string | null;
   /** Parcela de uma compra: cobre 1 mês, mesmo em plano anual. */
   installmentPayment?: boolean;
   /** Pagamento confirmado que gerou o evento. Sem isto, não há comissão (ex.: Stripe). */

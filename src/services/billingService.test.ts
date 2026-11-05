@@ -6,6 +6,7 @@ import {
   DEFAULT_PLAN_CODE,
   hasPlanAccess,
   type BillingRepository,
+  isCardlessTrial,
 } from "./billingService";
 
 function makePlan(overrides: Partial<Plan>): Plan {
@@ -90,6 +91,9 @@ function makeRepo(state: {
       if (!row) throw new Error("not found");
       Object.assign(row, data);
       return row;
+    },
+    async hasEverSubscribed(companyId) {
+      return state.subscriptions.some((s) => s.company_id === companyId);
     },
   };
 }
@@ -222,6 +226,7 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
       calls,
       gateway: {
         name: "spy",
+        supportsTrial: false,
         async createCheckout() {
           throw new Error("não usado");
         },
@@ -624,5 +629,58 @@ describe("applyPaymentEvent", () => {
     await expect(service.applyPaymentEvent(makeEvent({ companyId: null }))).rejects.toThrow();
     await service.applyPaymentEvent(makeEvent({ type: "ignored" }));
     expect(state.subscriptions).toHaveLength(0);
+  });
+});
+
+describe("teste grátis", () => {
+  const NOW = new Date("2026-11-05T12:00:00Z");
+  const plans = () => [makePlan({ id: "plan-pro", code: "pro" })];
+
+  it("sem assinatura, a empresa não tem acesso e ainda pode testar", async () => {
+    const billing = createBillingService(makeRepo({ plans: plans(), subscriptions: [] }));
+    expect(await billing.getAccessState("company-1", NOW)).toEqual({ hasAccess: false, inCardlessTrial: false, trialEndsAt: null, trialAvailable: true });
+  });
+
+  it("teste sem cartão: 7 dias do plano completo, sem gateway e sem renovar", async () => {
+    const state = { plans: plans(), subscriptions: [] as Subscription[] };
+    const billing = createBillingService(makeRepo(state));
+    const trial = await billing.startCardlessTrial("company-1", NOW);
+    expect(trial).toMatchObject({
+      plan_id: "plan-pro",
+      status: "trialing",
+      renews: false,
+      external_subscription_id: null,
+      current_period_end: "2026-11-12T12:00:00.000Z",
+    });
+    expect(isCardlessTrial(trial)).toBe(true);
+    expect(await billing.getAccessState("company-1", NOW)).toMatchObject({ hasAccess: true, inCardlessTrial: true, trialEndsAt: "2026-11-12T12:00:00.000Z", trialAvailable: false });
+    // Depois do sétimo dia, perde o acesso e não ganha outro teste.
+    expect(await billing.getAccessState("company-1", new Date("2026-11-12T12:00:01Z"))).toMatchObject({ hasAccess: false, trialAvailable: false });
+    await expect(billing.startCardlessTrial("company-1", NOW)).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("quem já assinou, mesmo apagado no histórico, não ganha teste", async () => {
+    const old = makeSubscription({ status: "canceled", deleted_at: "2026-01-01T00:00:00Z" });
+    const billing = createBillingService(makeRepo({ plans: plans(), subscriptions: [old] }));
+    await expect(billing.startCardlessTrial("company-1", NOW)).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("teste com cartão entra como em teste e renova sozinho", async () => {
+    const state = { plans: [makePlan({ id: "plan-1" })], subscriptions: [] as Subscription[] };
+    const billing = createBillingService(makeRepo(state));
+    await billing.applyPaymentEvent({
+      type: "subscription.activated",
+      gateway: "fake",
+      externalSubscriptionId: "ext-trial",
+      externalCustomerId: "cus",
+      companyId: "company-1",
+      planId: "plan-1",
+      currentPeriodStart: NOW.toISOString(),
+      currentPeriodEnd: "2026-11-12T12:00:00.000Z",
+      cancelAtPeriodEnd: false,
+      trialEndsAt: "2026-11-12T12:00:00.000Z",
+    });
+    expect(state.subscriptions[0]).toMatchObject({ status: "trialing", renews: true });
+    expect(isCardlessTrial(state.subscriptions[0])).toBe(false);
   });
 });

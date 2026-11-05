@@ -57,6 +57,16 @@ export function createSupabaseBillingRepository(client: SupabaseClient): Billing
       return unwrap(result);
     },
 
+    async hasEverSubscribed(companyId) {
+      // Inclui o histórico apagado: quem já testou ou assinou não ganha outro teste.
+      const { count, error } = await client
+        .from("subscriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId);
+      if (error) throw new AppError("internal_error", "Falha ao ler o histórico de assinaturas", error);
+      return (count ?? 0) > 0;
+    },
+
     async insertSubscription(data) {
       const result = await client
         .from("subscriptions")

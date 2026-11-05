@@ -49,6 +49,7 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
 
   return {
     name: "stripe",
+    supportsTrial: true,
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
       // Stripe cobra por preço do catálogo: sem price id configurado não há checkout.
@@ -71,6 +72,8 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
         // permitindo mapear evento -> empresa/plano sem tabela de-para.
         "subscription_data[metadata][company_id]": params.companyId,
         "subscription_data[metadata][plan_id]": params.plan.id,
+        // Teste com cartão: o Stripe guarda o cartão e só cobra no fim do teste.
+        ...(params.trialDays ? { "subscription_data[trial_period_days]": String(params.trialDays) } : {}),
       });
       return { id: String(session.id), url: String(session.url) };
     },

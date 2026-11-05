@@ -59,6 +59,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "quote.approved_by_client": "Orçamento aprovado pelo cliente",
   "quote.refused_by_client": "Orçamento recusado pelo cliente",
   "subscription.activated": "Assinatura ativada",
+  "subscription.trial_started": "Teste grátis iniciado",
   "subscription.updated": "Assinatura alterada",
   "subscription.canceled": "Assinatura cancelada",
   "subscription.checkout_started": "Contratação iniciada",

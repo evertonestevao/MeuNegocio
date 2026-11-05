@@ -280,8 +280,15 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
 
   return {
     name: "asaas",
+    // O link de pagamento cobra na hora. Adiar a primeira cobrança pede assinatura com cartão
+    // tokenizado e precisa ser validado no sandbox antes de ligar.
+    supportsTrial: false,
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
+      if (params.trialDays) {
+        // Nunca cobrar na hora dizendo que é grátis.
+        throw new AppError("payment_error", "Teste com cartão ainda não disponível neste meio de pagamento");
+      }
       const annual = params.plan.billingInterval === "year";
       const link = await asaasRequest<{ id: string; url: string }>("/paymentLinks", "POST", {
         name: params.plan.name,

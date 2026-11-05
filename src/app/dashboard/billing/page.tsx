@@ -15,7 +15,7 @@ import { createSupabaseBillingRepository } from "@/repositories/supabase/billing
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { formatCents } from "@/lib/money";
 import { getActiveTenant } from "@/server/tenant";
-import { createBillingService, hasPlanAccess } from "@/services/billingService";
+import { createBillingService, hasPlanAccess, isCardlessTrial } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
@@ -71,7 +71,8 @@ export default async function BillingPage() {
   // Compra parcelada não tem o que cancelar aqui: desistência passa pelo suporte.
   const hasActiveSubscription =
     subscription != null && subscription.renews && ["trialing", "active", "past_due"].includes(subscription.status);
-  const prepaidWithAccess = subscription != null && !subscription.renews && subscription.status !== "canceled" && hasPlanAccess(subscription);
+  const inTrial = isCardlessTrial(subscription) && hasPlanAccess(subscription!);
+  const prepaidWithAccess = subscription != null && !inTrial && !subscription.renews && subscription.status !== "canceled" && hasPlanAccess(subscription);
   const canceledWithAccess =
     subscription != null && subscription.status === "canceled" && hasPlanAccess(subscription);
 
@@ -86,6 +87,14 @@ export default async function BillingPage() {
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
           {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}
         </p>
+        {inTrial ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Teste grátis até {new Date(subscription!.current_period_end!).toLocaleDateString("pt-BR")}, sem cobrança.{" "}
+            <Link href="/assinar" className="font-medium text-primary hover:underline">
+              Assinar agora
+            </Link>
+          </p>
+        ) : null}
         {prepaidWithAccess ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Plano pago até {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}, sem renovação automática.
@@ -95,8 +104,8 @@ export default async function BillingPage() {
         {canceledWithAccess ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Assinatura cancelada. Acesso ao plano até{" "}
-            {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}. Depois disso, a
-            empresa passa para o plano gratuito.
+            {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}. Depois disso, o acesso
+            fica pausado até assinar de novo, e os dados continuam guardados.
           </p>
         ) : null}
       </div>
@@ -140,7 +149,8 @@ export default async function BillingPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {plansForSale(plans).map((plan) => {
-          const isCurrent = currentPlan?.id === plan.id;
+          // No teste grátis, o plano em teste ainda pode ser assinado.
+          const isCurrent = currentPlan?.id === plan.id && !inTrial;
           return (
             <Card key={plan.id} className={isCurrent ? "border-primary" : undefined}>
               <CardHeader>

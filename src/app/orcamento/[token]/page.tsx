@@ -35,9 +35,11 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   }
 
   const quote = isDemo ? await getDemoPublicQuote(token) : await getPublicQuoteRepository().getByToken(token);
-  if (!quote || (!isDemo && !(await canUsePublicApproval(quote.companyId)))) notFound();
+  if (!quote) notFound();
+  // Empresa sem assinatura (teste acabou): o cliente ainda vê o orçamento que recebeu, mas não responde por aqui.
+  const respondsOnline = isDemo || (await canUsePublicApproval(quote.companyId));
   const { response } = quote;
-  const canRespond = quote.document.status === "sent" && quote.isWithinValidity;
+  const canRespond = respondsOnline && quote.document.status === "sent" && quote.isWithinValidity;
   // Aprovado: a resposta do cliente, com a assinatura, entra na página e no PDF.
   const approved = response?.decision === "approved" && (quote.document.status === "approved" || quote.document.status === "closed");
   const signatureUrl = approved && response.signaturePath
@@ -175,6 +177,9 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
                   Orçamento recusado
                   {response?.decision === "refused" ? ` por ${response.name} em ${formatTimestamp(response.createdAt)}` : ""}.
                 </p>
+              ) : null}
+              {!respondsOnline && document.status === "sent" && quote.isWithinValidity ? (
+                <p className="font-medium">Para aprovar este orçamento, fale direto com a {document.company.name}.</p>
               ) : null}
               {document.status === "expired" || (document.status === "sent" && !quote.isWithinValidity) ? (
                 <p className="font-medium">A validade deste orçamento terminou. Fale com a empresa para receber uma nova versão.</p>

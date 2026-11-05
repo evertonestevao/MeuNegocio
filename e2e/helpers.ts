@@ -23,8 +23,16 @@ export async function signupAndOnboard(
   await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
   await page.getByRole("button", { name: "Criar empresa" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard/);
+  // Empresa nova ainda não tem assinatura: começa o teste de 7 dias sem cartão.
+  await startCardlessTrial(page);
   await expect(page.locator("main").getByText(company).first()).toBeVisible();
+}
+
+/** Na tela de assinar, começa o teste sem cartão e volta ao painel. */
+export async function startCardlessTrial(page: Page) {
+  await expect(page).toHaveURL(/\/assinar/);
+  await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
 }
 
 export function uniqueEmail(prefix: string): string {
