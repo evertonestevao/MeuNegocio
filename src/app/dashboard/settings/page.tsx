@@ -48,7 +48,7 @@ export default async function SettingsPage() {
       ? [{ href: "/dashboard/settings/checklists", title: "Checklists", description: "Itens padrão de cada tipo de visita", icon: ClipboardList }]
       : []),
     ...(permissionService.canManageFinance(active.role)
-      ? [{ href: "/dashboard/settings/impostos", title: "Impostos", description: "Regime e alíquota descontada do resultado dos serviços", icon: Percent }]
+      ? [{ href: "/dashboard/settings/impostos", title: "Impostos e taxas", description: "Imposto e taxas do cartão descontados do resultado dos serviços", icon: Percent }]
       : []),
     ...(permissionService.canManageBilling(active.role)
       ? [{ href: "/dashboard/billing", title: "Assinatura", description: "Plano, vagas e pagamentos", icon: CreditCard }]

@@ -110,6 +110,12 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
               <span className="tabular-nums">{formatCents(document.totalCents)}</span>
             </div>
           </div>
+          {document.paymentTerms ? (
+            <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+              <span className="text-muted-foreground">Condições de pagamento: </span>
+              <strong>{document.paymentTerms}</strong>
+            </p>
+          ) : null}
           {document.notes ? (
             <div className="text-sm">
               <p className="font-medium">Condições</p>

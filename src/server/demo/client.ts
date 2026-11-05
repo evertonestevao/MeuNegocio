@@ -248,6 +248,7 @@ function demoPublicQuoteRow(token: string): Row | null {
     discount_cents: quote.discount_cents,
     total_cents: quote.total_cents,
     notes: quote.notes,
+    payment_plan: quote.payment_plan ?? null,
     company: { name: company?.name, cnpj: profile?.cnpj, phone: profile?.phone, email: profile?.email, address: profile?.address },
     client: { name: client?.name, document: client?.document },
     location: location ? { name: location.name, address: location.address } : null,
@@ -292,6 +293,7 @@ function demoCompanyTax(tables: Record<string, Row[]>): CompanyTax {
     annex,
     fator_r: profile.fator_r === true,
     activity_started_on: null,
+    cash_basis: profile.tax_cash_basis === true,
     rate_bps: rate.rateBps,
     detail: {
       month,

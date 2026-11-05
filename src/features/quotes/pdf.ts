@@ -94,6 +94,13 @@ async function buildQuotePdf(quote: QuoteDocument) {
   }
   addRow("Total", formatCents(quote.totalCents), true);
 
+  if (quote.paymentTerms) {
+    y += 2;
+    const terms: string[] = pdf.splitTextToSize(`Condições de pagamento: ${quote.paymentTerms}`, width - margin * 2);
+    pdf.setTextColor(20).setFont("helvetica", "normal").setFontSize(9.5).text(terms, margin, y);
+    y += terms.length * 4.4;
+  }
+
   if (quote.notes) {
     y += 4;
     const wrapped: string[] = pdf.splitTextToSize(quote.notes, width - margin * 2);
@@ -186,6 +193,7 @@ export function quoteShareText(quote: QuoteDocument, contactName: string | null,
     `${greeting} Segue o orçamento Nº ${formatQuoteNumber(quote.number)} da ${quote.company.name}.`,
     quote.title ? `Serviço: ${quote.title}` : null,
     `Valor total: ${formatCents(quote.totalCents)}`,
+    quote.paymentTerms ? `Pagamento: ${quote.paymentTerms}` : null,
     quote.validUntil ? `Válido até ${formatDate(quote.validUntil)}.` : null,
     publicUrl ? `Veja os detalhes e aprove por aqui: ${publicUrl}` : null,
     "Qualquer dúvida, estou à disposição.",

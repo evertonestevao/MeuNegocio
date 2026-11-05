@@ -2,7 +2,7 @@ import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
 import { MAX_TAX_RATE_BPS, taxCents } from "@/lib/tax";
 import type { ActorContext } from "@/server/actor";
-import type { Expense } from "@/types/finance";
+import type { Expense, QuotePaymentPlan } from "@/types/finance";
 import { totalsByCategory, type CategoryTotal } from "./expenseService";
 import { permissionService } from "./permissionService";
 
@@ -43,6 +43,7 @@ export interface ServiceQuoteRow {
   total_cents: number;
   approved_at: string | null;
   closed_at: string | null;
+  payment_plan?: QuotePaymentPlan | null;
 }
 
 export interface ServiceVisit {
@@ -78,6 +79,8 @@ export interface ServiceCostRepository {
   /** Alíquota padrão da empresa; null sem regime informado. */
   getCompanyTaxRate(companyId: string): Promise<number | null>;
   setTaxRate(companyId: string, quoteId: string, rateBps: number): Promise<void>;
+  /** Taxa da maquininha das parcelas de cada serviço. */
+  listCardFees(companyId: string, quoteIds: string[]): Promise<{ quote_id: string; fee_cents: number }[]>;
 }
 
 export type MarginStatus = "good" | "low" | "loss" | "none";
@@ -102,6 +105,8 @@ export interface ServiceCost {
   taxRateBps: number;
   taxCents: number;
   taxSource: TaxSource;
+  /** Taxa da maquininha das parcelas no cartão. */
+  cardFeeCents: number;
   resultCents: number;
   marginPercent: number | null;
   status: MarginStatus;
@@ -135,6 +140,7 @@ export function buildServiceCost(input: {
   /** Alíquota do serviço; null quando segue a da empresa. */
   serviceTaxRateBps?: number | null;
   companyTaxRateBps?: number | null;
+  cardFeeCents?: number;
 }): ServiceCost {
   const rates = new Map(input.rates.map((rate) => [rate.employee_id, rate]));
   const byPerson = new Map<string, LaborLine>();
@@ -161,11 +167,13 @@ export function buildServiceCost(input: {
   const taxSource: TaxSource = serviceRate !== null ? "service" : companyRate !== null ? "company" : "none";
   const taxRateBps = serviceRate ?? companyRate ?? 0;
   const tax = taxCents(input.revenueCents, taxRateBps);
-  const resultCents = input.revenueCents - totalCostCents - tax;
-  const margin = marginPercent(input.revenueCents, totalCostCents + tax);
+  const cardFeeCents = Math.max(0, input.cardFeeCents ?? 0);
+  const resultCents = input.revenueCents - totalCostCents - tax - cardFeeCents;
+  const margin = marginPercent(input.revenueCents, totalCostCents + tax + cardFeeCents);
   const categories = totalsByCategory(input.expenses);
   if (laborCents > 0) categories.push({ categoryId: "labor", name: "Mão de obra (horas)", totalCents: laborCents });
   if (tax > 0) categories.push({ categoryId: "tax", name: "Imposto (estimado)", totalCents: tax });
+  if (cardFeeCents > 0) categories.push({ categoryId: "card_fee", name: "Taxa do cartão", totalCents: cardFeeCents });
   categories.sort((a, b) => b.totalCents - a.totalCents);
 
   return {
@@ -176,6 +184,7 @@ export function buildServiceCost(input: {
     taxRateBps,
     taxCents: tax,
     taxSource,
+    cardFeeCents,
     resultCents,
     marginPercent: margin,
     status: marginStatus(resultCents, margin, input.targetMarginPercent),
@@ -231,11 +240,12 @@ export function createServiceCostService(repo: ServiceCostRepository) {
   async function load(companyId: string, quotes: ServiceQuoteRef[], targetMarginPercent: number) {
     const ids = quotes.map((quote) => quote.id);
     if (ids.length === 0) return new Map<string, ServiceCost>();
-    const [expenses, labor, taxRates, companyTaxRateBps] = await Promise.all([
+    const [expenses, labor, taxRates, companyTaxRateBps, cardFees] = await Promise.all([
       repo.listExpenses(companyId, ids),
       repo.listLabor(companyId, ids),
       repo.listTaxRates(companyId, ids),
       repo.getCompanyTaxRate(companyId),
+      repo.listCardFees(companyId, ids),
     ]);
     const rates = await repo.listRates(companyId, [...new Set(labor.map((entry) => entry.employee_id))]);
     const serviceTaxRates = new Map(taxRates.map((row) => [row.quote_id, row.tax_rate_bps]));
@@ -251,6 +261,7 @@ export function createServiceCostService(repo: ServiceCostRepository) {
           targetMarginPercent,
           serviceTaxRateBps: serviceTaxRates.get(quote.id) ?? null,
           companyTaxRateBps,
+          cardFeeCents: cardFees.filter((fee) => fee.quote_id === quote.id).reduce((sum, fee) => sum + fee.fee_cents, 0),
         }),
       ]),
     );

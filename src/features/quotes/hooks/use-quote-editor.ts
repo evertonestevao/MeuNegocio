@@ -5,6 +5,7 @@ import { centsToMoneyInput, parseMoneyToCents } from "@/lib/money";
 import { estimatedCostCents, lineTotalCents, marginPercent, priceWithMarkup, subtotalCents, totalCents, type MarkupMode } from "@/lib/quoteCalc";
 import { taxCents } from "@/lib/tax";
 import type { CatalogItem, PricingMode, Quote, QuoteItem } from "@/types/database";
+import type { PaymentMethod, QuotePaymentPlan } from "@/types/finance";
 import type { QuoteInput } from "../schemas";
 
 export interface EditorLine {
@@ -70,6 +71,13 @@ export function useQuoteEditor(params: {
   const [validUntil, setValidUntil] = useState(quote ? (quote.valid_until ?? "") : (initial.validUntil ?? ""));
   const [discount, setDiscount] = useState(quote ? centsToMoneyInput(quote.discount_cents) : "0");
   const [notes, setNotes] = useState(quote ? (quote.notes ?? "") : initial.notes);
+  // Condições de pagamento: "" é a combinar.
+  const agreed = quote?.payment_plan ?? null;
+  const [planKind, setPlanKind] = useState<"" | QuotePaymentPlan["kind"]>(agreed?.kind ?? "");
+  const [planMethod, setPlanMethod] = useState<PaymentMethod | null>(agreed?.method ?? "pix");
+  const [planEntry, setPlanEntry] = useState(agreed?.entry_cents ? centsToMoneyInput(agreed.entry_cents) : "");
+  const [planEntryMethod, setPlanEntryMethod] = useState<PaymentMethod | null>(agreed?.entry_method ?? "pix");
+  const [planCount, setPlanCount] = useState(String(agreed?.count ?? 2));
   const [lines, setLines] = useState<EditorLine[]>(() =>
     items.map((item) => {
       // Item salvo com "a mais": o custo guardado é o valor digitado e a diferença é o "a mais".
@@ -176,6 +184,15 @@ export function useQuoteEditor(params: {
       validUntil: validUntil || null,
       discountCents: parseMoneyToCents(discount) ?? -1,
       notes,
+      paymentPlan: planKind
+        ? {
+            kind: planKind,
+            method: planKind === "card" ? "credit" : planMethod,
+            entry_cents: planKind === "entry" ? (parseMoneyToCents(planEntry) ?? -1) : 0,
+            entry_method: planKind === "entry" ? planEntryMethod : null,
+            count: planKind === "cash" ? 1 : Math.round(Number(planCount)) || 0,
+          }
+        : null,
       items: lines.map((line) => {
         const hasMarkup = parseMarkup(line) !== null;
         return {
@@ -196,5 +213,7 @@ export function useQuoteEditor(params: {
   return {
     clientId, chooseClient, locationId, setLocationId, title, setTitle, validUntil, setValidUntil,
     discount, setDiscount, notes, setNotes, lines, addFromCatalog, addCustom, updateLine, removeLine, totals, toInput,
+    plan: { kind: planKind, setKind: setPlanKind, method: planMethod, setMethod: setPlanMethod, entry: planEntry, setEntry: setPlanEntry,
+      entryMethod: planEntryMethod, setEntryMethod: setPlanEntryMethod, count: planCount, setCount: setPlanCount },
   };
 }

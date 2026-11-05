@@ -29,6 +29,8 @@ export interface QuoteDocument {
   discountCents: number;
   totalCents: number;
   notes: string | null;
+  /** Condições de pagamento em texto, para o cliente ("Entrada de R$ 500,00 e 3x de ..."). */
+  paymentTerms?: string | null;
   /** Aprovação pelo link: quem, quando, a observação e a assinatura (link temporário). */
   approval?: { name: string; comment: string | null; approvedAt: string; signatureUrl: string | null } | null;
 }

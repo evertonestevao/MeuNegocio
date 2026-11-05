@@ -17,7 +17,13 @@ import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/f
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatCents } from "@/lib/money";
 import { getClientService } from "@/server/clients";
-import { getQuoteService } from "@/server/quotes";
+import { getCompanyProfileService, getQuoteService } from "@/server/quotes";
+import { getReceivableService } from "@/server/receivables";
+import { getDemoProfile } from "@/server/demo/mode";
+import { brand } from "@/config/brand";
+import { ReceivableList } from "@/features/receivables/components/receivable-list";
+import { todayInTimezone } from "@/lib/dates";
+import { summarizeOpen } from "@/lib/installments";
 import { getVisitService } from "@/server/schedule";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
@@ -42,6 +48,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   );
   const visits = (await (await getVisitService()).list({ companyId: active.id, role: active.role }, { clientId: client.id })).reverse();
   const canDelete = permissionService.canDeleteRecords(active.role);
+  // Quanto o cliente ainda deve: só para quem vê o financeiro.
+  const seesMoney = permissionService.canManageFinance(active.role);
+  const today = todayInTimezone((await (await getCompanyProfileService()).get(active.id)).timezone);
+  const owed = seesMoney ? await (await getReceivableService()).listOpenByClient({ companyId: active.id, role: active.role }, client.id) : [];
+  const owedTotals = summarizeOpen(owed, today);
+  const isDemo = (await getDemoProfile()) !== null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,6 +156,21 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       </div>
+
+      {seesMoney && owed.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>A receber deste cliente</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {formatCents(owedTotals.openCents)} em {owedTotals.openCount === 1 ? "1 parcela" : `${owedTotals.openCount} parcelas`}
+              {owedTotals.overdueCents > 0 ? <span className="text-destructive"> · {formatCents(owedTotals.overdueCents)} atrasado</span> : null}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ReceivableList items={owed} today={today} empty="" companyName={active.name} reminderPhone={isDemo ? brand.salesWhatsapp : undefined} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

@@ -13,6 +13,8 @@ import { getCompanyProfileService } from "@/server/quotes";
 import { getReceivableService } from "@/server/receivables";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { brand } from "@/config/brand";
+import { getDemoProfile } from "@/server/demo/mode";
 
 export const metadata: Metadata = { title: "Contas a receber" };
 
@@ -21,6 +23,8 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
   const { active } = await getActiveTenant();
   if (!active) return null;
   if (!permissionService.canManageFinance(active.role)) redirect("/dashboard");
+  // Na demonstração os telefones são inventados: o lembrete abre o número comercial.
+  const reminderPhone = (await getDemoProfile()) !== null ? brand.salesWhatsapp : undefined;
 
   const actor = { companyId: active.id, role: active.role };
   const { timezone } = await (await getCompanyProfileService()).get(active.id);
@@ -97,7 +101,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
           {received ? (
             <ReceivableList items={receivedItems} today={today} empty="Nada recebido neste mês." />
           ) : (
-            <ReceivableList items={open} today={today} empty="Nenhuma parcela a receber. Tudo em dia." />
+            <ReceivableList items={open} today={today} companyName={active.name} reminderPhone={reminderPhone} empty="Nenhuma parcela a receber. Tudo em dia." />
           )}
         </CardContent>
       </Card>

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
+import { paymentPlanText } from "@/lib/installments";
+import type { QuotePaymentPlan } from "@/types/finance";
 import type { PublicQuoteRepository, QuoteRepository } from "@/services/quoteService";
 import type { Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, Revenue } from "@/types/database";
 import type { PublicQuote } from "@/types/quotes";
@@ -153,6 +155,9 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
         })),
       });
       if (error) fail(error);
+      // Condições de pagamento à parte: mesma regra de só rascunho, sem mexer em save_quote.
+      const plan = await client.rpc("set_quote_payment_plan", { p_company_id: companyId, p_quote_id: data as string, p_plan: input.paymentPlan });
+      if (plan.error) fail(plan.error);
       return data as string;
     },
 
@@ -208,6 +213,7 @@ interface PublicQuoteRow {
   discount_cents: number;
   total_cents: number;
   notes: string | null;
+  payment_plan?: QuotePaymentPlan | null;
   company: PublicQuote["document"]["company"];
   client: { name: string; document: string | null };
   location: { name: string; address: string } | null;
@@ -266,6 +272,7 @@ export function createSupabasePublicQuoteRepository(client: SupabaseClient): Pub
           discountCents: row.discount_cents,
           totalCents: row.total_cents,
           notes: row.notes,
+          paymentTerms: paymentPlanText(row.payment_plan, row.total_cents),
         },
       };
     },

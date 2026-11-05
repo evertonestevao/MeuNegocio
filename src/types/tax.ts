@@ -35,6 +35,8 @@ export interface CompanyTax {
   annex: SimplesAnnex | null;
   fator_r: boolean;
   activity_started_on: string | null;
+  /** RBT12 pelo recebido (regime de caixa), em vez do faturado. */
+  cash_basis: boolean;
   /** Alíquota que vale hoje; null sem regime informado. */
   rate_bps: number | null;
   detail: SimplesRateDetail | null;

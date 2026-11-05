@@ -24,6 +24,12 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await page.getByLabel("Horas").fill("10");
   await page.getByLabel("Pessoas").fill("2");
   await page.getByLabel("Desconto").fill("100,00");
+  // Combinado com o cliente: R$ 10,00 de entrada no PIX e o restante em 2x no boleto.
+  await page.getByLabel("Condições de pagamento").selectOption("entry");
+  await page.getByLabel("Entrada (R$)").fill("10,00");
+  await page.getByLabel("Restante em quantas vezes").fill("2");
+  await page.getByLabel("Forma do restante").selectOption("boleto");
+  await expect(page.getByText(/O cliente vê: Entrada de R\$\s10,00 no PIX e o restante em 2x de R\$\s895,00 no boleto/)).toBeVisible();
 
   // 10 h × 2 pessoas × R$ 95 − R$ 100.
   await expect(page.getByText("R$ 1.800,00").first()).toBeVisible();
@@ -41,6 +47,7 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await client.goto(new URL(publicLink as string).pathname);
   await expect(client.getByText("Ampliação elétrica")).toBeVisible();
   await expect(client.getByText(/custo|margem/i)).toHaveCount(0);
+  await expect(client.getByText(/Entrada de R\$\s10,00 no PIX e o restante em 2x de R\$\s895,00 no boleto/)).toBeVisible();
 
   await client.getByRole("button", { name: "Aprovar orçamento" }).click();
   await expect(client.getByText("Informe seu nome.")).toBeVisible();
@@ -77,9 +84,9 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await page.getByRole("button", { name: "Fechar e faturar" }).click();
   // Entrada de R$ 10,00 já paga e o restante em 2 parcelas a receber.
   const closeDialog = page.getByRole("dialog");
-  await closeDialog.getByText("Entrada + parcelas").click();
-  await closeDialog.getByLabel("Entrada (R$)").fill("10,00");
-  await closeDialog.getByLabel("Restante em quantas vezes").fill("2");
+  // Vem preenchido com o combinado no orçamento.
+  await expect(closeDialog.getByLabel("Entrada (R$)")).toHaveValue("10,00");
+  await expect(closeDialog.getByLabel("Restante em quantas vezes")).toHaveValue("2");
   await closeDialog.getByRole("button", { name: "Fechar e faturar" }).click();
   await expect(page.getByText("Faturado")).toBeVisible();
 

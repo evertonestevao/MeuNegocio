@@ -9,6 +9,8 @@ import { formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import type { ServiceListItem } from "@/services/serviceCostService";
+import type { CardFees } from "@/types/finance";
+import { allCostsCents, costsLabel } from "../labels";
 
 const ALERT_TEXT = {
   loss: "Os custos já passaram do valor cobrado.",
@@ -32,12 +34,14 @@ export function ServiceListItemCard({
   today,
   canClose,
   expenseOptions,
+  cardFees,
 }: {
   item: ServiceListItem;
   stage: "open" | "done";
   today: string;
   canClose: boolean;
   expenseOptions: ExpenseFormOptions | null;
+  cardFees?: CardFees;
 }) {
   const { quote, cost } = item;
   const next = nextVisitLabel(item, today);
@@ -85,8 +89,8 @@ export function ServiceListItemCard({
               <dd className="font-semibold tabular-nums">{formatCents(cost.revenueCents)}</dd>
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">
-              <dt className="text-muted-foreground">{cost.taxCents > 0 ? "Custos e imposto" : "Custos"}</dt>
-              <dd className="font-semibold tabular-nums">{formatCents(cost.totalCostCents + cost.taxCents)}</dd>
+              <dt className="text-muted-foreground">{costsLabel(cost)}</dt>
+              <dd className="font-semibold tabular-nums">{formatCents(allCostsCents(cost))}</dd>
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">
               <dt className="text-muted-foreground">Resultado</dt>
@@ -114,7 +118,7 @@ export function ServiceListItemCard({
           {expenseOptions ? (
             <NewExpenseButton options={expenseOptions} defaultDate={today} defaultQuoteId={quote.id} label="Lançar gasto" variant="outline" />
           ) : null}
-          {stage === "open" && canClose ? <CloseQuoteButton quoteId={quote.id} totalCents={quote.total_cents} today={today} label="Concluir e faturar" /> : null}
+          {stage === "open" && canClose ? <CloseQuoteButton quoteId={quote.id} totalCents={quote.total_cents} today={today} label="Concluir e faturar" paymentPlan={quote.payment_plan ?? null} cardFees={cardFees} /> : null}
           {!expenseOptions && !(stage === "open" && canClose) ? (
             <Button variant="outline" nativeButton={false} render={<Link href={`/dashboard/quotes/${quote.id}`} />}>
               Abrir serviço

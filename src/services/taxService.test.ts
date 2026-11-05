@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CompanyTax } from "@/types/tax";
-import { createTaxService, monthlyRevenuesSchema, taxSettingsSchema } from "./taxService";
+import { cardFeesSchema, createTaxService, monthlyRevenuesSchema, taxSettingsSchema } from "./taxService";
 
 const OWNER = { companyId: "co", role: "owner" as const };
 const MEMBER = { companyId: "co", role: "member" as const };
@@ -40,6 +40,18 @@ describe("configuração do imposto", () => {
   });
 });
 
+describe("regime de caixa e taxas do cartão", () => {
+  it("regime de caixa só no cálculo automático do Simples", () => {
+    expect(taxSettingsSchema.parse({ ...BASE, taxMode: "auto", simplesAnnex: "III", cashBasis: "on" }).taxCashBasis).toBe(true);
+    expect(taxSettingsSchema.parse({ ...BASE, taxRate: "6", cashBasis: "on" }).taxCashBasis).toBe(false);
+  });
+
+  it("taxas em %, de 0 a 20", () => {
+    expect(cardFeesSchema.parse({ creditFee: "3,49", debitFee: "" })).toEqual({ creditBps: 349, debitBps: 0 });
+    expect(cardFeesSchema.safeParse({ creditFee: "21", debitFee: "1" }).success).toBe(false);
+  });
+});
+
 describe("faturamento informado", () => {
   it("valor em reais vira centavos; vazio tira o informado", () => {
     expect(
@@ -65,6 +77,7 @@ describe("serviço de impostos", () => {
       get: vi.fn(async () => ({ rate_bps: 808 }) as CompanyTax),
       saveSettings: vi.fn(async () => undefined),
       saveMonthlyRevenues: vi.fn(async () => undefined),
+      saveCardFees: vi.fn(async () => undefined),
     };
     return { repo, service: createTaxService(repo) };
   }

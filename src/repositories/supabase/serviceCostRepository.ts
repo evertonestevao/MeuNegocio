@@ -15,7 +15,7 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
     async listServiceQuotes(companyId, stage) {
       let query = client
         .from("quotes")
-        .select("id, number, title, total_cents, approved_at, closed_at, client:clients(name)")
+        .select("id, number, title, total_cents, approved_at, closed_at, payment_plan, client:clients(name)")
         .eq("company_id", companyId)
         .eq("status", stage === "open" ? "approved" : "closed")
         .is("deleted_at", null);
@@ -159,6 +159,18 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
         .is("deleted_at", null);
       if (error) fail(error);
       return ((data ?? []) as { id: string; tax_rate_bps: number | null }[]).map((row): QuoteTaxRate => ({ quote_id: row.id, tax_rate_bps: row.tax_rate_bps }));
+    },
+
+    async listCardFees(companyId, quoteIds) {
+      const { data, error } = await client
+        .from("receivables")
+        .select("quote_id, fee_cents")
+        .eq("company_id", companyId)
+        .in("quote_id", quoteIds)
+        .is("deleted_at", null)
+        .gt("fee_cents", 0);
+      if (error) fail(error);
+      return (data ?? []) as { quote_id: string; fee_cents: number }[];
     },
 
     async getCompanyTaxRate(companyId) {

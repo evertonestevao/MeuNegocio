@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addMonthsKeepDay, buildInstallments, defaultPaymentPlan, receivableStatus, splitCents, summarizeOpen } from "./installments";
+import { addMonthsKeepDay, buildInstallments, cardFeeCents, defaultPaymentPlan, paymentPlanText, receivableStatus, splitCents, summarizeOpen } from "./installments";
 
 const TODAY = "2026-11-04";
 const plan = (overrides: Partial<ReturnType<typeof defaultPaymentPlan>>) => ({ ...defaultPaymentPlan(TODAY), ...overrides });
@@ -71,5 +71,33 @@ describe("contas a receber", () => {
       TODAY,
     );
     expect(totals).toEqual({ openCents: 1_000, openCount: 4, overdueCents: 100, overdueCount: 1, dueSoonCents: 500, dueSoonCount: 2 });
+  });
+});
+
+describe("condições de pagamento do orçamento", () => {
+  it("em texto, para o cliente", () => {
+    // O formato de moeda usa espaço que não quebra depois do "R$".
+    const text = (...args: Parameters<typeof paymentPlanText>) => paymentPlanText(...args)?.replace(/\u00a0/g, " ") ?? null;
+    expect(text({ kind: "cash", method: "pix", entry_cents: 0, entry_method: null, count: 1 }, 150_000)).toBe("À vista no PIX");
+    expect(text({ kind: "card", method: "credit", entry_cents: 0, entry_method: null, count: 3 }, 100_000)).toBe("Cartão de crédito em 3x de R$ 333,33");
+    expect(text({ kind: "entry", method: "boleto", entry_cents: 50_000, entry_method: "cash", count: 2 }, 150_000)).toBe(
+      "Entrada de R$ 500,00 em dinheiro e o restante em 2x de R$ 500,00 no boleto",
+    );
+    expect(text(null, 150_000)).toBeNull();
+  });
+
+  it("o combinado preenche o fechamento", () => {
+    const plan = defaultPaymentPlan(TODAY, { kind: "entry", method: "boleto", entry_cents: 50_000, entry_method: "pix", count: 3 });
+    expect(plan).toMatchObject({ kind: "entry", method: "boleto", entryCents: 50_000, entryMethod: "pix", count: 3, receivedNow: true, firstDueDate: "2026-12-04" });
+    expect(defaultPaymentPlan(TODAY, { kind: "cash", method: "boleto", entry_cents: 0, entry_method: null, count: 1 }).receivedNow).toBe(false);
+    expect(defaultPaymentPlan(TODAY, { kind: "card", method: null, entry_cents: 0, entry_method: null, count: 4 })).toMatchObject({ method: "credit", count: 4 });
+  });
+
+  it("taxa da maquininha só no crédito e no débito", () => {
+    const fees = { creditBps: 349, debitBps: 99 };
+    expect(cardFeeCents(100_000, "credit", fees)).toBe(3_490);
+    expect(cardFeeCents(100_000, "debit", fees)).toBe(990);
+    expect(cardFeeCents(100_000, "pix", fees)).toBe(0);
+    expect(summarizeOpen([{ received_on: null, due_date: TODAY, amount_cents: 100_000, fee_cents: 3_490 }], TODAY).openCents).toBe(96_510);
   });
 });

@@ -3,10 +3,12 @@ import { AppError } from "@/lib/errors";
 import type { ReceivableRepository } from "@/services/receivableService";
 import type { Receivable } from "@/types/finance";
 
-const COLUMNS = "id, quote_id, amount_cents, due_date, method, received_on, received_cents, quote:quotes(number, title, client:clients(name))";
+const COLUMNS =
+  "id, quote_id, amount_cents, fee_cents, due_date, method, received_on, received_cents, quote:quotes(number, title, client_id, client:clients(name, contacts:client_contacts(name, phone, is_primary, deleted_at)))";
 
-type Row = Omit<Receivable, "quote_number" | "quote_title" | "client_name"> & {
-  quote: { number: number; title: string | null; client: { name: string } | null } | null;
+type Contact = { name: string; phone: string | null; is_primary: boolean; deleted_at: string | null };
+type Row = Omit<Receivable, "quote_number" | "quote_title" | "client_name" | "client_id" | "contact_name" | "contact_phone"> & {
+  quote: { number: number; title: string | null; client_id: string | null; client: { name: string; contacts: Contact[] | null } | null } | null;
 };
 
 function fail(error: { code?: string; message?: string } | null): never {
@@ -17,7 +19,18 @@ function fail(error: { code?: string; message?: string } | null): never {
 }
 
 function toReceivable({ quote, ...row }: Row): Receivable {
-  return { ...row, quote_number: quote?.number ?? 0, quote_title: quote?.title ?? null, client_name: quote?.client?.name ?? null };
+  // Contato principal, para o lembrete de cobrança; sem ele, o primeiro ativo.
+  const contacts = (quote?.client?.contacts ?? []).filter((contact) => !contact.deleted_at);
+  const contact = contacts.find((candidate) => candidate.is_primary) ?? contacts[0] ?? null;
+  return {
+    ...row,
+    quote_number: quote?.number ?? 0,
+    quote_title: quote?.title ?? null,
+    client_name: quote?.client?.name ?? null,
+    client_id: quote?.client_id ?? null,
+    contact_name: contact?.name ?? null,
+    contact_phone: contact?.phone ?? null,
+  };
 }
 
 /** Parcelas a receber. A RLS restringe a leitura ao proprietário e ao administrador. */

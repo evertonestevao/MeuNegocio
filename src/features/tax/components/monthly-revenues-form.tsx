@@ -57,7 +57,7 @@ export function MonthlyRevenuesForm({ tax }: { tax: CompanyTax }) {
       <div className="flex flex-col">
         <div className="grid grid-cols-[1fr_auto_9.5rem] items-center gap-3 border-b pb-2 text-xs font-medium text-muted-foreground sm:grid-cols-[1fr_8rem_11rem]">
           <span>Mês</span>
-          <span className="text-right">No sistema</span>
+          <span className="text-right">{tax.cash_basis ? "Recebido" : "No sistema"}</span>
           <span>Informado</span>
         </div>
         {tax.months.map((month, index) => {

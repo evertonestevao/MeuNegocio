@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import { formatDate } from "@/lib/dates";
-import { buildInstallments, defaultPaymentPlan, MAX_INSTALLMENTS, type PaymentPlan, type PaymentPlanKind } from "@/lib/installments";
+import { buildInstallments, cardFeeCents, defaultPaymentPlan, MAX_INSTALLMENTS, type PaymentPlan, type PaymentPlanKind } from "@/lib/installments";
 import { centsToMoneyInput, formatCents, parseMoneyToCents } from "@/lib/money";
 import { closeQuoteAction } from "@/server/actions/quotes";
-import type { InstallmentInput, PaymentMethod } from "@/types/finance";
+import type { CardFees, InstallmentInput, PaymentMethod, QuotePaymentPlan } from "@/types/finance";
 import { closeQuoteSchema } from "../schemas";
 
 const SELECT_CLASS =
@@ -51,10 +51,17 @@ interface CustomRow {
 let nextKey = 0;
 
 /** Como o cliente vai pagar: o faturamento entra inteiro no fechamento; o caixa, parcela a parcela. */
-function PaymentPlanFields({ quoteId, totalCents, today }: { quoteId: string; totalCents: number; today: string }) {
+function PaymentPlanFields({ quoteId, totalCents, today, agreed, cardFees }: {
+  quoteId: string;
+  totalCents: number;
+  today: string;
+  agreed: QuotePaymentPlan | null;
+  cardFees: CardFees;
+}) {
   const [amount, setAmount] = useState(centsToMoneyInput(totalCents));
-  const [plan, setPlan] = useState<PaymentPlan>(() => defaultPaymentPlan(today));
-  const [entry, setEntry] = useState("");
+  // O combinado no orçamento já vem escolhido; a pessoa só confere.
+  const [plan, setPlan] = useState<PaymentPlan>(() => defaultPaymentPlan(today, agreed));
+  const [entry, setEntry] = useState(agreed?.kind === "entry" && agreed.entry_cents > 0 ? centsToMoneyInput(agreed.entry_cents) : "");
   const [rows, setRows] = useState<CustomRow[]>([]);
   const amountCents = parseMoneyToCents(amount) ?? 0;
   const update = (changes: Partial<PaymentPlan>) => setPlan((current) => ({ ...current, ...changes }));
@@ -64,6 +71,7 @@ function PaymentPlanFields({ quoteId, totalCents, today }: { quoteId: string; to
     return rows.map((row) => ({ amount_cents: parseMoneyToCents(row.amount) ?? 0, due_date: row.dueDate, method: row.method, received: row.received }));
   }, [plan, amountCents, entry, rows, today]);
   const missing = amountCents - installments.reduce((sum, item) => sum + item.amount_cents, 0);
+  const totalFee = installments.reduce((sum, item) => sum + cardFeeCents(item.amount_cents, item.method, cardFees), 0);
 
   function choose(kind: PaymentPlanKind) {
     if (kind === "custom" && rows.length === 0) {
@@ -195,11 +203,17 @@ function PaymentPlanFields({ quoteId, totalCents, today }: { quoteId: string; to
               <span>
                 {formatDate(item.due_date)} · {item.method ? PAYMENT_METHOD_LABEL[item.method] : "forma não informada"}
                 {item.received ? " · recebido" : " · a receber"}
+                {cardFeeCents(item.amount_cents, item.method, cardFees) > 0 ? ` · taxa ${formatCents(cardFeeCents(item.amount_cents, item.method, cardFees))}` : ""}
               </span>
               <span className="font-medium tabular-nums">{formatCents(item.amount_cents)}</span>
             </li>
           ))}
         </ul>
+      ) : null}
+      {totalFee > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Taxa da maquininha: {formatCents(totalFee)}, como custo do serviço. Entra no caixa {formatCents(amountCents - totalFee)}.
+        </p>
       ) : null}
       {missing !== 0 && amountCents > 0 ? (
         <p className="text-sm text-destructive">
@@ -218,12 +232,17 @@ export function CloseQuoteButton({
   today,
   label = "Fechar e faturar",
   className,
+  paymentPlan = null,
+  cardFees = { creditBps: 0, debitBps: 0 },
 }: {
   quoteId: string;
   totalCents: number;
   today: string;
   label?: string;
   className?: string;
+  /** Combinado no orçamento: preenche o plano. */
+  paymentPlan?: QuotePaymentPlan | null;
+  cardFees?: CardFees;
 }) {
   return (
     <DialogForm
@@ -245,7 +264,7 @@ export function CloseQuoteButton({
       )}
     >
       <input type="hidden" name="quoteId" value={quoteId} />
-      <PaymentPlanFields quoteId={quoteId} totalCents={totalCents} today={today} />
+      <PaymentPlanFields quoteId={quoteId} totalCents={totalCents} today={today} agreed={paymentPlan} cardFees={cardFees} />
     </DialogForm>
   );
 }

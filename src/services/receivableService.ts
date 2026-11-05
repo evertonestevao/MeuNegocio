@@ -72,6 +72,12 @@ export function createReceivableService(repo: ReceivableRepository) {
       return repo.listReceived(actor.companyId, from, to);
     },
 
+    /** O que o cliente ainda deve, parcela a parcela. */
+    async listOpenByClient(actor: ActorContext, clientId: string) {
+      requireFinance(actor);
+      return (await repo.listOpen(actor.companyId)).filter((item) => item.client_id === clientId);
+    },
+
     async listByQuote(actor: ActorContext, quoteId: string) {
       requireFinance(actor);
       return repo.listByQuote(actor.companyId, quoteId);

@@ -1,5 +1,6 @@
-import type { InstallmentInput, PaymentMethod, Receivable } from "@/types/finance";
+import type { CardFees, InstallmentInput, PaymentMethod, QuotePaymentPlan, Receivable } from "@/types/finance";
 import { addDays } from "./dates";
+import { formatCents } from "./money";
 
 /**
  * Como o cliente paga um serviço fechado: à vista, entrada + parcelas, cartão em N vezes ou do
@@ -66,9 +67,62 @@ export function buildInstallments(totalCents: number, plan: PaymentPlan, today: 
   }
 }
 
-/** Plano padrão ao fechar: à vista, já recebido. Cartão e parcelas começam em 30 dias. */
-export function defaultPaymentPlan(today: string): PaymentPlan {
-  return { kind: "cash", method: "pix", receivedNow: true, entryCents: 0, entryMethod: "pix", count: 2, firstDueDate: addDays(today, 30) };
+/**
+ * Plano ao fechar: o combinado no orçamento, quando houver; senão, à vista e já recebido. Cartão e
+ * parcelas começam em 30 dias.
+ */
+export function defaultPaymentPlan(today: string, agreed?: QuotePaymentPlan | null): PaymentPlan {
+  const base: PaymentPlan = { kind: "cash", method: "pix", receivedNow: true, entryCents: 0, entryMethod: "pix", count: 2, firstDueDate: addDays(today, 30) };
+  if (!agreed) return base;
+  return {
+    ...base,
+    kind: agreed.kind,
+    method: agreed.kind === "card" ? "credit" : agreed.method,
+    // Boleto à vista costuma ser pago depois: não começa como recebido.
+    receivedNow: agreed.kind === "cash" ? agreed.method !== "boleto" : true,
+    entryCents: agreed.entry_cents,
+    entryMethod: agreed.entry_method,
+    count: agreed.count,
+  };
+}
+
+const METHOD_TEXT: Record<PaymentMethod, string> = {
+  pix: "no PIX",
+  cash: "em dinheiro",
+  debit: "no débito",
+  credit: "no cartão de crédito",
+  boleto: "no boleto",
+  transfer: "por transferência",
+  other: "",
+};
+
+const withMethod = (text: string, method: PaymentMethod | null) => (method && METHOD_TEXT[method] ? `${text} ${METHOD_TEXT[method]}` : text);
+
+/** As condições em texto, para o cliente: no link, no PDF e na mensagem. */
+export function paymentPlanText(plan: QuotePaymentPlan | null | undefined, totalCents: number): string | null {
+  if (!plan || totalCents <= 0) return null;
+  const parts = (cents: number, count: number) => {
+    const values = splitCents(cents, count);
+    return values.length === 1 ? formatCents(values[0]) : `${values.length}x de ${formatCents(values[values.length - 1])}`;
+  };
+  if (plan.kind === "cash") return withMethod("À vista", plan.method);
+  if (plan.kind === "card") return `Cartão de crédito em ${parts(totalCents, plan.count)}`;
+  const entry = Math.min(Math.max(0, plan.entry_cents), totalCents);
+  const rest = totalCents - entry;
+  const entryText = withMethod(`Entrada de ${formatCents(entry)}`, plan.entry_method);
+  if (rest === 0) return entryText;
+  return `${entryText} e o restante em ${withMethod(parts(rest, plan.count), plan.method)}`;
+}
+
+/** Taxas da maquininha cadastradas pela empresa (Configurações › Impostos e taxas). */
+export function cardFeesOf(profile: { card_fee_credit_bps?: number; card_fee_debit_bps?: number }): CardFees {
+  return { creditBps: profile.card_fee_credit_bps ?? 0, debitBps: profile.card_fee_debit_bps ?? 0 };
+}
+
+/** Taxa da maquininha da parcela: só crédito e débito. Mesma conta de public.card_fee_cents. */
+export function cardFeeCents(amountCents: number, method: PaymentMethod | null, fees: CardFees): number {
+  const rate = method === "credit" ? fees.creditBps : method === "debit" ? fees.debitBps : 0;
+  return Math.round((amountCents * rate) / 10_000);
 }
 
 export type ReceivableStatus = "received" | "overdue" | "due_today" | "open";
@@ -79,13 +133,18 @@ export function receivableStatus(item: Pick<Receivable, "received_on" | "due_dat
   return item.due_date === today ? "due_today" : "open";
 }
 
-/** Totais do que falta receber: em aberto, atrasado e o que vence nos próximos dias. */
-export function summarizeOpen(items: Pick<Receivable, "received_on" | "due_date" | "amount_cents">[], today: string, days = 7) {
+/** O que deve entrar no caixa pela parcela: o valor menos a taxa da maquininha. */
+export function expectedCents(item: Pick<Receivable, "amount_cents" | "fee_cents">): number {
+  return item.amount_cents - (item.fee_cents ?? 0);
+}
+
+/** Totais do que falta receber (já sem a taxa): em aberto, atrasado e o que vence nos próximos dias. */
+export function summarizeOpen(items: Pick<Receivable, "received_on" | "due_date" | "amount_cents" | "fee_cents">[], today: string, days = 7) {
   const open = items.filter((item) => !item.received_on);
   const until = addDays(today, days);
   const overdue = open.filter((item) => item.due_date < today);
   const dueSoon = open.filter((item) => item.due_date >= today && item.due_date <= until);
-  const total = (list: typeof open) => list.reduce((sum, item) => sum + item.amount_cents, 0);
+  const total = (list: typeof open) => list.reduce((sum, item) => sum + expectedCents(item), 0);
   return {
     openCents: total(open),
     openCount: open.length,

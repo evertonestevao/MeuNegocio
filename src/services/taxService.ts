@@ -23,13 +23,14 @@ export const taxSettingsSchema = z
     simplesAnnex: z.preprocess(emptyToNull, z.enum(SIMPLES_ANNEXES, { error: "Escolha o anexo." }).nullable()),
     fatorR: z.preprocess((value) => value === "on" || value === true, z.boolean()),
     activityStartedOn: z.preprocess(emptyToNull, z.iso.date("Informe a data de início das atividades.").nullable()),
+    cashBasis: z.preprocess((value) => value === "on" || value === true, z.boolean()),
   })
   .superRefine((value, context) => {
     if (value.taxRegime === "simples" && value.taxMode === "auto" && !value.simplesAnnex) {
       context.addIssue({ code: "custom", path: ["simplesAnnex"], message: "Para calcular pelo faturamento, escolha o anexo." });
     }
   })
-  .transform(({ taxRegime, taxMode, taxRate, simplesAnnex, fatorR, activityStartedOn }) => {
+  .transform(({ taxRegime, taxMode, taxRate, simplesAnnex, fatorR, activityStartedOn, cashBasis }) => {
     const simples = taxRegime === "simples";
     const auto = simples && taxMode === "auto";
     return {
@@ -40,10 +41,28 @@ export const taxSettingsSchema = z
       simplesAnnex: simples ? simplesAnnex : null,
       fatorR: simples && simplesAnnex === "V" && fatorR,
       activityStartedOn: simples ? activityStartedOn : null,
+      // Regime de caixa só muda a conta do RBT12: fora do cálculo automático, não se aplica.
+      taxCashBasis: auto && cashBasis,
     };
   });
 
 export type TaxSettingsInput = z.output<typeof taxSettingsSchema>;
+
+const cardFeeSchema = taxRatePercentSchema.optional().transform((value, context) => {
+  if ((value ?? 0) > 2000) {
+    context.addIssue({ code: "custom", message: "Informe a taxa do cartão de 0 a 20%." });
+    return z.NEVER;
+  }
+  return value ?? 0;
+});
+
+/** Taxas da maquininha em % na tela; saem em centésimos de ponto. */
+export const cardFeesSchema = z.object({ creditFee: cardFeeSchema, debitFee: cardFeeSchema }).transform(({ creditFee, debitFee }) => ({
+  creditBps: creditFee,
+  debitBps: debitFee,
+}));
+
+export type CardFeesInput = z.output<typeof cardFeesSchema>;
 
 const MONTH = /^\d{4}-\d{2}-01$/;
 
@@ -69,6 +88,7 @@ export interface TaxRepository {
   get(companyId: string): Promise<CompanyTax>;
   saveSettings(companyId: string, input: TaxSettingsInput): Promise<void>;
   saveMonthlyRevenues(companyId: string, entries: MonthlyRevenueEntry[]): Promise<void>;
+  saveCardFees(companyId: string, input: CardFeesInput): Promise<void>;
 }
 
 export function createTaxService(repo: TaxRepository) {
@@ -93,6 +113,12 @@ export function createTaxService(repo: TaxRepository) {
     async saveSettings(actor: ActorContext, input: TaxSettingsInput) {
       requireFinance(actor);
       await repo.saveSettings(actor.companyId, input);
+    },
+
+    /** Valem para as parcelas fechadas daqui para a frente; as já fechadas mantêm a taxa. */
+    async saveCardFees(actor: ActorContext, input: CardFeesInput) {
+      requireFinance(actor);
+      await repo.saveCardFees(actor.companyId, input);
     },
 
     async saveMonthlyRevenues(actor: ActorContext, entries: MonthlyRevenueEntry[]) {

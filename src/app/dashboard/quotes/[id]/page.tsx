@@ -15,6 +15,7 @@ import { ServiceCostSection } from "@/features/service-costs/components/service-
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatTimestamp, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
+import { cardFeesOf } from "@/lib/installments";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
@@ -160,7 +161,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </p>
           </CardHeader>
           <CardContent>
-            <ReceivableList items={receivables} today={today} showQuote={false} empty="Nenhuma parcela registrada." />
+            <ReceivableList
+              items={receivables}
+              today={today}
+              showQuote={false}
+              empty="Nenhuma parcela registrada."
+              companyName={active.name}
+              reminderPhone={isDemo ? brand.salesWhatsapp : undefined}
+            />
           </CardContent>
         </Card>
       ) : null}
@@ -217,6 +225,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             canClose={permissionService.canCloseQuotes(active.role)}
             canDelete={permissionService.canDeleteRecords(active.role)}
             today={today}
+            cardFees={cardFeesOf(profile)}
           />
         }
       />

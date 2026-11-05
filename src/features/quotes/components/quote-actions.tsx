@@ -19,6 +19,7 @@ import {
 } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { Quote, Revenue } from "@/types/database";
+import type { CardFees } from "@/types/finance";
 import type { QuoteDocument } from "@/types/quotes";
 import { CloseQuoteButton } from "./close-quote-button";
 import { downloadQuotePdf, printQuotePdf, quoteShareText, whatsappUrl } from "../pdf";
@@ -114,6 +115,7 @@ export function QuoteActions({
   canClose,
   canDelete,
   today,
+  cardFees,
 }: {
   quote: Quote;
   document: QuoteDocument;
@@ -124,6 +126,7 @@ export function QuoteActions({
   canClose: boolean;
   canDelete: boolean;
   today: string;
+  cardFees?: CardFees;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
   const shareUrl = quote.status === "draft" || quote.status === "sent" ? publicUrl : null;
@@ -191,7 +194,7 @@ export function QuoteActions({
         ) : null}
 
         {quote.status === "approved" && canClose ? (
-          <CloseQuoteButton quoteId={quote.id} totalCents={quote.total_cents} today={today} />
+          <CloseQuoteButton quoteId={quote.id} totalCents={quote.total_cents} today={today} paymentPlan={quote.payment_plan ?? null} cardFees={cardFees} />
         ) : null}
         {quote.status === "approved" && !canClose ? (
           <p className="text-sm text-muted-foreground">Aprovado. O fechamento é feito por owner ou admin.</p>

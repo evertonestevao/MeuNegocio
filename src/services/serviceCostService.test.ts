@@ -42,6 +42,12 @@ describe("resultado do serviço", () => {
     expect(buildServiceCost(base)).toMatchObject({ taxSource: "none", taxCents: 0, resultCents: 60_000 });
   });
 
+  it("a taxa do cartão é custo do serviço", () => {
+    const cost = buildServiceCost({ revenueCents: 100_000, plannedCostCents: null, expenses: [expense(40_000)], labor: [], rates: [], targetMarginPercent: 20, cardFeeCents: 3_490 });
+    expect(cost).toMatchObject({ cardFeeCents: 3_490, resultCents: 56_510, marginPercent: 57, totalCostCents: 40_000 });
+    expect(cost.categories.map((category) => category.name)).toContain("Taxa do cartão");
+  });
+
   it("o imposto pode levar a margem para baixo da meta", () => {
     const cost = buildServiceCost({ revenueCents: 10_000, plannedCostCents: null, expenses: [expense(7_500)], labor: [], rates: [], targetMarginPercent: 20, companyTaxRateBps: 600 });
     expect(cost.resultCents).toBe(1_900);
@@ -85,6 +91,7 @@ describe("serviço de custos", () => {
       listTaxRates: vi.fn(async () => [{ quote_id: "q2", tax_rate_bps: 1_000 }]),
       getCompanyTaxRate: vi.fn(async (): Promise<number | null> => 600),
       setTaxRate: vi.fn(async () => undefined),
+      listCardFees: vi.fn(async () => [{ quote_id: "q1", fee_cents: 35 }]),
     };
     return { repo, service: createServiceCostService(repo) };
   }
@@ -104,6 +111,13 @@ describe("serviço de custos", () => {
       await expect(service.listQuoteOptions({ companyId: "co", role })).rejects.toMatchObject({ code: "forbidden" });
       expect(repo.listExpenses).not.toHaveBeenCalled();
     }
+  });
+
+  it("soma a taxa do cartão de cada serviço", async () => {
+    const { service } = setup();
+    const results = await service.getForQuotes(OWNER, [{ id: "q1", totalCents: 1_000, plannedCostCents: null }, { id: "q2", totalCents: 1_000, plannedCostCents: null }], 20);
+    expect(results.get("q1")?.cardFeeCents).toBe(35);
+    expect(results.get("q2")?.cardFeeCents).toBe(0);
   });
 
   it("cada serviço usa a própria alíquota, e quem não tem segue a da empresa", async () => {
@@ -148,6 +162,7 @@ describe("lista de serviços", () => {
       listTaxRates: vi.fn(async () => []),
       getCompanyTaxRate: vi.fn(async (): Promise<number | null> => null),
       setTaxRate: vi.fn(async () => undefined),
+      listCardFees: vi.fn(async () => []),
     };
     return { repo, service: createServiceCostService(repo) };
   }

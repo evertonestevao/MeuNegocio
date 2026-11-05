@@ -5,6 +5,7 @@ import { Wrench } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ServiceListItemCard } from "@/features/service-costs/components/service-list-item";
 import { todayInTimezone } from "@/lib/dates";
+import { cardFeesOf } from "@/lib/installments";
 import { getExpenseService } from "@/server/finance";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getEmployeeService } from "@/server/schedule";
@@ -94,6 +95,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
               today={today}
               canClose={permissionService.canCloseQuotes(active.role)}
               expenseOptions={expenseOptions}
+              cardFees={cardFeesOf(profile)}
             />
           ))}
         </div>

@@ -17,6 +17,8 @@ import { getCompanyProfileService } from "@/server/quotes";
 import { getServiceCostService } from "@/server/serviceCosts";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { brand } from "@/config/brand";
+import { getDemoProfile } from "@/server/demo/mode";
 
 export const metadata: Metadata = { title: "Financeiro" };
 
@@ -61,6 +63,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const { active } = await getActiveTenant();
   if (!active) return null;
   if (!permissionService.canManageFinance(active.role)) redirect("/dashboard");
+  // Na demonstração os telefones são inventados: o lembrete abre o número comercial.
+  const reminderPhone = (await getDemoProfile()) !== null ? brand.salesWhatsapp : undefined;
 
   const profile = await (await getCompanyProfileService()).get(active.id);
   const today = todayInTimezone(profile.timezone);
@@ -170,6 +174,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
               <ReceivableList
                 items={overview.receivables.upcoming}
                 today={today}
+                companyName={active.name}
+                reminderPhone={reminderPhone}
                 empty="Nada atrasado nem vencendo nos próximos 30 dias."
               />
             </CardContent>

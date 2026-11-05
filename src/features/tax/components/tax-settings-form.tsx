@@ -115,6 +115,18 @@ export function TaxSettingsForm({ tax }: { tax: CompanyTax }) {
         </label>
       ) : null}
 
+      {simples && mode === "auto" ? (
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="cashBasis" defaultChecked={tax.cash_basis} className="mt-1" />
+          <span className="flex flex-col">
+            <span>A empresa optou pelo regime de caixa</span>
+            <span className="text-xs text-muted-foreground">
+              O RBT12 passa a somar o que foi recebido em cada mês, e não o faturado. A opção é anual e feita com o contador.
+            </span>
+          </span>
+        </label>
+      ) : null}
+
       {simples ? (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="tax-activity">Início das atividades (opcional)</Label>

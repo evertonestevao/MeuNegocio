@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
 import { getTaxService } from "@/server/tax";
-import { monthlyRevenuesSchema, taxSettingsSchema } from "@/services/taxService";
+import { cardFeesSchema, monthlyRevenuesSchema, taxSettingsSchema } from "@/services/taxService";
 import { toActionError, type ActionState } from "./action-state";
 
 function handleError(err: unknown): ActionState {
@@ -33,6 +33,25 @@ export async function saveTaxSettingsAction(_prev: ActionState | undefined, form
     });
     refresh();
     return { success: "Impostos salvos" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+export async function saveCardFeesAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const input = cardFeesSchema.parse(Object.fromEntries(formData));
+    await (await getTaxService()).saveCardFees(actor, input);
+    await recordAudit({
+      companyId: actor.companyId,
+      action: "company.card_fees_updated",
+      entityType: "company",
+      entityId: actor.companyId,
+      metadata: { credit_bps: input.creditBps, debit_bps: input.debitBps },
+    });
+    refresh();
+    return { success: "Taxas do cartão salvas" };
   } catch (err) {
     return handleError(err);
   }

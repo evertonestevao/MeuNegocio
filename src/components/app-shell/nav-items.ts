@@ -64,7 +64,7 @@ const SETTINGS_SUBPAGES: Record<string, string> = {
   "/dashboard/billing": "Assinatura",
   "/dashboard/audit": "Auditoria",
   "/dashboard/settings/checklists": "Checklists",
-  "/dashboard/settings/impostos": "Impostos",
+  "/dashboard/settings/impostos": "Impostos e taxas",
 };
 
 export function isSettingsSubpage(pathname: string): boolean {

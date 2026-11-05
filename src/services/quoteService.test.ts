@@ -17,6 +17,7 @@ const INPUT: QuoteInput = {
   discountCents: 0,
   notes: "",
   items: [],
+  paymentPlan: null,
 };
 
 function makeRepo() {

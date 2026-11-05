@@ -3,6 +3,7 @@
  * Fonte única — não redeclarar essas interfaces em outros arquivos.
  */
 
+import type { QuotePaymentPlan } from "./finance";
 import type { SimplesAnnex } from "./tax";
 
 export type RoleCode = "owner" | "admin" | "member" | "technician";
@@ -166,6 +167,10 @@ export interface CompanyProfile {
   simples_annex?: SimplesAnnex | null;
   fator_r?: boolean;
   activity_started_on?: string | null;
+  /** Simples Nacional pelo regime de caixa: o RBT12 soma o recebido. */
+  tax_cash_basis?: boolean;
+  card_fee_credit_bps?: number;
+  card_fee_debit_bps?: number;
 }
 
 export type CatalogKind = "product" | "service";
@@ -210,6 +215,8 @@ export interface Quote {
   closed_at: string | null;
   /** Alíquota congelada na aprovação; null segue a da empresa. */
   tax_rate_bps?: number | null;
+  /** Condições de pagamento combinadas; null é "a combinar". */
+  payment_plan?: QuotePaymentPlan | null;
   created_at: string;
   updated_at: string;
 }

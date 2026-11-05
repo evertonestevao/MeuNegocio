@@ -3,6 +3,18 @@ import { z } from "zod";
 /** Validação do orçamento: roda no navegador e de novo no servidor. */
 
 const uuidOrNull = z.uuid().nullable();
+const PAYMENT_METHODS = ["pix", "cash", "debit", "credit", "boleto", "transfer", "other"] as const;
+
+/** Condições de pagamento combinadas; null é "a combinar". */
+export const quotePaymentPlanSchema = z
+  .object({
+    kind: z.enum(["cash", "entry", "card"]),
+    method: z.enum(PAYMENT_METHODS).nullable(),
+    entry_cents: z.number({ error: "Informe a entrada." }).int().min(0, "A entrada não pode ser negativa.").max(1_000_000_000),
+    entry_method: z.enum(PAYMENT_METHODS).nullable(),
+    count: z.number({ error: "Informe em quantas vezes." }).int("Use um número inteiro de parcelas.").min(1, "Use ao menos 1 parcela.").max(60, "Use até 60 parcelas."),
+  })
+  .nullable();
 const dateOrNull = z.iso.date().nullable();
 
 export const quoteItemSchema = z.object({
@@ -25,12 +37,11 @@ export const quoteSchema = z.object({
   discountCents: z.number().int().min(0, "O desconto não pode ser negativo."),
   notes: z.string().trim().max(4000, "Use até 4000 caracteres nas observações."),
   items: z.array(quoteItemSchema).max(200, "Use até 200 itens."),
+  paymentPlan: quotePaymentPlanSchema.default(null),
 });
 
 export type QuoteInput = z.output<typeof quoteSchema>;
 export type QuoteItemInput = z.output<typeof quoteItemSchema>;
-
-const PAYMENT_METHODS = ["pix", "cash", "debit", "credit", "boleto", "transfer", "other"] as const;
 
 export const installmentSchema = z.object({
   amount_cents: z.number({ error: "Informe o valor de cada parcela." }).int().positive("Cada parcela precisa ter valor maior que zero."),

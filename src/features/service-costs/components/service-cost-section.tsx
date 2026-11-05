@@ -14,6 +14,7 @@ import type { MarginStatus, ServiceCost } from "@/services/serviceCostService";
 import { formatHours, type ServiceCostPdfInput } from "../pdf";
 import { ServiceCostPdfButton } from "./service-cost-pdf-button";
 import { ServiceTaxForm } from "./service-tax-form";
+import { allCostsCents, costsLabel } from "../labels";
 
 const RESULT_TONE: Record<MarginStatus, MetricTone> = { good: "success", low: "warning", loss: "danger", none: "info" };
 
@@ -63,9 +64,9 @@ export function ServiceCostSection({
         <MetricCard
           icon={Wallet}
           tone="warning"
-          label={cost.taxCents > 0 ? "Custos e imposto" : "Custos"}
-          value={formatCents(cost.totalCostCents + cost.taxCents)}
-          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}${cost.taxCents > 0 ? ` · imposto ${formatCents(cost.taxCents)}` : ""}`}
+          label={costsLabel(cost)}
+          value={formatCents(allCostsCents(cost))}
+          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}${cost.taxCents > 0 ? ` · imposto ${formatCents(cost.taxCents)}` : ""}${cost.cardFeeCents > 0 ? ` · taxa do cartão ${formatCents(cost.cardFeeCents)}` : ""}`}
         />
         <div className="col-span-2 sm:col-span-1">
           <MetricCard
@@ -114,7 +115,7 @@ export function ServiceCostSection({
                     </div>
                     <span className="h-2.5 overflow-hidden rounded-full bg-muted">
                       <span
-                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : category.categoryId === "tax" ? "bg-chart-3" : "bg-chart-2"}`}
+                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : category.categoryId === "tax" || category.categoryId === "card_fee" ? "bg-chart-3" : "bg-chart-2"}`}
                         style={{ width: `${largest ? Math.round((category.totalCents / largest) * 100) : 0}%` }}
                       />
                     </span>

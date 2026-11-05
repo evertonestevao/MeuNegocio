@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Check, Undo2 } from "lucide-react";
+import { CalendarClock, Check, MessageCircle, Undo2 } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { DialogForm } from "@/components/dialog-form";
 import { MaskedInput } from "@/components/masked-input";
@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { addDays, formatDate } from "@/lib/dates";
-import { receivableStatus } from "@/lib/installments";
+import { expectedCents, receivableStatus } from "@/lib/installments";
+import { whatsappUrl } from "@/features/quotes/pdf";
+import { reminderText } from "../reminder";
 import { centsToMoneyInput, formatCents } from "@/lib/money";
 import { receiveInstallmentAction, rescheduleInstallmentAction, undoReceiveInstallmentAction } from "@/server/actions/receivables";
 import type { PaymentMethod, Receivable } from "@/types/finance";
@@ -53,7 +55,7 @@ function ReceiveButton({ item, today }: { item: Receivable; today: string }) {
   return (
     <DialogForm
       title="Registrar recebimento"
-      description={`Parcela de ${formatCents(item.amount_cents)} do orçamento Nº ${formatQuoteNumber(item.quote_number)}.`}
+      description={`Parcela de ${formatCents(item.amount_cents)} do orçamento Nº ${formatQuoteNumber(item.quote_number)}${item.fee_cents ? `; entra ${formatCents(expectedCents(item))} depois da taxa do cartão` : ""}.`}
       action={receiveInstallmentAction}
       submitLabel="Registrar"
       trigger={(open) => (
@@ -71,7 +73,7 @@ function ReceiveButton({ item, today }: { item: Receivable; today: string }) {
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`receive-amount-${item.id}`}>Valor recebido (R$)</Label>
-          <MaskedInput mask="money" id={`receive-amount-${item.id}`} name="receivedAmount" defaultValue={centsToMoneyInput(item.amount_cents)} />
+          <MaskedInput mask="money" id={`receive-amount-${item.id}`} name="receivedAmount" defaultValue={centsToMoneyInput(expectedCents(item))} />
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
@@ -120,12 +122,18 @@ export function ReceivableList({
   today,
   showQuote = true,
   empty,
+  companyName,
+  reminderPhone,
 }: {
   items: Receivable[];
   today: string;
   /** Na página do orçamento, o orçamento já está na tela. */
   showQuote?: boolean;
   empty: string;
+  /** Com o nome da empresa, as parcelas a receber ganham o lembrete pelo WhatsApp. */
+  companyName?: string;
+  /** Na demonstração, o lembrete vai para o número comercial, nunca para um cliente de verdade. */
+  reminderPhone?: string;
 }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>;
   return (
@@ -135,6 +143,7 @@ export function ReceivableList({
         const details = [
           showQuote ? item.client_name : null,
           item.method ? PAYMENT_METHOD_LABEL[item.method] : null,
+          item.fee_cents && !item.received_on ? `taxa ${formatCents(item.fee_cents)}, entra ${formatCents(expectedCents(item))}` : null,
           // A situação já diz o vencimento; na atrasada, a data ajuda a cobrar.
           receivableStatus(item, today) === "overdue" ? `venceu em ${formatDate(item.due_date)}` : null,
         ].filter(Boolean);
@@ -151,6 +160,17 @@ export function ReceivableList({
             </span>
             <span className="flex shrink-0 items-center gap-2">
               <span className="font-semibold tabular-nums">{formatCents(item.received_cents ?? item.amount_cents)}</span>
+              {companyName && !item.received_on && (reminderPhone ?? item.contact_phone) ? (
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  aria-label={`Lembrar ${item.contact_name ?? item.client_name ?? "o cliente"} pelo WhatsApp`}
+                  render={<a href={whatsappUrl(reminderPhone ?? item.contact_phone ?? null, reminderText(item, companyName, today))} target="_blank" rel="noopener noreferrer" />}
+                  nativeButton={false}
+                >
+                  <MessageCircle className="size-4" />
+                </Button>
+              ) : null}
               {item.received_on ? (
                 <ActionButton
                   action={undoReceiveInstallmentAction}

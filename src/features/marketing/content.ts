@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v7";
+export const LANDING_SCREENS = "/landing/v8";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -245,6 +245,10 @@ export const faq = [
   {
     question: "O imposto entra na conta do lucro?",
     answer: "Sim. No Simples Nacional, o sistema pode calcular a alíquota do mês pelo faturamento dos últimos 12 meses e pelo anexo da sua atividade, ou você informa a alíquota que o contador passa. O imposto estimado sai do resultado de cada serviço, e dá para mudar a de um serviço específico. A guia oficial continua sendo apurada pelo contador.",
+  },
+  {
+    question: "Dá para controlar quem pagou parcelado?",
+    answer: "Sim. Ao fechar o serviço, você registra se foi à vista, entrada + parcelas ou cartão, e o sistema separa o que já entrou do que falta receber. Ele avisa das parcelas atrasadas, desconta a taxa da maquininha do resultado e abre um lembrete pronto no WhatsApp para o cliente.",
   },
   {
     question: "O registro de horas substitui o ponto eletrônico?",

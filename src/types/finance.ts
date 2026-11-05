@@ -122,11 +122,28 @@ export interface ExpenseTemplate {
   active: boolean;
 }
 
+/** Condições de pagamento combinadas no orçamento. Sem datas: as parcelas contam do fechamento. */
+export interface QuotePaymentPlan {
+  kind: "cash" | "entry" | "card";
+  method: PaymentMethod | null;
+  entry_cents: number;
+  entry_method: PaymentMethod | null;
+  count: number;
+}
+
+/** Taxas da maquininha, em centésimos de ponto percentual (3,49% = 349). */
+export interface CardFees {
+  creditBps: number;
+  debitBps: number;
+}
+
 /** Parcela a receber de um serviço fechado. Recebida quando tem received_on. */
 export interface Receivable {
   id: string;
   quote_id: string;
   amount_cents: number;
+  /** Taxa da maquininha: custo do serviço; o caixa recebe amount − fee. */
+  fee_cents?: number;
   due_date: string;
   method: PaymentMethod | null;
   received_on: string | null;
@@ -134,6 +151,10 @@ export interface Receivable {
   quote_number: number;
   quote_title: string | null;
   client_name: string | null;
+  client_id?: string | null;
+  /** Contato principal do cliente, para o lembrete de cobrança. */
+  contact_name?: string | null;
+  contact_phone?: string | null;
 }
 
 /** Parcela que o fechamento grava. */

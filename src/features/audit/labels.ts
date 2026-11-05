@@ -55,6 +55,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "receivable.rescheduled": "Parcela reagendada",
   "company.tax_updated": "Impostos da empresa alterados",
   "company.revenue_informed": "Faturamento informado para o imposto",
+  "company.card_fees_updated": "Taxas do cartão alteradas",
   "quote.approved_by_client": "Orçamento aprovado pelo cliente",
   "quote.refused_by_client": "Orçamento recusado pelo cliente",
   "subscription.activated": "Assinatura ativada",

@@ -1,5 +1,6 @@
 import "server-only";
 import type { Client, ClientLocation, CompanyProfile, Quote, QuoteItem } from "@/types/database";
+import { paymentPlanText } from "@/lib/installments";
 import type { QuoteDocument } from "@/types/quotes";
 
 export function buildQuoteDocument(params: {
@@ -34,6 +35,7 @@ export function buildQuoteDocument(params: {
     discountCents: quote.discount_cents,
     totalCents: quote.total_cents,
     notes: quote.notes,
+    paymentTerms: paymentPlanText(quote.payment_plan, quote.total_cents),
     approval,
   };
 }

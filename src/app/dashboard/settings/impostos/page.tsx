@@ -6,17 +6,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MonthlyRevenuesForm } from "@/features/tax/components/monthly-revenues-form";
 import { TaxSettingsForm } from "@/features/tax/components/tax-settings-form";
 import { getTaxService } from "@/server/tax";
+import { getCompanyProfileService } from "@/server/quotes";
+import { CardFeesForm } from "@/features/tax/components/card-fees-form";
+import { cardFeesOf } from "@/lib/installments";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 
-export const metadata: Metadata = { title: "Impostos" };
+export const metadata: Metadata = { title: "Impostos e taxas" };
 
 export default async function TaxSettingsPage() {
   const { active } = await getActiveTenant();
   if (!active) return null;
   if (!permissionService.canManageFinance(active.role)) redirect("/dashboard/settings");
 
-  const tax = await (await getTaxService()).get({ companyId: active.id, role: active.role });
+  const [tax, profile] = await Promise.all([
+    (await getTaxService()).get({ companyId: active.id, role: active.role }),
+    (await getCompanyProfileService()).get(active.id),
+  ]);
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -24,7 +30,7 @@ export default async function TaxSettingsPage() {
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Impostos</h2>
+        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Impostos e taxas</h2>
         <p className="text-sm text-muted-foreground">
           Imposto estimado que sai do resultado de cada serviço. É uma estimativa para medir a margem: o valor oficial é o da guia apurada pelo contador. Só você e o
           administrador veem.
@@ -56,6 +62,16 @@ export default async function TaxSettingsPage() {
       ) : tax.regime === "simples" ? (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm">Escolha o anexo e salve para ver a alíquota calculada pelo faturamento dos últimos 12 meses.</p>
       ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Taxas da maquininha</CardTitle>
+          <CardDescription>Descontadas das parcelas no cartão de crédito e de débito.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CardFeesForm fees={cardFeesOf(profile)} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

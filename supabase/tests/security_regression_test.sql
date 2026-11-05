@@ -857,6 +857,100 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Recebimentos, etapa 2: condições no orçamento (só rascunho), taxa da maquininha como parte da
+-- parcela e regime de caixa no RBT12.
+-- ---------------------------------------------------------------------------
+update public.company_profiles set card_fee_credit_bps = 349, card_fee_debit_bps = 199
+where company_id = '5ec0c000-0000-4000-8000-000000000001';
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+create temp table sec_plan_quote on commit drop as
+  select public.save_quote('5ec0c000-0000-4000-8000-000000000001', null, '5ec0e000-0000-4000-8000-000000000001', null, 'Condições', current_date + 15, 0, null,
+    '[{"description":"Instalação","unit":"un","pricing_mode":"fixed","quantity":1,"people":1,"unit_price_cents":100000}]'::jsonb) as id;
+do $$
+declare
+  v_quote constant uuid := (select id from sec_plan_quote);
+  v_today constant date := public.company_today('5ec0c000-0000-4000-8000-000000000001');
+  v_card uuid;
+begin
+  begin
+    perform public.set_quote_payment_plan('5ec0c000-0000-4000-8000-000000000001', v_quote, '{"kind":"fiado","count":1}'::jsonb);
+    raise exception 'FALHA condições: aceitou forma de plano desconhecida' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  perform public.set_quote_payment_plan('5ec0c000-0000-4000-8000-000000000001', v_quote,
+    '{"kind":"entry","method":"boleto","entry_cents":20000,"entry_method":"pix","count":2,"extra":"x"}'::jsonb);
+  if (select payment_plan ->> 'extra' from public.quotes where id = v_quote) is not null
+     or (select (payment_plan ->> 'entry_cents')::integer from public.quotes where id = v_quote) <> 20000 then
+    raise exception 'FALHA condições: não normalizou o plano';
+  end if;
+  v_card := public.duplicate_quote('5ec0c000-0000-4000-8000-000000000001', v_quote);
+  if (select payment_plan from public.quotes where id = v_card) is null then
+    raise exception 'FALHA condições: duplicar não levou as condições';
+  end if;
+
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 'send', current_date + 15);
+  begin
+    perform public.set_quote_payment_plan('5ec0c000-0000-4000-8000-000000000001', v_quote, null);
+    raise exception 'FALHA condições: mudou condições de orçamento enviado' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  perform public.transition_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 'approve', null);
+
+  -- Cartão: 3,49% de taxa em cada parcela; recebida, entra no caixa sem a taxa.
+  perform public.close_quote('5ec0c000-0000-4000-8000-000000000001', v_quote, 100000, v_today, jsonb_build_array(
+    jsonb_build_object('amount_cents', 40000, 'due_date', v_today, 'method', 'credit', 'received', true),
+    jsonb_build_object('amount_cents', 60000, 'due_date', v_today + 30, 'method', 'credit', 'received', false)
+  ));
+  if (select fee_cents from public.receivables where quote_id = v_quote and amount_cents = 40000) <> 1396
+     or (select received_cents from public.receivables where quote_id = v_quote and amount_cents = 40000) <> 38604 then
+    raise exception 'FALHA taxa: a parcela recebida no cartão não descontou a taxa';
+  end if;
+  -- Esperado 57.906 (60.000 − 2.094); entrou 30.000: o restante (27.906) vira parcela sem taxa.
+  select id into v_card from public.receivables where quote_id = v_quote and amount_cents = 60000;
+  perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_card, v_today, 30000, null, v_today + 10);
+  if (select amount_cents from public.receivables where id = v_card) <> 32094
+     or (select sum(amount_cents) from public.receivables where quote_id = v_quote) <> 100000
+     or (select amount_cents from public.receivables where quote_id = v_quote and received_on is null) <> 27906 then
+    raise exception 'FALHA taxa: baixa parcial no cartão não fechou a conta';
+  end if;
+  -- Mudar a forma de uma parcela a receber recalcula a taxa.
+  perform public.reschedule_installment('5ec0c000-0000-4000-8000-000000000001',
+    (select id from public.receivables where quote_id = v_quote and received_on is null), v_today + 10, 'debit');
+  if (select fee_cents from public.receivables where quote_id = v_quote and received_on is null) <> 555 then
+    raise exception 'FALHA taxa: reagendar no débito não recalculou a taxa';
+  end if;
+end $$;
+reset role;
+-- O link do cliente (só o servidor chama) mostra as condições combinadas.
+do $$
+begin
+  if (public.get_public_quote((select public_token from public.quotes where id = (select id from sec_plan_quote))) -> 'payment_plan' ->> 'kind') is distinct from 'entry' then
+    raise exception 'FALHA condições: o link não mostra as condições';
+  end if;
+end $$;
+-- Regime de caixa: o mês conta o que entrou (com a taxa, que o cliente pagou), não o faturado.
+do $$
+declare
+  v_month constant date := date_trunc('month', public.company_today('5ec0c000-0000-4000-8000-000000000001'))::date;
+begin
+  if public.tax_month_revenue_cents('5ec0c000-0000-4000-8000-000000000001', v_month, false)
+     < public.tax_month_revenue_cents('5ec0c000-0000-4000-8000-000000000001', v_month, true) then
+    raise exception 'FALHA caixa: neste mês o recebido não pode passar do faturado';
+  end if;
+  if public.tax_month_revenue_cents('5ec0c000-0000-4000-8000-000000000001', v_month, true)
+     <> (select coalesce(sum(received_cents + fee_cents), 0) from public.receivables
+         where company_id = '5ec0c000-0000-4000-8000-000000000001' and deleted_at is null
+           and received_on >= v_month and received_on < v_month + interval '1 month') then
+    raise exception 'FALHA caixa: o RBT12 pelo caixa não somou o recebido';
+  end if;
+  if has_function_privilege('authenticated', 'public.card_fee_cents(uuid, text, integer)', 'execute')
+     or has_function_privilege('authenticated', 'public.tax_month_revenue_cents(uuid, date, boolean)', 'execute') then
+    raise exception 'FALHA caixa: função interna aberta ao usuário';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

@@ -12,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import { CATALOG_UNITS } from "@/features/catalog/schemas";
 import { formatCents } from "@/lib/money";
 import { formatTaxRate } from "@/lib/tax";
+import { paymentPlanText } from "@/lib/installments";
+import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
+import type { PaymentMethod } from "@/types/finance";
 import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
@@ -296,6 +299,7 @@ export function QuoteEditor({
                 onChange={(event) => editor.setNotes(event.target.value)}
               />
             </div>
+            <PaymentPlanEditor editor={editor} readOnly={readOnly} totalCents={editor.totals.total} />
           </CardContent>
         </Card>
       </div>
@@ -429,6 +433,80 @@ function LineCost({
           )}
         </p>
       </div>
+    </div>
+  );
+}
+
+const METHOD_OPTIONS = Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][];
+
+function MethodSelect({ id, value, onChange, disabled }: { id: string; value: PaymentMethod | null; onChange: (value: PaymentMethod | null) => void; disabled: boolean }) {
+  return (
+    <select id={id} disabled={disabled} value={value ?? ""} onChange={(event) => onChange((event.target.value || null) as PaymentMethod | null)} className={SELECT_CLASS}>
+      <option value="">Não informada</option>
+      {METHOD_OPTIONS.map(([method, label]) => (
+        <option key={method} value={method}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Condições de pagamento combinadas: o cliente vê no link e no PDF, e o fechamento já vem preenchido. */
+function PaymentPlanEditor({ editor, readOnly, totalCents }: { editor: ReturnType<typeof useQuoteEditor>; readOnly: boolean; totalCents: number }) {
+  const { plan } = editor;
+  const preview = editor.toInput().paymentPlan;
+  const text = preview && preview.entry_cents >= 0 && preview.count >= 1 ? paymentPlanText(preview, totalCents) : null;
+  return (
+    <div className="flex flex-col gap-3 border-t pt-4">
+      <div className="flex flex-col gap-1.5 sm:max-w-64">
+        <Label htmlFor="quote-plan">Condições de pagamento</Label>
+        <select
+          id="quote-plan"
+          disabled={readOnly}
+          value={plan.kind}
+          onChange={(event) => plan.setKind(event.target.value as typeof plan.kind)}
+          className={SELECT_CLASS}
+        >
+          <option value="">A combinar</option>
+          <option value="cash">À vista</option>
+          <option value="entry">Entrada + parcelas</option>
+          <option value="card">Cartão parcelado</option>
+        </select>
+      </div>
+      {plan.kind === "cash" ? (
+        <div className="flex flex-col gap-1.5 sm:max-w-64">
+          <Label htmlFor="quote-plan-method">Forma</Label>
+          <MethodSelect id="quote-plan-method" value={plan.method} onChange={plan.setMethod} disabled={readOnly} />
+        </div>
+      ) : null}
+      {plan.kind === "entry" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="quote-plan-entry">Entrada (R$)</Label>
+            <MaskedInput mask="money" id="quote-plan-entry" disabled={readOnly} value={plan.entry} onChange={(event) => plan.setEntry(event.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="quote-plan-entry-method">Forma da entrada</Label>
+            <MethodSelect id="quote-plan-entry-method" value={plan.entryMethod} onChange={plan.setEntryMethod} disabled={readOnly} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="quote-plan-count">Restante em quantas vezes</Label>
+            <Input id="quote-plan-count" type="number" min={1} max={60} disabled={readOnly} value={plan.count} onChange={(event) => plan.setCount(event.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="quote-plan-rest-method">Forma do restante</Label>
+            <MethodSelect id="quote-plan-rest-method" value={plan.method} onChange={plan.setMethod} disabled={readOnly} />
+          </div>
+        </div>
+      ) : null}
+      {plan.kind === "card" ? (
+        <div className="flex flex-col gap-1.5 sm:max-w-40">
+          <Label htmlFor="quote-plan-card">Em quantas vezes</Label>
+          <Input id="quote-plan-card" type="number" min={1} max={60} disabled={readOnly} value={plan.count} onChange={(event) => plan.setCount(event.target.value)} />
+        </div>
+      ) : null}
+      {text ? <p className="rounded-lg bg-muted px-3 py-2 text-sm">O cliente vê: <strong>{text}</strong></p> : null}
     </div>
   );
 }

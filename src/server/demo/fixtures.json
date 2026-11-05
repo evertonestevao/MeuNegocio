@@ -53,7 +53,10 @@
 "tax_rate_auto": true,
 "simples_annex": "III",
 "fator_r": false,
-"activity_started_on": null
+"activity_started_on": null,
+"card_fee_credit_bps": 349,
+"card_fee_debit_bps": 199,
+"tax_cash_basis": false
 }
 ],
 "clients": [
@@ -313,7 +316,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "bb59cd92-e495-4507-9952-e5d23daa0262",
@@ -337,7 +341,14 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": {
+"kind": "cash",
+"method": "pix",
+"entry_cents": 0,
+"entry_method": null,
+"count": 1
+}
 },
 {
 "id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
@@ -361,7 +372,14 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": {
+"kind": "card",
+"method": "credit",
+"entry_cents": 0,
+"entry_method": null,
+"count": 3
+}
 },
 {
 "id": "4b416710-538f-4e33-8b7f-883903d30776",
@@ -385,7 +403,14 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"tax_rate_bps": null
+"tax_rate_bps": null,
+"payment_plan": {
+"kind": "entry",
+"method": "boleto",
+"entry_cents": 50000,
+"entry_method": "pix",
+"count": 2
+}
 },
 {
 "id": "2da438f7-8154-44ad-ba13-658601e2167c",
@@ -409,7 +434,14 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"tax_rate_bps": null
+"tax_rate_bps": null,
+"payment_plan": {
+"kind": "entry",
+"method": "pix",
+"entry_cents": 40000,
+"entry_method": "pix",
+"count": 2
+}
 },
 {
 "id": "e3ff69d8-c0c4-43e4-943b-d97935e9a1a5",
@@ -433,7 +465,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "e7655699-483e-47c5-a84a-8b39859aa4ed",
@@ -457,7 +490,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "d6ba4dd8-0bfb-4a63-aa8c-4da6118ca2ee",
@@ -481,7 +515,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "fd0becdf-ac54-402c-9484-7c9445a8e52e",
@@ -505,7 +540,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "70bed888-cf03-431a-aebb-0a05cbe3dea7",
@@ -529,7 +565,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "68bf0cc0-3cfb-42b8-8f09-a43b4f4a180f",
@@ -553,7 +590,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 },
 {
 "id": "28b00cd5-1523-41ed-b9bb-2ced663330a9",
@@ -577,7 +615,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T22:00:27.675988+00:00",
 "updated_at": "2026-10-31T22:00:27.675988+00:00",
-"tax_rate_bps": 800
+"tax_rate_bps": 800,
+"payment_plan": null
 }
 ],
 "quote_items": [
@@ -2449,7 +2488,8 @@
 "received_cents": 820000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "0c92fad4-f58e-53aa-86ba-550b64620089",
@@ -2462,7 +2502,8 @@
 "received_cents": 960000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "3b7c1518-1873-539e-9928-f6fcf495ca05",
@@ -2475,7 +2516,8 @@
 "received_cents": 290000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "cd449e1d-700d-52a5-82c7-a9c1688c117b",
@@ -2488,7 +2530,8 @@
 "received_cents": 300000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "1dfb1e54-fc73-55df-863e-2d918613ea8f",
@@ -2501,7 +2544,8 @@
 "received_cents": 300000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "1bac0281-be90-5985-a083-c2b88450b907",
@@ -2511,10 +2555,11 @@
 "due_date": "2026-09-13",
 "method": "credit",
 "received_on": "2026-09-13",
-"received_cents": 380000,
+"received_cents": 366738,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 13262
 },
 {
 "id": "a05ac78a-30dc-55cc-bf53-22cb03b92785",
@@ -2524,10 +2569,11 @@
 "due_date": "2026-10-13",
 "method": "credit",
 "received_on": "2026-10-13",
-"received_cents": 380000,
+"received_cents": 366738,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 13262
 },
 {
 "id": "6862bf6f-c0a8-518d-892f-cc2ca413c321",
@@ -2540,7 +2586,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 13262
 },
 {
 "id": "24415a1d-51dd-5230-999d-6250c9a5e5ea",
@@ -2553,7 +2600,8 @@
 "received_cents": 410000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "439980a9-4e70-5825-9dca-dc7c4c2ba22a",
@@ -2566,7 +2614,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "4392734b-a2a2-5dac-843c-a6b65e0d8b3e",
@@ -2579,7 +2628,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "a1d7b841-137d-50cc-a8b8-9c8182f79aaf",
@@ -2592,7 +2642,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 8550
 },
 {
 "id": "4e8fe149-4477-56f5-aae2-7ba86172945c",
@@ -2605,7 +2656,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 8550
 },
 {
 "id": "48ee1b5a-be1e-5901-a408-a63a0c9b8b5c",
@@ -2618,7 +2670,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 8550
 },
 {
 "id": "e33f8aa3-f802-54e6-aa44-0b06792c2c4f",
@@ -2631,7 +2684,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 8550
 },
 {
 "id": "bfd3d123-e1d7-584f-a0f1-6f52a068458b",
@@ -2644,7 +2698,8 @@
 "received_cents": 520000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 },
 {
 "id": "68b594c2-f80b-5660-81f4-3e1d38fdf845",
@@ -2657,7 +2712,8 @@
 "received_cents": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"fee_cents": 0
 }
 ]
 },

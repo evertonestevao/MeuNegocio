@@ -27,8 +27,18 @@ export function createSupabaseTaxRepository(client: SupabaseClient): TaxReposito
         simples_annex: input.simplesAnnex,
         fator_r: input.fatorR,
         activity_started_on: input.activityStartedOn,
+        tax_cash_basis: input.taxCashBasis,
       });
       if (error) fail(error, "Falha ao salvar os impostos");
+    },
+
+    async saveCardFees(companyId, input) {
+      const { error } = await client.from("company_profiles").upsert({
+        company_id: companyId,
+        card_fee_credit_bps: input.creditBps,
+        card_fee_debit_bps: input.debitBps,
+      });
+      if (error) fail(error, "Falha ao salvar as taxas do cartão");
     },
 
     async saveMonthlyRevenues(companyId, entries) {
