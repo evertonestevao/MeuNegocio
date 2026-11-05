@@ -2,15 +2,20 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { signatureToBlob } from "../image";
 
 export interface SignaturePadHandle {
   /** Null enquanto ninguém assinou. */
   toBlob(): Promise<Blob | null>;
 }
 
-/** Quadro de assinatura com o dedo ou o mouse. O traço é sempre escuro sobre branco, para o PDF. */
-export const SignaturePad = forwardRef<SignaturePadHandle>(function SignaturePad(_props, ref) {
+function signatureToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Não foi possível ler a assinatura."))), "image/png");
+  });
+}
+
+/** Quadro de assinatura com o dedo ou o mouse, em PNG. O traço é sempre escuro sobre branco, para o PDF. */
+export const SignaturePad = forwardRef<SignaturePadHandle, { label?: string }>(function SignaturePad({ label = "Assinatura do cliente" }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [signed, setSigned] = useState(false);
@@ -64,7 +69,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle>(function SignaturePad
         ref={canvasRef}
         width={800}
         height={300}
-        aria-label="Assinatura do cliente"
+        aria-label={label}
         className="h-40 w-full touch-none rounded-lg border bg-white"
         onPointerDown={start}
         onPointerMove={move}

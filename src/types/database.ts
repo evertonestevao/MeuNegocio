@@ -240,6 +240,8 @@ export interface QuoteResponse {
   decision: "approved" | "refused";
   name: string;
   comment: string | null;
+  /** Assinatura de quem aprovou pelo link, no bucket privado quote-signatures. */
+  signature_path?: string | null;
   created_at: string;
 }
 

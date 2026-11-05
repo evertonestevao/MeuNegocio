@@ -1,4 +1,6 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
+import { createSupabaseStorageProvider } from "@/adapters/storage/supabaseStorageProvider";
 import { createDemoClient } from "./demo/client";
 import { getServerEnv } from "@/config/env";
 import { todayInTimezone } from "@/lib/dates";
@@ -12,6 +14,7 @@ import {
 import { createBillingService } from "@/services/billingService";
 import { createCatalogService, type CatalogService } from "@/services/catalogService";
 import { createCompanyProfileService, type CompanyProfileService } from "@/services/companyProfileService";
+import { createPublicQuoteService, type PublicQuoteService } from "@/services/publicQuoteService";
 import { createQuoteService, type PublicQuoteRepository, type QuoteService } from "@/services/quoteService";
 import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
@@ -65,4 +68,29 @@ export function getDemoPublicQuote(token: string) {
 
 export function getPublicQuoteRepository(): PublicQuoteRepository {
   return createSupabasePublicQuoteRepository(getSupabaseAdminClient());
+}
+
+const QUOTE_SIGNATURES_BUCKET = "quote-signatures";
+const SIGNED_URL_SECONDS = 60 * 60;
+
+/** Resposta pelo link: o cliente não tem login, então a assinatura é gravada com service_role. */
+export function getPublicQuoteService(): PublicQuoteService {
+  const admin = getSupabaseAdminClient();
+  const storage = createSupabaseStorageProvider(admin, QUOTE_SIGNATURES_BUCKET);
+  return createPublicQuoteService({
+    repo: createSupabasePublicQuoteRepository(admin),
+    files: {
+      upload: async (path, content, contentType) => {
+        await storage.upload({ path, content, contentType });
+      },
+      remove: (path) => storage.remove(path),
+    },
+    canUsePublicApproval,
+    newId: randomUUID,
+  });
+}
+
+/** Link temporário da assinatura, com a sessão de quem vê: a policy do bucket libera só o escritório da empresa. */
+export async function getQuoteSignatureUrl(path: string): Promise<string> {
+  return createSupabaseStorageProvider(await getSupabaseServerClient(), QUOTE_SIGNATURES_BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS);
 }

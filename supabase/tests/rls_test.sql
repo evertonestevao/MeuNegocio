@@ -834,20 +834,20 @@ begin
   if v_doc::text like '%cost%' then raise exception 'FALHA link: documento expõe custo'; end if;
 
   begin
-    perform public.respond_public_quote(v_token, 'refused', 'Ana', '');
+    perform public.respond_public_quote(v_token, 'refused', 'Ana', '', null);
     raise exception 'FALHA link: recusou sem motivo';
   exception when sqlstate 'P0001' then
     if sqlerrm like 'FALHA%' then raise; end if;
   end;
 
-  perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+  perform public.respond_public_quote(v_token, 'approved', 'Ana', '', (select company_id || '/' || id || '/assinatura.png' from public.quotes where id = v_quote));
   select status into v_status from public.quotes where id = v_quote;
   if v_status <> 'approved' then raise exception 'FALHA link: não aprovou'; end if;
   select count(*) into n from public.quote_responses where quote_id = v_quote;
   if n <> 1 then raise exception 'FALHA link: resposta não registrada'; end if;
 
   begin
-    perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+    perform public.respond_public_quote(v_token, 'approved', 'Ana', '', (select company_id || '/' || id || '/assinatura.png' from public.quotes where id = v_quote));
     raise exception 'FALHA link: aceitou segunda resposta';
   exception when sqlstate 'P0001' then
     if sqlerrm like 'FALHA%' then raise; end if;
@@ -855,7 +855,7 @@ begin
 
   update public.quotes set status = 'sent', valid_until = current_date - 2 where id = v_quote;
   begin
-    perform public.respond_public_quote(v_token, 'approved', 'Ana', '');
+    perform public.respond_public_quote(v_token, 'approved', 'Ana', '', (select company_id || '/' || id || '/assinatura.png' from public.quotes where id = v_quote));
     raise exception 'FALHA link: aceitou resposta vencida';
   exception when sqlstate 'P0001' then
     if sqlerrm like 'FALHA%' then raise; end if;

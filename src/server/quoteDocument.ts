@@ -9,8 +9,9 @@ export function buildQuoteDocument(params: {
   profile: CompanyProfile;
   client: Client | null;
   location: ClientLocation | null;
+  approval?: QuoteDocument["approval"];
 }): QuoteDocument {
-  const { quote, items, companyName, profile, client, location } = params;
+  const { quote, items, companyName, profile, client, location, approval = null } = params;
   return {
     number: quote.number,
     title: quote.title,
@@ -33,5 +34,6 @@ export function buildQuoteDocument(params: {
     discountCents: quote.discount_cents,
     totalCents: quote.total_cents,
     notes: quote.notes,
+    approval,
   };
 }

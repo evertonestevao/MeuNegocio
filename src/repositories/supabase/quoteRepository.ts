@@ -263,12 +263,13 @@ export function createSupabasePublicQuoteRepository(client: SupabaseClient): Pub
       };
     },
 
-    async respond(token, decision, name, comment) {
+    async respond(token, decision, name, comment, signaturePath) {
       const { data, error } = await client.rpc("respond_public_quote", {
         p_token: token,
         p_decision: decision,
         p_name: name,
         p_comment: comment,
+        p_signature_path: signaturePath,
       });
       if (error) fail(error);
       const result = data as { company_id: string; quote_id: string };

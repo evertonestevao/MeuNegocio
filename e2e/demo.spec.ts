@@ -170,6 +170,14 @@ test("o link do orçamento da demonstração abre sem login e não grava a respo
   await expect(page.getByText("Orçamento Nº 0004")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Refrigeração Exemplo" })).toBeVisible();
   await page.getByLabel(/nome/i).first().fill("Cliente de teste");
+  const pad = page.getByLabel("Sua assinatura");
+  await pad.scrollIntoViewIfNeeded();
+  const box = await pad.boundingBox();
+  if (!box) throw new Error("quadro de assinatura fora da tela");
+  await page.mouse.move(box.x + 30, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 120, box.y + 90, { steps: 6 });
+  await page.mouse.up();
   await page.getByRole("button", { name: /Aprovar/ }).click();
   const confirm = page.getByRole("dialog").getByRole("button", { name: /Aprovar|Confirmar/ });
   if (await confirm.isVisible().catch(() => false)) await confirm.click();

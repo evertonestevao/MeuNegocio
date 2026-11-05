@@ -3,6 +3,7 @@ import { formatDate, formatQuantity, formatTimestamp } from "@/lib/dates";
 import type { QuoteDocument } from "@/types/quotes";
 import { formatQuoteNumber } from "./status";
 import { formatDocument, formatPhone } from "@/lib/masks";
+import { loadImage } from "@/features/work-orders/pdf";
 
 function itemDetail(item: QuoteDocument["items"][number]): string {
   if (item.pricingMode === "hourly") {
@@ -103,6 +104,28 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
     pdf.setFont("helvetica", "bold").setFontSize(10).text("Observações e condições", margin, y);
     y += 5;
     pdf.setFont("helvetica", "normal").setFontSize(9.5).text(wrapped, margin, y);
+    y += wrapped.length * 4.4;
+  }
+
+  if (quote.approval) {
+    // Bloco de aceite: quem aprovou pelo link, quando, e a assinatura.
+    const signature = quote.approval.signatureUrl ? await loadImage(quote.approval.signatureUrl).catch(() => null) : null;
+    const signatureWidth = 60;
+    const signatureHeight = signature ? (signature.height / signature.width) * signatureWidth : 0;
+    y += 8;
+    if (y + signatureHeight + 14 > height - 16) {
+      pdf.addPage();
+      y = 20;
+    }
+    pdf.setTextColor(20).setFont("helvetica", "bold").setFontSize(10).text("Aprovação do cliente", margin, y);
+    y += 4;
+    if (signature) {
+      pdf.addImage(signature.data, signature.format, margin, y, signatureWidth, signatureHeight);
+      y += signatureHeight;
+    }
+    pdf.setDrawColor(150).line(margin, y + 1, margin + 80, y + 1);
+    y += 5;
+    pdf.setFont("helvetica", "normal").setFontSize(9.5).text(`${quote.approval.name} — aprovado pelo link em ${formatTimestamp(quote.approval.approvedAt)}`, margin, y);
   }
 
   const pages = pdf.getNumberOfPages();

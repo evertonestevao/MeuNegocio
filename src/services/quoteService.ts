@@ -33,7 +33,8 @@ export interface QuoteRepository {
 /** Link público: só o servidor acessa, com service_role. */
 export interface PublicQuoteRepository {
   getByToken(token: string): Promise<PublicQuote | null>;
-  respond(token: string, decision: "approved" | "refused", name: string, comment: string): Promise<{ companyId: string; quoteId: string }>;
+  /** A assinatura é obrigatória ao aprovar; o banco confere que o caminho é da pasta do orçamento. */
+  respond(token: string, decision: "approved" | "refused", name: string, comment: string, signaturePath: string | null): Promise<{ companyId: string; quoteId: string }>;
 }
 
 interface QuoteServiceDeps {

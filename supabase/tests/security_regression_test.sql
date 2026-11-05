@@ -716,6 +716,63 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Aprovação pelo link: exige assinatura na pasta do orçamento; só o servidor responde; só o
+-- escritório da empresa lê o arquivo.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_quote public.quotes;
+begin
+  select * into v_quote from public.quotes where id = (select id from sec_cost_quote);
+  if v_quote.status <> 'sent' then raise exception 'FALHA assinatura: cenário sem orçamento enviado'; end if;
+  begin
+    perform public.respond_public_quote(v_quote.public_token, 'approved', 'Cliente', '', null);
+    raise exception 'FALHA assinatura: aprovou sem assinatura' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  begin
+    perform public.respond_public_quote(v_quote.public_token, 'approved', 'Cliente', '', '5ec0c000-0000-4000-8000-000000000002/outro/a.png');
+    raise exception 'FALHA assinatura: aceitou arquivo fora da pasta do orçamento' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  perform public.respond_public_quote(v_quote.public_token, 'approved', 'Cliente', '', v_quote.company_id || '/' || v_quote.id || '/assinatura.png');
+  if (select signature_path from public.quote_responses where quote_id = v_quote.id and decision = 'approved')
+     is distinct from v_quote.company_id || '/' || v_quote.id || '/assinatura.png' then
+    raise exception 'FALHA assinatura: não gravou o caminho da assinatura';
+  end if;
+  if has_function_privilege('authenticated', 'public.respond_public_quote(text, text, text, text, text)', 'execute')
+     or has_function_privilege('anon', 'public.respond_public_quote(text, text, text, text, text)', 'execute') then
+    raise exception 'FALHA assinatura: usuário responde o link direto, sem o servidor';
+  end if;
+end $$;
+create temp table sec_signature_path on commit drop as
+  select q.company_id || '/' || q.id || '/assinatura.png' as name from public.quotes q where q.id = (select id from sec_cost_quote);
+grant select on sec_signature_path to authenticated;
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000002', 'sec-admin@test.local');
+do $$
+begin
+  if not public.can_read_quote_signature((select name from sec_signature_path)) then
+    raise exception 'FALHA assinatura: o escritório não abre a assinatura';
+  end if;
+end $$;
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+do $$
+begin
+  if public.can_read_quote_signature((select name from sec_signature_path)) then
+    raise exception 'FALHA assinatura: outra empresa abre a assinatura';
+  end if;
+end $$;
+reset role;
+do $$
+begin
+  if exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects'
+             and cmd in ('INSERT', 'UPDATE', 'DELETE') and (qual like '%quote-signatures%' or with_check like '%quote-signatures%')) then
+    raise exception 'FALHA assinatura: usuário grava no bucket das assinaturas';
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Isolamento entre empresas: vale para toda tabela e função, inclusive as que forem criadas.
 -- ---------------------------------------------------------------------------
 do $$

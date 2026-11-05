@@ -26,7 +26,7 @@ import type { VisitSheet } from "@/types/workOrders";
 import { compressPhoto } from "../image";
 import { downloadWorkOrderPdf, type WorkOrderPdfInput } from "../pdf";
 import { completeWorkOrderSchema, photoCaptionSchema } from "../schemas";
-import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
+import { SignaturePad, type SignaturePadHandle } from "@/components/signature-pad";
 import { formatPhone } from "@/lib/masks";
 import { VISIT_STATUS_VARIANT } from "@/features/visits/components/visit-row";
 

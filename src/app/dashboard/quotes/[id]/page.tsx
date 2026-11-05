@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -15,7 +16,7 @@ import { formatTimestamp, todayInTimezone } from "@/lib/dates";
 import { getClientService } from "@/server/clients";
 import { buildQuoteDocument } from "@/server/quoteDocument";
 import { loadQuoteEditorData } from "@/server/quoteEditorData";
-import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService } from "@/server/quotes";
+import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService, getQuoteSignatureUrl } from "@/server/quotes";
 import { getEmployeeService, getVisitService } from "@/server/schedule";
 import { getExpenseService } from "@/server/finance";
 import { getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
@@ -46,6 +47,15 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     // A alíquota guardada no orçamento vale mais; sem ela, a de hoje da empresa.
     quote.tax_rate_bps === null || quote.tax_rate_bps === undefined ? (await getTaxService()).getRate(actor) : Promise.resolve(null),
   ]);
+  // Assinaturas de quem aprovou pelo link; sem o arquivo, a resposta aparece sem a imagem.
+  const signatureUrls = new Map(
+    await Promise.all(
+      responses
+        .filter((response) => response.signature_path)
+        .map(async (response) => [response.id, await getQuoteSignatureUrl(response.signature_path!).catch(() => null)] as const),
+    ),
+  );
+  const approvalResponse = responses.find((response) => response.decision === "approved") ?? null;
   const location = clientDetail?.locations.find((candidate) => candidate.id === quote.location_id) ?? null;
   const primaryContact = clientDetail?.contacts[0] ?? null;
   // Na demonstração os telefones são inventados: o WhatsApp não pode abrir conversa com um número de verdade.
@@ -109,6 +119,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 {formatTimestamp(response.created_at, profile.timezone)}
               </p>
               {response.comment ? <p className="text-muted-foreground">{response.comment}</p> : null}
+              {signatureUrls.get(response.id) ? (
+                <Image
+                  src={signatureUrls.get(response.id)!}
+                  alt={`Assinatura de ${response.name}`}
+                  width={400}
+                  height={150}
+                  unoptimized
+                  className="mt-2 w-full max-w-sm rounded-lg border bg-white"
+                />
+              ) : null}
             </CardContent>
           </Card>
         ))}
@@ -163,6 +183,9 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               profile,
               client: clientDetail?.client ?? null,
               location,
+              approval: approvalResponse
+                ? { name: approvalResponse.name, approvedAt: approvalResponse.created_at, signatureUrl: signatureUrls.get(approvalResponse.id) ?? null }
+                : null,
             })}
             contact={primaryContact ? { name: primaryContact.name, phone: isDemo ? brand.salesWhatsapp : primaryContact.phone } : null}
             publicUrl={allowsPublicLink ? getPublicQuoteUrl(quote.public_token) : null}

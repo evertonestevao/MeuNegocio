@@ -45,7 +45,7 @@ export const showcases: {
     eyebrow: "Orçamentos",
     title: "Saiba o que está parado e o que falta fechar",
     description: "Cada orçamento mostra em que etapa está, do rascunho ao fechamento. Nada fica perdido em uma conversa antiga.",
-    points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar sem criar conta", "Margem visível só para quem pode ver"],
+    points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar e assinar sem criar conta", "Margem visível só para quem pode ver"],
     image: `${LANDING_SCREENS}/orcamentos.jpg`,
     alt: "Tela de orçamentos com a lista por situação: rascunho, enviado, aprovado e fechado.",
     device: "browser",
@@ -154,7 +154,7 @@ export const pains = [
 
 export const journey = [
   { title: "Orçamento", description: "Monte com materiais e horas, envie em PDF ou pelo WhatsApp." },
-  { title: "Aprovação", description: "O cliente abre o link, sem criar conta, e aprova ou recusa." },
+  { title: "Aprovação", description: "O cliente abre o link, sem criar conta, e aprova com assinatura ou recusa." },
   { title: "Agenda", description: "Escale a equipe. Quem já tem visita no horário é bloqueado." },
   { title: "Execução", description: "No celular, o técnico faz o checklist, fotografa e colhe a assinatura." },
   { title: "Resultado", description: "Lance os gastos do serviço, conclua e veja quanto sobrou nele e no mês." },
@@ -224,7 +224,7 @@ export const faq = [
   },
   {
     question: "Meu cliente precisa criar conta para aprovar o orçamento?",
-    answer: "Não. Ele recebe um link, vê os itens e o total, baixa o PDF e responde. O link de aprovação depende do plano.",
+    answer: "Não. Ele recebe um link, vê os itens e o total, baixa o PDF e responde. Para aprovar, assina com o dedo na tela, e a assinatura fica no orçamento e no PDF. O link de aprovação depende do plano.",
   },
   {
     question: "O técnico consegue ver preços e o financeiro?",

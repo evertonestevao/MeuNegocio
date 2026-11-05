@@ -446,6 +446,7 @@ Outras regras:
 - Sem login, com token aleatório próprio de 256 bits, nunca o id do orçamento. Rascunho não abre.
 - Mostra só o que o cliente precisa ver e permite baixar o PDF.
 - Aceita resposta apenas com status enviado e dentro da validade, uma única vez. Exige nome, e motivo na recusa.
+- **Aprovar exige assinatura**, feita com o dedo ou o mouse no mesmo quadro da ordem de serviço. O servidor confere que é uma imagem PNG de até 900 KB e grava no bucket privado `quote-signatures`, na pasta do orçamento; o banco recusa aprovação sem assinatura ou com arquivo de outra pasta. Recusar não pede assinatura. Só o escritório da empresa (owner, admin e member) abre a assinatura, por link temporário de 1 hora: ela aparece na resposta, na página do orçamento, e no PDF baixado de lá, com o nome e a data da aprovação. O PDF do próprio link continua sem o bloco de aprovação.
 - Rate limit por IP: 10 respostas a cada 10 minutos e 60 visualizações por minuto. A escrita passa pelo servidor.
 - A resposta aparece no orçamento e entra na auditoria.
 

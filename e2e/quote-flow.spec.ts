@@ -46,11 +46,22 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await expect(client.getByText("Informe seu nome.")).toBeVisible();
   await client.getByLabel("Seu nome").fill("Renato Cliente");
   await client.getByRole("button", { name: "Aprovar orçamento" }).click();
+  await expect(client.getByText("Assine no quadro para aprovar o orçamento.")).toBeVisible();
+  const pad = client.getByLabel("Sua assinatura");
+  await pad.scrollIntoViewIfNeeded();
+  const box = await pad.boundingBox();
+  if (!box) throw new Error("quadro de assinatura fora da tela");
+  await client.mouse.move(box.x + 30, box.y + 40);
+  await client.mouse.down();
+  await client.mouse.move(box.x + 120, box.y + 90, { steps: 6 });
+  await client.mouse.up();
+  await client.getByRole("button", { name: "Aprovar orçamento" }).click();
   await expect(client.getByText(/Orçamento aprovado/)).toBeVisible();
   await visitor.close();
 
   await page.reload();
   await expect(page.getByText(/Renato Cliente aprovou pelo link/)).toBeVisible();
+  await expect(page.getByRole("img", { name: "Assinatura de Renato Cliente" })).toBeVisible();
 
   // Aprovado, vira serviço em andamento.
   await page.goto("/dashboard/services");

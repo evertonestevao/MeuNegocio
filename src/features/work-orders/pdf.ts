@@ -65,7 +65,8 @@ export function workOrderFileName(clientName: string, date: string): string {
   return `ordem-de-servico-${slug ? `${slug}-` : ""}${date}.pdf`;
 }
 
-async function loadImage(url: string): Promise<{ data: string; width: number; height: number; format: "JPEG" | "PNG" }> {
+/** Baixa a imagem pelo link temporário e devolve como data URL, para o jsPDF. */
+export async function loadImage(url: string): Promise<{ data: string; width: number; height: number; format: "JPEG" | "PNG" }> {
   const blob = await (await fetch(url)).blob();
   const data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();

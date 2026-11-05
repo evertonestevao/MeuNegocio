@@ -12,7 +12,7 @@ import { taxRatePercentSchema } from "@/lib/tax";
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
-import { canUsePublicApproval, getPublicQuoteRepository, getQuoteService } from "@/server/quotes";
+import { getPublicQuoteService, getQuoteService } from "@/server/quotes";
 import { getServiceCostService } from "@/server/serviceCosts";
 import { createRateLimiter } from "@/server/rateLimit";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
@@ -198,13 +198,13 @@ export async function respondPublicQuoteAction(
       comment: formData.get("comment") ?? "",
     });
 
-    const repo = getPublicQuoteRepository();
-    const quote = await repo.getByToken(token.data);
-    if (!quote || !(await canUsePublicApproval(quote.companyId))) {
-      throw new AppError("not_found", "Orçamento não encontrado");
-    }
-
-    const { companyId, quoteId } = await repo.respond(token.data, decision, name, comment);
+    const signature = formData.get("signature");
+    const { companyId, quoteId } = await getPublicQuoteService().respond(token.data, {
+      decision,
+      name,
+      comment,
+      signature: signature instanceof File && signature.size > 0 ? new Uint8Array(await signature.arrayBuffer()) : null,
+    });
     await createAuditService(createSupabaseAuditRepository(getSupabaseAdminClient())).record({
       companyId,
       userId: null,

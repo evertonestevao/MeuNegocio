@@ -28,8 +28,3 @@ export async function compressPhoto(file: File): Promise<Blob> {
   }
   throw new Error("A foto ficou grande demais. Tente outra.");
 }
-
-/** Assinatura em PNG, a partir do quadro de desenho. */
-export function signatureToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return canvasToBlob(canvas, "image/png");
-}
