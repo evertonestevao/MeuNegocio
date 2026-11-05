@@ -113,8 +113,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-2">
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Cada coluna estica o último cartão até a altura da outra: nada de vão entre os cartões. */}
+        <div className="flex min-w-0 flex-col gap-2 lg:gap-4">
           <BarChartCard
             title="Últimos 6 meses"
             data={chartData}
@@ -127,7 +128,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             yAxisWidth={72}
           />
           {/* No computador fica sempre à vista, ao lado das categorias; no celular, recolhido para não alongar a tela. */}
-          <Card className="max-lg:hidden">
+          <Card className="max-lg:hidden lg:flex-1">
             <CardHeader>
               <CardTitle>Mês a mês</CardTitle>
             </CardHeader>
@@ -169,12 +170,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="lg:flex-1">
             <CardHeader>
               <CardTitle>Previsão</CardTitle>
               <CardDescription>Ainda não entra no saldo: só vira faturamento quando o orçamento for fechado.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm">
+            <CardContent className="flex flex-1 flex-col gap-2 text-sm">
               <p className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Aprovados, a fechar</span>
                 <span className="tabular-nums">{formatCents(overview.forecast.approvedCents)}</span>
@@ -195,7 +196,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Resultado por serviço</CardTitle>
