@@ -19,6 +19,36 @@ import { permissionService } from "@/services/permissionService";
 
 export const metadata: Metadata = { title: "Financeiro" };
 
+function MonthlyRows({ series, selected, monthHref }: {
+  series: { month: string; revenueCents: number; expenseCents: number }[];
+  selected: string;
+  monthHref: (month: string) => string;
+}) {
+  return (
+    <ul className="flex flex-col divide-y text-sm">
+      {series.toReversed().map((item) => {
+        const balance = item.revenueCents - item.expenseCents;
+        return (
+          <li key={item.month}>
+            <Link scroll={false} href={monthHref(item.month)} className="flex items-center justify-between gap-3 py-2 hover:underline">
+              <span className="flex min-w-0 flex-col">
+                <span className={item.month === selected ? "font-semibold" : undefined}>{formatMonth(item.month)}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  Faturamento {formatCents(item.revenueCents)} · gastos {formatCents(item.expenseCents)}
+                </span>
+              </span>
+              <span className="flex shrink-0 flex-col items-end">
+                <span className={`font-semibold tabular-nums ${balance < 0 ? "text-destructive" : "text-success"}`}>{formatCents(balance)}</span>
+                <span className="text-xs text-muted-foreground">saldo</span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function changeHint(change: number | null): string {
   if (change === null) return "Sem base no mês anterior";
   return `${change > 0 ? "+" : ""}${change}% sobre o mês anterior`;
@@ -96,33 +126,19 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             valueFormat={{ style: "currency", currency: "BRL", maximumFractionDigits: 0 }}
             yAxisWidth={72}
           />
-          <details className="rounded-lg border px-3 py-2 text-sm">
-            <summary className="cursor-pointer">Ver tabela</summary>
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full tabular-nums">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    <th className="py-1 font-medium">Mês</th>
-                    <th className="py-1 text-right font-medium">Faturamento</th>
-                    <th className="py-1 text-right font-medium">Gastos</th>
-                    <th className="py-1 text-right font-medium">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overview.series.map((item) => (
-                    <tr key={item.month} className="border-t">
-                      <td className="py-1">
-                        <Link scroll={false} href={monthHref(item.month)} className="hover:underline">
-                          {formatMonth(item.month)}
-                        </Link>
-                      </td>
-                      <td className="py-1 text-right">{formatCents(item.revenueCents)}</td>
-                      <td className="py-1 text-right">{formatCents(item.expenseCents)}</td>
-                      <td className="py-1 text-right">{formatCents(item.revenueCents - item.expenseCents)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* No computador fica sempre à vista, ao lado das categorias; no celular, recolhido para não alongar a tela. */}
+          <Card className="max-lg:hidden">
+            <CardHeader>
+              <CardTitle>Mês a mês</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MonthlyRows series={overview.series} selected={month} monthHref={monthHref} />
+            </CardContent>
+          </Card>
+          <details className="rounded-xl border bg-card px-4 py-3 text-sm lg:hidden">
+            <summary className="cursor-pointer font-medium">Ver mês a mês</summary>
+            <div className="mt-2">
+              <MonthlyRows series={overview.series} selected={month} monthHref={monthHref} />
             </div>
           </details>
         </div>

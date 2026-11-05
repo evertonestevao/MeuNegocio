@@ -564,7 +564,7 @@ Tela em `/dashboard/finance`, só para owner e admin.
 |---|---|
 | **Resumo do mês** | Faturamento, gastos e saldo, com a variação sobre o mês anterior. O saldo pode ficar negativo. |
 | **Faturamento** | Vem só de orçamentos fechados, na data de competência. Desfazer o fechamento tira o valor. |
-| **Últimos 6 meses** | Gráfico de faturamento e gastos, com tabela equivalente. |
+| **Últimos 6 meses** | Gráfico de faturamento e gastos e, logo abaixo, "Mês a mês" com faturamento, gastos e saldo de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
 | **Gastos por categoria** | Só do mês escolhido, da maior para a menor. |
 | **Previsão** | Aprovados a fechar e enviados aguardando resposta. Fica separada e não entra no saldo. |
 | **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |
