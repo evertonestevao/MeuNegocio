@@ -55,19 +55,19 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
         <Card size="sm">
           <CardContent className="flex flex-col">
             <span className="text-muted-foreground">A receber</span>
-            <strong className="font-heading text-lg tabular-nums">{formatCents(totals.openCents)}</strong>
+            <strong className="font-heading text-sm tabular-nums sm:text-lg">{formatCents(totals.openCents)}</strong>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent className="flex flex-col">
             <span className="text-muted-foreground">Atrasado</span>
-            <strong className={`font-heading text-lg tabular-nums ${totals.overdueCents > 0 ? "text-destructive" : ""}`}>{formatCents(totals.overdueCents)}</strong>
+            <strong className={`font-heading text-sm tabular-nums sm:text-lg ${totals.overdueCents > 0 ? "text-destructive" : ""}`}>{formatCents(totals.overdueCents)}</strong>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent className="flex flex-col">
             <span className="text-muted-foreground">Em 7 dias</span>
-            <strong className="font-heading text-lg tabular-nums">{formatCents(totals.dueSoonCents)}</strong>
+            <strong className="font-heading text-sm tabular-nums sm:text-lg">{formatCents(totals.dueSoonCents)}</strong>
           </CardContent>
         </Card>
       </div>

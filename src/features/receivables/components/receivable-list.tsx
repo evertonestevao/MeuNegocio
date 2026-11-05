@@ -148,8 +148,9 @@ export function ReceivableList({
           receivableStatus(item, today) === "overdue" ? `venceu em ${formatDate(item.due_date)}` : null,
         ].filter(Boolean);
         return (
-          <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0 last:pb-0">
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          // No celular, o texto em cima e o valor com os botões embaixo: lado a lado, o texto ficava espremido.
+          <li key={item.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <span className="flex min-w-0 flex-col gap-0.5 sm:flex-1">
               {showQuote ? (
                 <Link href={`/dashboard/quotes/${item.quote_id}`} className="font-medium break-words hover:underline">
                   #{formatQuoteNumber(item.quote_number)} · {item.quote_title ?? "Sem título"}
@@ -159,7 +160,7 @@ export function ReceivableList({
               {details.length > 0 ? <span className="text-xs text-muted-foreground">{details.join(" · ")}</span> : null}
             </span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="font-semibold tabular-nums">{formatCents(item.received_cents ?? item.amount_cents)}</span>
+              <span className="mr-auto font-semibold tabular-nums sm:mr-0">{formatCents(item.received_cents ?? item.amount_cents)}</span>
               {companyName && !item.received_on && (reminderPhone ?? item.contact_phone) ? (
                 <Button
                   size="icon-sm"
