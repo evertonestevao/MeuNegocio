@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicQuotePdfButton, PublicQuoteResponseForm } from "@/features/quotes/components/public-quote";
@@ -8,7 +9,7 @@ import { formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { DEMO_QUOTE_TOKEN } from "@/config/demo";
-import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository } from "@/server/quotes";
+import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository, getPublicQuoteSignatureUrl } from "@/server/quotes";
 import { createRateLimiter } from "@/server/rateLimit";
 import { formatPhone } from "@/lib/masks";
 
@@ -35,8 +36,18 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
   const quote = isDemo ? await getDemoPublicQuote(token) : await getPublicQuoteRepository().getByToken(token);
   if (!quote || (!isDemo && !(await canUsePublicApproval(quote.companyId)))) notFound();
-  const { document, response } = quote;
-  const canRespond = document.status === "sent" && quote.isWithinValidity;
+  const { response } = quote;
+  const canRespond = quote.document.status === "sent" && quote.isWithinValidity;
+  // Aprovado: a resposta do cliente, com a assinatura, entra na página e no PDF.
+  const approved = response?.decision === "approved" && (quote.document.status === "approved" || quote.document.status === "closed");
+  const signatureUrl = approved && response.signaturePath
+    ? isDemo
+      ? response.signaturePath
+      : await getPublicQuoteSignatureUrl(quote, response.signaturePath)
+    : null;
+  const document = approved
+    ? { ...quote.document, approval: { name: response.name, comment: response.comment, approvedAt: response.createdAt, signatureUrl } }
+    : quote.document;
 
   return (
     <main id="conteudo" className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8">
@@ -105,9 +116,12 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
               <p className="whitespace-pre-wrap text-muted-foreground">{document.notes}</p>
             </div>
           ) : null}
-          <div>
-            <PublicQuotePdfButton document={document} />
-          </div>
+          {/* Aprovado, os botões ficam junto da assinatura, mais abaixo. */}
+          {approved ? null : (
+            <div>
+              <PublicQuotePdfButton document={document} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -117,11 +131,38 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
             <PublicQuoteResponseForm token={token} companyName={document.company.name} />
           ) : (
             <div className="flex flex-col gap-1 text-sm">
-              {document.status === "approved" || document.status === "closed" ? (
-                <p className="font-medium">
-                  Orçamento aprovado
-                  {response?.decision === "approved" ? ` por ${response.name} em ${formatTimestamp(response.createdAt)}` : ""}.
-                </p>
+              {approved ? (
+                <div className="flex flex-col gap-3">
+                  <h2 className="text-lg font-semibold">Orçamento aprovado</h2>
+                  {signatureUrl ? (
+                    <Image
+                      src={signatureUrl}
+                      alt={`Assinatura de ${response.name}`}
+                      width={400}
+                      height={150}
+                      unoptimized
+                      className="w-full max-w-sm rounded-lg border bg-white"
+                    />
+                  ) : null}
+                  <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
+                    <dt className="text-muted-foreground">Aprovado por</dt>
+                    <dd className="font-medium break-words">{response.name}</dd>
+                    <dt className="text-muted-foreground">Data</dt>
+                    <dd>{formatTimestamp(response.createdAt)}</dd>
+                    {response.comment ? (
+                      <>
+                        <dt className="text-muted-foreground">Observação</dt>
+                        <dd className="whitespace-pre-wrap break-words">{response.comment}</dd>
+                      </>
+                    ) : null}
+                  </dl>
+                  <div>
+                    <PublicQuotePdfButton document={document} />
+                  </div>
+                  <p className="text-muted-foreground">O PDF e a impressão já levam a sua assinatura.</p>
+                </div>
+              ) : document.status === "approved" || document.status === "closed" ? (
+                <p className="font-medium">Orçamento aprovado.</p>
               ) : null}
               {document.status === "refused" ? (
                 <p className="font-medium">

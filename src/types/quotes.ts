@@ -29,8 +29,8 @@ export interface QuoteDocument {
   discountCents: number;
   totalCents: number;
   notes: string | null;
-  /** Aprovação pelo link, com a assinatura (link temporário). Só no documento do escritório. */
-  approval?: { name: string; approvedAt: string; signatureUrl: string | null } | null;
+  /** Aprovação pelo link: quem, quando, a observação e a assinatura (link temporário). */
+  approval?: { name: string; comment: string | null; approvedAt: string; signatureUrl: string | null } | null;
 }
 
 export interface PublicQuote {
@@ -38,5 +38,5 @@ export interface PublicQuote {
   quoteId: string;
   isWithinValidity: boolean;
   document: QuoteDocument;
-  response: { decision: "approved" | "refused"; name: string; comment: string | null; createdAt: string } | null;
+  response: { decision: "approved" | "refused"; name: string; comment: string | null; createdAt: string; signaturePath: string | null } | null;
 }

@@ -184,7 +184,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               client: clientDetail?.client ?? null,
               location,
               approval: approvalResponse
-                ? { name: approvalResponse.name, approvedAt: approvalResponse.created_at, signatureUrl: signatureUrls.get(approvalResponse.id) ?? null }
+                ? {
+                    name: approvalResponse.name,
+                    comment: approvalResponse.comment,
+                    approvedAt: approvalResponse.created_at,
+                    signatureUrl: signatureUrls.get(approvalResponse.id) ?? null,
+                  }
                 : null,
             })}
             contact={primaryContact ? { name: primaryContact.name, phone: isDemo ? brand.salesWhatsapp : primaryContact.phone } : null}

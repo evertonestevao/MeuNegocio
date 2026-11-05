@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { CalendarDays, Copy, Download, Link2, MessageCircle } from "lucide-react";
+import { CalendarDays, Copy, Download, Link2, MessageCircle, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { DialogForm } from "@/components/dialog-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,7 +21,7 @@ import type { ActionState } from "@/server/actions/action-state";
 import type { Quote, Revenue } from "@/types/database";
 import type { QuoteDocument } from "@/types/quotes";
 import { CloseQuoteButton } from "./close-quote-button";
-import { downloadQuotePdf, quoteShareText, whatsappUrl } from "../pdf";
+import { downloadQuotePdf, printQuotePdf, quoteShareText, whatsappUrl } from "../pdf";
 
 type Action = (prev: ActionState | undefined, formData: FormData) => Promise<ActionState>;
 
@@ -231,6 +231,9 @@ export function QuoteActions({
         <hr className="my-1" />
         <Button variant="outline" onClick={() => void downloadQuotePdf(document)}>
           <Download className="size-4" /> Baixar PDF
+        </Button>
+        <Button variant="outline" onClick={() => void printQuotePdf(document)}>
+          <Printer className="size-4" /> Imprimir
         </Button>
         {canSend || quote.status === "sent" ? (
           <Button

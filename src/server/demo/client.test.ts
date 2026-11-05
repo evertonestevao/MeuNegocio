@@ -57,7 +57,14 @@ describe("client da demonstração", () => {
     expect((await client.rpc("resellers_enabled")).data).toBe(false);
   });
 
-  it("calcula o imposto pelo faturamento dos 12 meses anteriores", async () => {
+  it("orçamento aprovado no link traz a resposta com assinatura; enviado, não", async () => {
+    const approved = (await client.rpc("get_public_quote", { p_token: "demonstracao-0002" })).data;
+    expect(approved.status).toBe("approved");
+    expect(approved.response).toMatchObject({ decision: "approved", signature_path: "/exemplos/assinatura-cliente.png" });
+    expect((await client.rpc("get_public_quote", { p_token: "demonstracao-0004" })).data.response).toBeNull();
+  });
+
+    it("calcula o imposto pelo faturamento dos 12 meses anteriores", async () => {
     const { data, error } = await client.rpc("get_company_tax", { p_company_id: "demo" });
     expect(error).toBeNull();
     expect(data.months).toHaveLength(12);

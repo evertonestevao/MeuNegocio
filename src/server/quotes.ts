@@ -90,6 +90,17 @@ export function getPublicQuoteService(): PublicQuoteService {
   });
 }
 
+/**
+ * Link temporário da assinatura para a página do link do cliente, que não tem sessão. Só assina
+ * caminho da pasta do próprio orçamento: quem tem o token vê o que ele mesmo assinou.
+ */
+export async function getPublicQuoteSignatureUrl(quote: { companyId: string; quoteId: string }, path: string): Promise<string | null> {
+  if (!path.startsWith(`${quote.companyId}/${quote.quoteId}/`)) return null;
+  return createSupabaseStorageProvider(getSupabaseAdminClient(), QUOTE_SIGNATURES_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS)
+    .catch(() => null);
+}
+
 /** Link temporário da assinatura, com a sessão de quem vê: a policy do bucket libera só o escritório da empresa. */
 export async function getQuoteSignatureUrl(path: string): Promise<string> {
   return createSupabaseStorageProvider(await getSupabaseServerClient(), QUOTE_SIGNATURES_BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS);

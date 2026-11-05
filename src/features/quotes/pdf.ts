@@ -15,8 +15,8 @@ function itemDetail(item: QuoteDocument["items"][number]): string {
 
 export { itemDetail as quoteItemDetail };
 
-/** Gera o PDF no navegador. As bibliotecas só carregam quando alguém pede o arquivo. */
-export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
+/** Monta o PDF no navegador. As bibliotecas só carregam quando alguém pede o arquivo. */
+async function buildQuotePdf(quote: QuoteDocument) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const width = pdf.internal.pageSize.getWidth();
@@ -120,12 +120,22 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
     pdf.setTextColor(20).setFont("helvetica", "bold").setFontSize(10).text("Aprovação do cliente", margin, y);
     y += 4;
     if (signature) {
-      pdf.addImage(signature.data, signature.format, margin, y, signatureWidth, signatureHeight);
+      // Comprimida: sem isso a assinatura em PNG deixa o PDF com quase 1 MB.
+      pdf.addImage(signature.data, signature.format, margin, y, signatureWidth, signatureHeight, undefined, "FAST");
       y += signatureHeight;
     }
     pdf.setDrawColor(150).line(margin, y + 1, margin + 80, y + 1);
     y += 5;
     pdf.setFont("helvetica", "normal").setFontSize(9.5).text(`${quote.approval.name} — aprovado pelo link em ${formatTimestamp(quote.approval.approvedAt)}`, margin, y);
+    if (quote.approval.comment) {
+      const comment: string[] = pdf.splitTextToSize(`Observação do cliente: ${quote.approval.comment}`, width - margin * 2);
+      y += 5;
+      if (y + comment.length * 4.4 > height - 16) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setTextColor(80).text(comment, margin, y);
+    }
   }
 
   const pages = pdf.getNumberOfPages();
@@ -135,7 +145,32 @@ export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
     pdf.text(`${quote.company.name} — Orçamento Nº ${number}`, margin, height - 8);
     pdf.text(`Página ${page} de ${pages}`, width - margin, height - 8, { align: "right" });
   }
-  pdf.save(`orcamento-${number}.pdf`);
+  return { pdf, fileName: `orcamento-${number}.pdf` };
+}
+
+export async function downloadQuotePdf(quote: QuoteDocument): Promise<void> {
+  const { pdf, fileName } = await buildQuotePdf(quote);
+  pdf.save(fileName);
+}
+
+/**
+ * Abre o PDF numa aba nova com a impressão já pedida. A aba é aberta no clique, antes de montar o
+ * PDF, para o navegador não bloquear como pop-up. No celular e no tablet, baixa o arquivo com o nome
+ * certo: vários navegadores de celular não abrem PDF em aba e salvariam com um nome sem sentido.
+ */
+export async function printQuotePdf(quote: QuoteDocument): Promise<void> {
+  if (window.matchMedia("(pointer: coarse)").matches) return downloadQuotePdf(quote);
+  const tab = window.open("", "_blank");
+  try {
+    const { pdf, fileName } = await buildQuotePdf(quote);
+    pdf.autoPrint();
+    const url = URL.createObjectURL(pdf.output("blob"));
+    if (tab) tab.location.href = url;
+    else pdf.save(fileName);
+  } catch (err) {
+    tab?.close();
+    throw err;
+  }
 }
 
 /** Texto de envio: a mesma mensagem no WhatsApp e no "Copiar texto". */

@@ -219,7 +219,7 @@ interface PublicQuoteRow {
     unit_price_cents: number;
     line_total_cents: number;
   }[];
-  response: { decision: "approved" | "refused"; name: string; comment: string | null; created_at: string } | null;
+  response: { decision: "approved" | "refused"; name: string; comment: string | null; created_at: string; signature_path?: string | null } | null;
 }
 
 /** Recebe o client de service_role: o link público não tem sessão. */
@@ -235,7 +235,13 @@ export function createSupabasePublicQuoteRepository(client: SupabaseClient): Pub
         quoteId: row.quote_id,
         isWithinValidity: row.is_within_validity === true,
         response: row.response
-          ? { decision: row.response.decision, name: row.response.name, comment: row.response.comment, createdAt: row.response.created_at }
+          ? {
+              decision: row.response.decision,
+              name: row.response.name,
+              comment: row.response.comment,
+              createdAt: row.response.created_at,
+              signaturePath: row.response.signature_path ?? null,
+            }
           : null,
         document: {
           number: row.number,

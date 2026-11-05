@@ -56,7 +56,13 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await client.mouse.move(box.x + 120, box.y + 90, { steps: 6 });
   await client.mouse.up();
   await client.getByRole("button", { name: "Aprovar orçamento" }).click();
-  await expect(client.getByText(/Orçamento aprovado/)).toBeVisible();
+  await expect(client.getByRole("heading", { name: "Orçamento aprovado" })).toBeVisible();
+  // Depois de assinar, o cliente vê a própria assinatura e pode baixar ou imprimir com ela.
+  await expect(client.getByRole("img", { name: "Assinatura de Renato Cliente" })).toBeVisible();
+  await expect(client.getByRole("button", { name: "Imprimir" })).toBeVisible();
+  const download = client.waitForEvent("download");
+  await client.getByRole("button", { name: "Baixar PDF" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^orcamento-\d+\.pdf$/);
   await visitor.close();
 
   await page.reload();

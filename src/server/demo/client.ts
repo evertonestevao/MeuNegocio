@@ -245,7 +245,17 @@ function demoPublicQuoteRow(token: string): Row | null {
     client: { name: client?.name, document: client?.document },
     location: location ? { name: location.name, address: location.address } : null,
     items: tables.quote_items.filter((item) => item.quote_id === quote.id && !item.deleted_at),
-    response: null,
+    // Aprovado: resposta fictícia com assinatura servida pelo próprio site, sem bucket.
+    response:
+      status === "approved" || status === "closed"
+        ? {
+            decision: "approved",
+            name: tables.client_contacts.find((contact) => contact.client_id === quote.client_id)?.name ?? client?.name,
+            comment: "Pode agendar para a próxima semana, de manhã.",
+            created_at: quote.approved_at,
+            signature_path: "/exemplos/assinatura-cliente.png",
+          }
+        : null,
   };
 }
 

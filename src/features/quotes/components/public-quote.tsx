@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { SignaturePad, type SignaturePadHandle } from "@/components/signature-pad";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { respondPublicQuoteAction } from "@/server/actions/quotes";
 import type { QuoteDocument } from "@/types/quotes";
-import { downloadQuotePdf } from "../pdf";
+import { downloadQuotePdf, printQuotePdf } from "../pdf";
 import { publicResponseSchema } from "../schemas";
 
 export function PublicQuotePdfButton({ document }: { document: QuoteDocument }) {
   return (
-    <Button variant="outline" onClick={() => void downloadQuotePdf(document)}>
-      <Download className="size-4" /> Baixar PDF
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <Button variant="outline" onClick={() => void downloadQuotePdf(document)}>
+        <Download className="size-4" /> Baixar PDF
+      </Button>
+      <Button variant="outline" onClick={() => void printQuotePdf(document)}>
+        <Printer className="size-4" /> Imprimir
+      </Button>
+    </div>
   );
 }
 
