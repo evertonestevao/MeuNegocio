@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getPaymentGateway } from "@/adapters/payment";
 import { CompanySwitcher } from "@/components/app-shell/company-switcher";
-import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { brand } from "@/config/brand";
@@ -62,63 +61,62 @@ export default async function SubscribePage() {
 
   return (
     <TenantProvider value={{ companies, active }}>
-      <AuthSplitLayout wide>
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {companies.length > 1 ? <CompanySwitcher canCreate={false} /> : null}
-              <form action={signOutAction}>
-                <Button type="submit" variant="ghost" size="sm" className="h-9">
-                  Sair
-                </Button>
-              </form>
-            </div>
-
-            {inSignup ? <SignupSteps current={3} /> : null}
-            <div className="flex flex-col gap-1.5">
-              <h1 className="font-heading text-3xl font-semibold tracking-tight">Assine o {brand.name}</h1>
-              <p className="text-base text-muted-foreground">
-                {access.inCardlessTrial && access.trialEndsAt
-                  ? `Seu teste grátis vai até ${formatDate(access.trialEndsAt.slice(0, 10))}. Assine agora e continue sem interrupção.`
-                  : ended
-                    ? `O acesso da ${active.name} está pausado. Seus dados continuam guardados: assine e tudo volta como estava.`
-                    : inSignup
-                      ? "Orçamentos, agenda, ordem de serviço e financeiro em um só lugar. Depois de assinar, você informa os dados da empresa."
-                      : `Orçamentos, agenda, ordem de serviço e financeiro da ${active.name} em um só lugar.`}
-              </p>
-            </div>
-
-            {canSubscribe ? (
-              <SubscribePanel
-                companyId={active.id}
-                plans={plans}
-                included={featured ? planOfferLines(featured.features) : []}
-                savingsCents={annualSavingsCents(forSale)}
-                trialAvailable={access.trialAvailable}
-                cardTrial={gateway.supportsTrial}
-                cardlessTrial={CARDLESS_TRIAL_OFFERED}
-                firstChargeDate={formatDate(trialEndsAt().slice(0, 10))}
-                gatewayName={GATEWAY_LABEL[gateway.name] ?? gateway.name}
-                isFakeGateway={isFakeGateway}
-              />
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col gap-2 text-sm">
-                  <p className="font-medium">Quem assina é o proprietário da empresa.</p>
-                  <p className="text-muted-foreground">
-                    Peça ao proprietário da {active.name} para assinar o {brand.name}
-                    {access.trialAvailable && gateway.supportsTrial ? ` com ${TRIAL_DAYS} dias grátis` : ""}. Os dados continuam guardados enquanto isso.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {access.inCardlessTrial ? (
-              <Link href="/dashboard" className="self-center text-sm font-medium text-primary hover:underline">
-                Voltar ao sistema
-              </Link>
-            ) : null}
+      <div data-wide className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {companies.length > 1 ? <CompanySwitcher canCreate={false} /> : null}
+          <form action={signOutAction}>
+            <Button type="submit" variant="ghost" size="sm" className="h-9">
+              Sair
+            </Button>
+          </form>
         </div>
-      </AuthSplitLayout>
+
+        {inSignup ? <SignupSteps current={3} /> : null}
+        <div className="flex flex-col gap-1.5">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">Assine o {brand.name}</h1>
+          <p className="text-base text-muted-foreground">
+            {access.inCardlessTrial && access.trialEndsAt
+              ? `Seu teste grátis vai até ${formatDate(access.trialEndsAt.slice(0, 10))}. Assine agora e continue sem interrupção.`
+              : ended
+                ? `O acesso da ${active.name} está pausado. Seus dados continuam guardados: assine e tudo volta como estava.`
+                : inSignup
+                  ? "Orçamentos, agenda, ordem de serviço e financeiro em um só lugar. Depois de assinar, você informa os dados da empresa."
+                  : `Orçamentos, agenda, ordem de serviço e financeiro da ${active.name} em um só lugar.`}
+          </p>
+        </div>
+
+        {canSubscribe ? (
+          <SubscribePanel
+            companyId={active.id}
+            plans={plans}
+            included={featured ? planOfferLines(featured.features) : []}
+            savingsCents={annualSavingsCents(forSale)}
+            trialAvailable={access.trialAvailable}
+            cardTrial={gateway.supportsTrial}
+            cardlessTrial={CARDLESS_TRIAL_OFFERED}
+            firstChargeDate={formatDate(trialEndsAt().slice(0, 10))}
+            gatewayName={GATEWAY_LABEL[gateway.name] ?? gateway.name}
+            isFakeGateway={isFakeGateway}
+        afterActivationHref={inSignup ? "/onboarding" : "/dashboard"}
+          />
+        ) : (
+          <Card>
+            <CardContent className="flex flex-col gap-2 text-sm">
+              <p className="font-medium">Quem assina é o proprietário da empresa.</p>
+              <p className="text-muted-foreground">
+                Peça ao proprietário da {active.name} para assinar o {brand.name}
+                {access.trialAvailable && gateway.supportsTrial ? ` com ${TRIAL_DAYS} dias grátis` : ""}. Os dados continuam guardados enquanto isso.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {access.inCardlessTrial ? (
+          <Link href="/dashboard" className="self-center text-sm font-medium text-primary hover:underline">
+            Voltar ao sistema
+          </Link>
+        ) : null}
+      </div>
     </TenantProvider>
   );
 }

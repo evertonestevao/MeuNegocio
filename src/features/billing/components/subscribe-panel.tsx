@@ -32,6 +32,7 @@ export function SubscribePanel({
   firstChargeDate,
   gatewayName,
   isFakeGateway,
+  afterActivationHref = "/dashboard",
 }: {
   companyId: string;
   plans: SubscribePlan[];
@@ -46,6 +47,8 @@ export function SubscribePanel({
   firstChargeDate: string;
   gatewayName: string;
   isFakeGateway: boolean;
+  /** Para onde vai depois da ativação na hora (gateway de testes). No cadastro, direto ao último passo. */
+  afterActivationHref?: string;
 }) {
   const router = useRouter();
   const monthly = plans.find((plan) => plan.interval === "month");
@@ -56,7 +59,7 @@ export function SubscribePanel({
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await (isFakeGateway ? activateFakePlanAction : checkoutAction)(prev, data);
     // No gateway fake a ativação é na hora; no real, o checkout redireciona para o pagamento.
-    if (result?.success) router.push("/dashboard");
+    if (result?.success) router.push(afterActivationHref);
     return result;
   }, undefined);
   const [trialState, startTrial, startingTrial] = useActionState(startTrialAction, undefined);

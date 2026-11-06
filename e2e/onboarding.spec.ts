@@ -17,6 +17,8 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   await expect(page.getByText("Os primeiros 7 dias são grátis.")).toBeVisible();
   await expect(page.getByText("Guardamos seu nome e e-mail a partir daqui")).toBeVisible();
 
+  // A tela dividida é a mesma nos quatro passos: só o formulário troca, o painel da marca não remonta.
+  await page.locator("aside").evaluate((element) => element.setAttribute("data-mesmo-painel", ""));
   await page.getByLabel("Seu nome").fill("Ana Etapas");
   await page.getByLabel("E-mail", { exact: true }).fill(email.toUpperCase());
   await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
@@ -40,6 +42,7 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   // Sem os dados da empresa, o painel manda de volta para o último passo.
   await page.getByRole("button", { name: "Começar agora: 7 dias grátis" }).click();
   await expect(page).toHaveURL(/\/onboarding/);
+  await expect(page.locator("aside[data-mesmo-painel]")).toHaveCount(1);
   await page.goto("/dashboard/quotes");
   await expect(page).toHaveURL(/\/onboarding/);
 

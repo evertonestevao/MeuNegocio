@@ -46,9 +46,10 @@ function BackdropChart() {
 
 /**
  * Tela dividida das páginas de acesso e do cadastro: marca à esquerda (cabeçalho compacto no celular)
- * e o conteúdo à direita. wide dá mais largura a quem tem duas colunas, como planos e dados da empresa.
+ * e o conteúdo à direita. Fica no layout do grupo (auth): trocar de passo troca só o conteúdo, sem
+ * remontar a marca. Página com data-wide no elemento raiz ganha mais largura (planos, dados da empresa).
  */
-export function AuthSplitLayout({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-1 flex-col lg:grid lg:min-h-svh lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       {/* No computador, painel só com a marca e uma frase. No celular, cabeçalho compacto. */}
@@ -75,7 +76,7 @@ export function AuthSplitLayout({ children, wide = false }: { children: React.Re
         tabIndex={-1}
         className="flex flex-1 items-start justify-center px-6 py-10 outline-none lg:items-center lg:px-12 [&_input:not([type=checkbox],[type=hidden])]:h-11 [&_[data-slot=button][type=submit]]:h-11"
       >
-        <div className={`lp-enter w-full ${wide ? "max-w-xl" : "max-w-md"} [&>[data-slot=card]]:gap-6 [&>[data-slot=card]]:overflow-visible [&>[data-slot=card]]:border-0 [&>[data-slot=card]]:bg-transparent [&>[data-slot=card]]:py-0 [&>[data-slot=card]]:shadow-none [&>[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0 [&_[data-slot=card-description]]:text-base [&_[data-slot=card-header]]:px-0 [&_[data-slot=card-title]]:text-3xl [&_[data-slot=card-title]]:font-semibold [&_[data-slot=card-title]]:tracking-tight`}>
+        <div className="lp-enter w-full max-w-md has-[>[data-wide]]:max-w-xl [&>[data-slot=card]]:gap-6 [&>[data-slot=card]]:overflow-visible [&>[data-slot=card]]:border-0 [&>[data-slot=card]]:bg-transparent [&>[data-slot=card]]:py-0 [&>[data-slot=card]]:shadow-none [&>[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0 [&_[data-slot=card-description]]:text-base [&_[data-slot=card-header]]:px-0 [&_[data-slot=card-title]]:text-3xl [&_[data-slot=card-title]]:font-semibold [&_[data-slot=card-title]]:tracking-tight">
           {children}
         </div>
       </main>
