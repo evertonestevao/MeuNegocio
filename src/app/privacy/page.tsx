@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "2. Dados da conta e da empresa",
-    body: "Início do cadastro: nome, email, e IP e navegador no aceite dos termos. Guardamos assim que você continua, antes da senha, para você retomar de onde parou e para falarmos com você sobre o cadastro.\nCadastro: nome completo, email, foto de perfil opcional e senha (armazenada de forma protegida).\nEmpresa: nome, CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
+    body: "Início do cadastro: nome, email, e IP e navegador no aceite dos termos. Guardamos assim que você continua, antes da senha, para você retomar de onde parou e para falarmos com você sobre o cadastro.\nCadastro: nome completo, email e senha (armazenada de forma protegida). Não pedimos foto de perfil.\nEmpresa: nome, logo (opcional), CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
   },
   {
     title: "3. Dados cadastrados pelas empresas",

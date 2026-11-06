@@ -1083,6 +1083,15 @@ delete from public.platform_admins where user_id = '5ec00000-0000-4000-8000-0000
 set local role authenticated;
 
 -- ---------------------------------------------------------------------------
+-- Foto de perfil desligada: ninguém grava foto no bucket nem o link dela no perfil; o nome segue.
+-- ---------------------------------------------------------------------------
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('usuário grava foto de perfil no bucket',
+  $$insert into storage.objects (bucket_id, name) values ('avatars', '5ec00000-0000-4000-8000-000000000004/avatar.png')$$);
+select sec_test.must_fail('usuário grava link de foto no perfil',
+  $$update public.profiles set avatar_url = 'https://exemplo.com/rastreador.png' where id = '5ec00000-0000-4000-8000-000000000004'$$);
+
+-- ---------------------------------------------------------------------------
 -- Logo da empresa: o caminho só aponta para a pasta da própria empresa, e o arquivo só o servidor
 -- grava. Sem isso, um owner exibiria nos PDFs dele a imagem de outra empresa (ou outro arquivo).
 -- ---------------------------------------------------------------------------

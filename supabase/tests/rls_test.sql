@@ -295,7 +295,7 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
--- Storage (bucket avatars): cada usuário só escreve na PRÓPRIA pasta.
+-- Storage (bucket avatars): foto de perfil desligada, ninguém escreve, nem na própria pasta.
 -- ---------------------------------------------------------------------------
 set local role authenticated;
 select set_config('request.jwt.claims',
@@ -303,9 +303,13 @@ select set_config('request.jwt.claims',
 
 do $$
 begin
-  -- na própria pasta: permitido
-  insert into storage.objects (bucket_id, name)
-  values ('avatars', 'a1a1a1a1-0000-4000-8000-000000000001/avatar.png');
+  -- na própria pasta: bloqueado (sem policy de escrita desde 20261106130000)
+  begin
+    insert into storage.objects (bucket_id, name)
+    values ('avatars', 'a1a1a1a1-0000-4000-8000-000000000001/avatar.png');
+    raise exception 'FALHA storage: alice gravou foto de perfil';
+  exception when sqlstate '42501' then null; -- esperado
+  end;
 
   -- na pasta do bob: bloqueado pela policy
   begin
@@ -384,7 +388,7 @@ begin
       'reseller_admin_totals', 'reseller_admin_clients', 'reseller_admin_commissions', 'reseller_admin_link_alerts']) t
     union all
     select 'authenticated', t, 'UPDATE' from unnest(array[
-      'profiles', 'companies', 'company_members', 'company_invites', 'settings',
+      'companies', 'company_members', 'company_invites', 'settings',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs', 'employees', 'employee_payment_details',
       'expense_categories', 'expense_templates', 'expenses', 'suppliers',
       'reseller_settings', 'resellers', 'commission_rules', 'reseller_clients', 'reseller_commissions']) t

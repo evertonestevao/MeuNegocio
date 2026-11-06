@@ -156,7 +156,7 @@ Código: `src/services/inviteService.ts`, `src/services/tenantService.ts`.
 | Função | Regras |
 |---|---|
 | **Editar nome** (Configurações) | De 2 a 120 caracteres. |
-| **Trocar avatar** | JPG, PNG ou WebP, até 2 MB. Validado no navegador e no servidor. Cada usuário só grava na própria pasta do storage. |
+| **Foto de perfil** | Não existe: por decisão do produto, a pessoa não envia foto. O menu e a lista de membros mostram as iniciais. O banco não aceita gravar foto (bucket `avatars` sem policy de escrita; em `profiles`, o usuário só altera o nome). A única imagem que a empresa envia é o logo. |
 
 Código: `src/services/userService.ts`, `src/server/actions/user.ts`.
 
@@ -335,7 +335,7 @@ significa escrever um adapter novo, sem mexer em regra de negócio.
 |---|---|---|
 | `PaymentGateway` | Asaas, Stripe, fake | `PAYMENT_GATEWAY` |
 | `EmailProvider` | Resend, console | `EMAIL_PROVIDER` |
-| `StorageProvider` | Supabase Storage (avatares em bucket público; fotos e assinaturas em bucket privado, com link temporário) | — |
+| `StorageProvider` | Supabase Storage (logo da empresa em bucket público; fotos e assinaturas em bucket privado, com link temporário) | — |
 | `NotificationProvider` | console | `NOTIFICATION_PROVIDER` |
 | `ErrorReporter` | Sentry, console | `ERROR_REPORTER` |
 | Rate limiter | memória, Upstash Redis | `RATE_LIMIT_STORE` |

@@ -8,7 +8,6 @@ import { CompanyLogoField } from "@/features/company/components/company-logo-fie
 import { CompanyProfileForm } from "@/features/company/components/company-profile-form";
 import { AcceptInviteButton } from "@/features/companies/components/accept-invite-button";
 import {
-  AvatarForm,
   CompanyNameForm,
   LeaveCompanyButton,
   ProfileForm,
@@ -129,11 +128,7 @@ export default async function SettingsPage() {
           <CardTitle>Perfil</CardTitle>
           <CardDescription>Como seu nome aparece para colegas de empresa</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <AvatarForm
-            initialAvatarUrl={profile?.avatar_url ?? null}
-            userName={profile?.full_name ?? ""}
-          />
+        <CardContent>
           <ProfileForm initialName={profile?.full_name ?? ""} />
         </CardContent>
       </Card>

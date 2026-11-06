@@ -44,11 +44,9 @@ test("CNPJ, CPF, telefone e valor ganham máscara ao digitar e ao salvar", async
   });
 
   await page.goto("/dashboard/settings");
-  // O campo de arquivo nativo escreveria "Choose File" no idioma do navegador.
-  await expect(page.getByRole("button", { name: "Escolher foto" })).toBeVisible();
-  await expect(page.getByText("Nenhuma foto escolhida")).toBeVisible();
-  await page.locator("#avatar").setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: Buffer.from("x") });
-  await expect(page.getByText("foto.png")).toBeVisible();
+  // Foto de perfil desligada: o único envio de imagem é o logo, com botão em português.
+  await expect(page.getByText("Nenhuma foto escolhida")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Enviar logo" })).toBeVisible();
 
   const cnpj = page.getByLabel("CNPJ");
   await cnpj.pressSequentially("11222333000181");
