@@ -586,6 +586,7 @@ Tela em `/dashboard/finance`, só para owner e admin.
 | **No cliente** | A ficha do cliente mostra "A receber deste cliente": o total, o atrasado e as parcelas, com baixa e lembrete. Só owner e admin. |
 | **Serviços fechados antes** | Viraram uma parcela única, recebida na data de competência: nenhum valor mudou. |
 | **Últimos 6 meses** | Gráfico de faturado, recebido e gastos e, logo abaixo, "Mês a mês" com faturado, recebido, gastos e caixa de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
+| **Próximas 4 semanas** (fluxo de caixa) | A partir de hoje, semana a semana: entra o que vence das parcelas a receber (já sem a taxa do cartão), sai o que está lançado com data de hoje em diante e as recorrências dos meses ainda não gerados. Mostra o que entra, o que sai, o resultado da semana e o acumulado, mais o total das 4 semanas. Não conta o saldo que já está no banco, e diz isso. O atrasado fica fora das semanas, citado à parte; se o acumulado fica negativo, avisa até quando sai mais do que entra. |
 | **Gastos por categoria** | Só do mês escolhido, da maior para a menor. |
 | **Previsão** | Aprovados a fechar e enviados aguardando resposta. Fica separada e não entra no saldo. |
 | **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |

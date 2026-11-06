@@ -1,6 +1,6 @@
 import { addMonths } from "@/lib/calendar";
 import { addDays } from "@/lib/dates";
-import { summarizeOpen } from "@/lib/installments";
+import { expectedCents, summarizeOpen } from "@/lib/installments";
 import { AppError } from "@/lib/errors";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
@@ -100,7 +100,7 @@ export function buildFinanceOverview(input: {
   };
 }
 
-export type FinanceOverview = ReturnType<typeof buildFinanceOverview>;
+export type FinanceOverview = ReturnType<typeof buildFinanceOverview> & { cashFlow?: CashFlow };
 
 export interface HomeFinance {
   /** Faturamento e gastos dos últimos 6 meses, do mais antigo ao atual. */
@@ -127,22 +127,77 @@ export interface HomeFinance {
  * vigência iguais às de public.generate_month_expenses.
  */
 export function projectUngeneratedRecurring(templates: ExpenseTemplate[], today: string, until: string): Sized[] {
+  return projectRecurringDated(templates, today, until).map(({ amount_cents }) => ({ amount_cents }));
+}
+
+/** As mesmas recorrências ainda não geradas, com a data em que vão vencer. */
+export function projectRecurringDated(templates: ExpenseTemplate[], today: string, until: string): (Sized & { date: string })[] {
   const currentMonth = `${today.slice(0, 7)}-01`;
   const lastMonth = `${until.slice(0, 7)}-01`;
-  const projected: Sized[] = [];
+  const projected: (Sized & { date: string })[] = [];
   for (let month = addMonths(currentMonth, 1); month <= lastMonth; month = addMonths(month, 1)) {
     for (const template of templates) {
       const inForce =
         template.active &&
         template.starts_on.slice(0, 7) <= month.slice(0, 7) &&
         (template.ends_on === null || template.ends_on.slice(0, 7) >= month.slice(0, 7));
-      if (inForce && addDays(month, template.day_of_month - 1) <= until) {
-        projected.push({ amount_cents: template.amount_cents });
-      }
+      const date = addDays(month, template.day_of_month - 1);
+      if (inForce && date <= until) projected.push({ amount_cents: template.amount_cents, date });
     }
   }
   return projected;
 }
+
+export interface CashFlowWeek {
+  start: string;
+  end: string;
+  inCents: number;
+  outCents: number;
+  /** Entra − sai na semana. */
+  netCents: number;
+  /** Somado desde hoje, sem o saldo que já está no banco. */
+  cumulativeCents: number;
+}
+
+export const CASH_FLOW_WEEKS = 4;
+
+/**
+ * Fluxo de caixa das próximas semanas, a partir de hoje: entra o que vence das parcelas a receber
+ * (já sem a taxa do cartão); sai o que está lançado com data de hoje em diante e as recorrências que
+ * ainda vão ser geradas. O atrasado fica à parte: não se sabe quando entra.
+ */
+export function buildCashFlow(input: {
+  today: string;
+  open: Pick<Receivable, "due_date" | "amount_cents" | "fee_cents" | "received_on">[];
+  expenses: Pick<Expense, "expense_date" | "amount_cents">[];
+  templates: ExpenseTemplate[];
+  weeks?: number;
+}) {
+  const { today, open, expenses, templates, weeks = CASH_FLOW_WEEKS } = input;
+  const until = addDays(today, weeks * 7 - 1);
+  const pending = open.filter((item) => !item.received_on);
+  const outgoing = [
+    ...expenses.filter((expense) => expense.expense_date >= today && expense.expense_date <= until).map((expense) => ({ date: expense.expense_date, amount_cents: expense.amount_cents })),
+    ...projectRecurringDated(templates, today, until),
+  ];
+  let cumulative = 0;
+  const rows: CashFlowWeek[] = Array.from({ length: weeks }, (_, index) => {
+    const start = addDays(today, index * 7);
+    const end = addDays(start, 6);
+    const inCents = pending.filter((item) => item.due_date >= start && item.due_date <= end).reduce((sum, item) => sum + expectedCents(item), 0);
+    const outCents = outgoing.filter((item) => item.date >= start && item.date <= end).reduce((sum, item) => sum + item.amount_cents, 0);
+    cumulative += inCents - outCents;
+    return { start, end, inCents, outCents, netCents: inCents - outCents, cumulativeCents: cumulative };
+  });
+  return {
+    weeks: rows,
+    overdueCents: pending.filter((item) => item.due_date < today).reduce((sum, item) => sum + expectedCents(item), 0),
+    inCents: rows.reduce((sum, week) => sum + week.inCents, 0),
+    outCents: rows.reduce((sum, week) => sum + week.outCents, 0),
+  };
+}
+
+export type CashFlow = ReturnType<typeof buildCashFlow>;
 
 export interface WeekLoadDay {
   date: string;
@@ -202,14 +257,20 @@ export function createFinanceService(readers: FinanceReaders) {
       }
       const from = addMonths(month, -5);
       const to = addDays(addMonths(month, 1), -1);
-      const [revenues, expenses, openQuotes, received, open] = await Promise.all([
+      const flowUntil = addDays(today, CASH_FLOW_WEEKS * 7 - 1);
+      const [revenues, expenses, openQuotes, received, open, upcoming, templates] = await Promise.all([
         readers.listRevenues(actor.companyId, from, to),
         readers.listExpenses(actor.companyId, from, to),
         readers.listOpenQuotes(actor.companyId),
         readers.listReceivedReceivables(actor.companyId, from, to),
         readers.listOpenReceivables(actor.companyId),
+        readers.listExpenses(actor.companyId, today, flowUntil),
+        readers.listExpenseTemplates(actor.companyId),
       ]);
-      return buildFinanceOverview({ month, today, revenues, expenses, openQuotes, received, open });
+      return {
+        ...buildFinanceOverview({ month, today, revenues, expenses, openQuotes, received, open }),
+        cashFlow: buildCashFlow({ today, open, expenses: upcoming, templates }),
+      };
     },
 
     /** Cada papel só recebe o que tem permissão de ver: finance fica null para o member. */

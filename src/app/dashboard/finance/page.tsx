@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EXPENSE_KIND_LABEL } from "@/features/expenses/schemas";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { ReceivableList } from "@/features/receivables/components/receivable-list";
+import { CashFlowCard } from "@/features/finance/components/cash-flow-card";
 import { addMonths, formatMonth, isValidDate } from "@/lib/calendar";
 import { formatDate, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
@@ -118,6 +119,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           hint={`Recebido − gastos. Pelo faturado: ${formatCents(overview.balanceCents)}`}
         />
       </div>
+
+      {overview.cashFlow ? <CashFlowCard flow={overview.cashFlow} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Cada coluna estica o último cartão até a altura da outra: nada de vão entre os cartões. */}

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
 import type { Expense, ExpenseTemplate, Receivable, RevenueListItem } from "@/types/finance";
-import { buildFinanceOverview, buildForecast, buildWeekLoad, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
+import { buildCashFlow, buildFinanceOverview, buildForecast, buildWeekLoad, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
 const MEMBER: ActorContext = { companyId: "co", role: "member" };
@@ -225,5 +225,28 @@ describe("início", () => {
     const home = await createFinanceService(readers).getHome(MEMBER, "2026-10-31");
     expect(home.awaitingReply.map((quote) => quote.id)).toEqual(["s"]);
     expect(home.awaitingClose.map((quote) => quote.id)).toEqual(["a"]);
+  });
+});
+
+describe("fluxo de caixa das próximas semanas", () => {
+  const template = (day: number, amount: number) =>
+    ({ id: `t${day}`, description: "Aluguel", amount_cents: amount, day_of_month: day, starts_on: "2026-01-01", ends_on: null, active: true }) as ExpenseTemplate;
+  const parcel = (due_date: string, amount_cents: number, fee_cents = 0) => ({ due_date, amount_cents, fee_cents, received_on: null }) as Receivable;
+
+  it("semana a semana: entra o que vence (sem a taxa), sai o lançado e a recorrência futura", () => {
+    const flow = buildCashFlow({
+      today: "2026-11-24",
+      open: [parcel("2026-11-20", 999), parcel("2026-11-25", 10_000, 349), parcel("2026-12-03", 5_000), { ...parcel("2026-11-26", 7_000), received_on: "2026-11-24" }],
+      expenses: [{ expense_date: "2026-11-23", amount_cents: 1 }, { expense_date: "2026-11-28", amount_cents: 3_000 }],
+      templates: [template(5, 12_000)],
+    });
+    expect(flow.weeks.map((week) => [week.start, week.end, week.inCents, week.outCents, week.netCents, week.cumulativeCents])).toEqual([
+      ["2026-11-24", "2026-11-30", 9_651, 3_000, 6_651, 6_651],
+      ["2026-12-01", "2026-12-07", 5_000, 12_000, -7_000, -349],
+      ["2026-12-08", "2026-12-14", 0, 0, 0, -349],
+      ["2026-12-15", "2026-12-21", 0, 0, 0, -349],
+    ]);
+    // O atrasado fica fora das semanas; o gasto de ontem já saiu.
+    expect(flow).toMatchObject({ overdueCents: 999, inCents: 14_651, outCents: 15_000 });
   });
 });
