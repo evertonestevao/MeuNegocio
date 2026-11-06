@@ -59,6 +59,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }).listMyPending(),
   ]);
 
+  // Suspensa pelo super admin (fraude, denúncia): nenhuma tela do painel abre.
+  if (active.suspended_at) redirect("/empresa-suspensa");
+
   const demoProfile = await getDemoProfile();
   // Sem assinatura válida (teste acabou, cancelada, nunca assinou): a tela de assinar. A demonstração
   // não tem assinatura de verdade e nunca bloqueia.

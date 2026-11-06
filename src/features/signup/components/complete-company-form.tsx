@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CompanyLogoField } from "@/features/company/components/company-logo-field";
+import { OwnershipDeclaration } from "@/features/company/components/ownership-declaration";
 import { TIMEZONE_LABEL } from "@/features/company/components/company-profile-fields";
 import { completeOnboardingAction } from "@/server/actions/signup";
 import type { ActionState } from "@/server/actions/action-state";
@@ -93,6 +94,8 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
       <input type="hidden" name="quoteValidityDays" value={DEFAULT_COMPANY_PROFILE.quote_validity_days} />
       <input type="hidden" name="targetMarginPercent" value={DEFAULT_COMPANY_PROFILE.target_margin_percent} />
       <input type="hidden" name="quoteDefaultNotes" value="" />
+
+      <OwnershipDeclaration />
 
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? "Salvando..." : "Concluir e entrar no sistema"}

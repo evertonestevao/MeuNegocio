@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishMoney, formatDocument, formatPhone, maskCnpj, maskCpfCnpj, maskMoney, maskPhone } from "./masks";
+import { finishMoney, formatDocument, formatPhone, isValidCnpj, maskCnpj, maskCpfCnpj, maskMoney, maskPhone } from "./masks";
 import { parseMoneyToCents } from "./money";
 
 describe("máscaras", () => {
@@ -50,5 +50,19 @@ describe("máscaras", () => {
     expect(formatPhone("ramal 12")).toBe("ramal 12");
     expect(formatDocument("98765432000110")).toBe("98.765.432/0001-10");
     expect(formatDocument("123")).toBe("123");
+  });
+});
+
+describe("isValidCnpj", () => {
+  it("aceita CNPJ com dígitos verificadores certos, com ou sem máscara", () => {
+    expect(isValidCnpj("11.222.333/0001-81")).toBe(true);
+    expect(isValidCnpj("33000167000101")).toBe(true);
+  });
+
+  it("recusa dígito errado, tamanho errado e sequência repetida", () => {
+    expect(isValidCnpj("12.345.678/0001-90")).toBe(false);
+    expect(isValidCnpj("1122233300018")).toBe(false);
+    expect(isValidCnpj("00000000000000")).toBe(false);
+    expect(isValidCnpj("11111111111111")).toBe(false);
   });
 });

@@ -71,8 +71,18 @@ export function isValidPhone(value: string): boolean {
   return digits.length === 10 || digits.length === 11;
 }
 
-export function isValidCnpjLength(value: string): boolean {
-  return digitsOnly(value).length === 14;
+/** CNPJ com 14 dígitos e dígitos verificadores certos. Sequência repetida (000…, 111…) não vale. */
+export function isValidCnpj(value: string): boolean {
+  const digits = digitsOnly(value);
+  if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
+  const check = (base: string) => {
+    const weights = base.length === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const rest = [...base].reduce((sum, digit, index) => sum + Number(digit) * weights[index], 0) % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+  const first = check(digits.slice(0, 12));
+  const second = check(digits.slice(0, 12) + first);
+  return digits.endsWith(`${first}${second}`);
 }
 
 /** Para exibir: telefone conhecido ganha a máscara; outro formato volta como veio. */

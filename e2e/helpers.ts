@@ -20,6 +20,7 @@ export async function completeCompany(page: Page, company: string) {
   await expect(page).toHaveURL(/\/onboarding/);
   await page.getByLabel("Nome da empresa").fill(company);
   await page.getByLabel("Telefone ou WhatsApp").fill("(14) 99999-0000");
+  await page.getByRole("checkbox", { name: /Declaro que sou responsável/ }).check();
   await page.getByRole("button", { name: "Concluir e entrar no sistema" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 }

@@ -49,6 +49,7 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   // Erro do servidor não apaga o que foi digitado.
   await page.getByLabel("Nome da empresa").fill("Empresa Etapas E2E");
   await page.getByLabel("Telefone ou WhatsApp").fill("(14) 9999");
+  await page.getByRole("checkbox", { name: /Declaro que sou responsável/ }).check();
   await page.getByRole("button", { name: "Concluir e entrar no sistema" }).click();
   await expect(page.getByText("Informe o telefone com DDD.")).toBeVisible();
   await expect(page.getByLabel("Nome da empresa")).toHaveValue("Empresa Etapas E2E");

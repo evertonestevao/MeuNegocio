@@ -298,6 +298,9 @@ export default async function LandingPage() {
             <Link href="/refund" className="hover:text-foreground">
               Reembolso
             </Link>
+            <Link href="/denunciar" className="hover:text-foreground">
+              Denunciar uso indevido
+            </Link>
           </nav>
           <p>
             {brand.legal.companyName} · CNPJ {brand.legal.cnpj} · {brand.legal.address}

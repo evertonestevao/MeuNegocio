@@ -21,6 +21,20 @@ export function formatTimestamp(timestamp: string | null | undefined, timezone =
   return new Date(timestamp).toLocaleDateString("pt-BR", { timeZone: timezone });
 }
 
+/** Data e hora com segundos, para registros que servem de prova: "06/11/2026 14:32:05". */
+export function formatDateTimeSeconds(timestamp: string | null | undefined, timezone = "America/Sao_Paulo"): string {
+  if (!timestamp) return "—";
+  return new Date(timestamp).toLocaleString("pt-BR", {
+    timeZone: timezone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).replace(",", "");
+}
+
 /** Número decimal para exibir: 2,5 em vez de 2.5. */
 export function formatQuantity(value: number): string {
   return value.toLocaleString("pt-BR", { maximumFractionDigits: 3 });

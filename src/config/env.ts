@@ -38,6 +38,8 @@ const serverEnvSchema = z.object({
   ASAAS_WEBHOOK_TOKEN: z.string().min(1).optional(),
   ASAAS_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
   EMAIL_PROVIDER: z.enum(["resend", "console"]).default("console"),
+  /** Consulta de CNPJ: brasilapi (base pública, sem chave) ou fake (sem rede, para testes). */
+  COMPANY_REGISTRY: z.enum(["brasilapi", "fake"]).default("brasilapi"),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.email().optional(),
   /** Cadastro público. Fechado por padrão: quem cria empresa é o super admin. */

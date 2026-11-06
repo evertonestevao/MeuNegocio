@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CompanyProfileFields } from "@/features/company/components/company-profile-fields";
+import { OwnershipDeclaration } from "@/features/company/components/ownership-declaration";
 import { TermsCheckboxes } from "@/features/terms/components/terms-checkboxes";
 import { createCompanyAction } from "@/server/actions/tenant";
 import type { ActionState } from "@/server/actions/action-state";
@@ -61,6 +62,7 @@ export function CreateCompanyForm({
       {/* Onboarding (1º acesso): aceite dos termos vigentes antes de criar.
           O required do checkbox é UX; a validação real é na server action. */}
       {requireTerms ? <TermsCheckboxes /> : null}
+      <OwnershipDeclaration />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Criando..." : "Criar empresa"}
       </Button>

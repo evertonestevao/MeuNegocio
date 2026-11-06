@@ -66,7 +66,7 @@ export function AppShell({
       <aside
         data-collapsed={collapsed}
         className={cn(
-          "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
+          "sticky top-0 hidden h-svh shrink-0 flex-col border-r print:hidden border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
           collapsed ? "w-14" : "w-60",
         )}
       >
@@ -94,7 +94,7 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground lg:border-border lg:bg-background/95 lg:text-foreground lg:backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-14 print:hidden items-center gap-2 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground lg:border-border lg:bg-background/95 lg:text-foreground lg:backdrop-blur">
           <Link href={homeHref} className="flex min-w-0 items-center gap-2.5 lg:hidden">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-lg font-extrabold text-sidebar-primary-foreground" aria-hidden>
               {brand.name.slice(0, 1)}
@@ -116,6 +116,8 @@ export function AppShell({
           {children}
         </main>
       </div>
+      {/* Na impressão (comprovantes do admin), só o conteúdo. */}
+      <div className="print:hidden">
       {area ? (
         <MobileNav
           tabs={area.items.slice(0, 4)}
@@ -126,6 +128,7 @@ export function AppShell({
       ) : (
         <TenantMobileNav pathname={pathname} pendingInvitesCount={pendingInvitesCount} areaLinks={user.areaLinks} />
       )}
+      </div>
     </div>
   );
 }

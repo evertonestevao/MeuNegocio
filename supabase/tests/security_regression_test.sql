@@ -1083,6 +1083,55 @@ delete from public.platform_admins where user_id = '5ec00000-0000-4000-8000-0000
 set local role authenticated;
 
 -- ---------------------------------------------------------------------------
+-- Prevenção de fraude: provas só o super admin lê e ninguém grava pela API; a empresa suspensa
+-- não se reativa, e o link do orçamento dela não abre.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.company_declarations (company_id, user_name, user_email, company_name, statement)
+values ('5ec0c000-0000-4000-8000-000000000001', 'Owner', 'sec-owner@test.local', 'Pro', 'Declaro que sou responsável.');
+update public.companies set suspended_at = now(), suspension_reason = 'Teste de suspensão'
+where id = '5ec0c000-0000-4000-8000-000000000002';
+set local role authenticated;
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select sec_test.must_fail('owner lê a própria declaração direto', $$select * from public.company_declarations$$);
+select sec_test.must_fail('owner forja declaração',
+  $$insert into public.company_declarations (company_id, user_name, user_email, company_name, statement)
+    values ('5ec0c000-0000-4000-8000-000000000001', 'X', 'x@x', 'Pro', 'falsa')$$);
+select sec_test.must_fail('owner apaga declaração', $$delete from public.company_declarations$$);
+select sec_test.must_fail('owner forja conferência de CNPJ',
+  $$insert into public.company_cnpj_checks (company_id, cnpj, informed_name, result, source)
+    values ('5ec0c000-0000-4000-8000-000000000001', '11222333000181', 'Pro', 'match', 'forjado')$$);
+select sec_test.must_fail('owner apaga denúncia', $$delete from public.abuse_reports$$);
+select sec_test.must_fail('owner se suspende ou mexe na suspensão',
+  $$update public.companies set suspended_at = now() where id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_fail('owner muda a etapa do próprio cadastro',
+  $$update public.companies set onboarding_pending = not onboarding_pending where id = '5ec0c000-0000-4000-8000-000000000001'$$);
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000005', 'sec-free@test.local');
+select sec_test.must_fail('empresa suspensa se reativa',
+  $$update public.companies set suspended_at = null, suspension_reason = null where id = '5ec0c000-0000-4000-8000-000000000002'$$);
+
+reset role;
+do $$
+begin
+  insert into public.clients (id, company_id, name) values ('5ec0d000-0000-4000-8000-000000000001', '5ec0c000-0000-4000-8000-000000000001', 'Cliente Pro');
+  insert into public.quotes (id, company_id, client_id, number, status, public_token, valid_until)
+  values ('5ec0e000-0000-4000-8000-000000000001', '5ec0c000-0000-4000-8000-000000000001', '5ec0d000-0000-4000-8000-000000000001', 9001, 'sent', repeat('a', 64), current_date + 10);
+  if public.get_public_quote(repeat('a', 64)) is null then
+    raise exception 'FALHA fraude: link do orçamento de empresa ativa não abriu';
+  end if;
+  update public.companies set suspended_at = now(), suspension_reason = 'Teste de suspensão'
+  where id = '5ec0c000-0000-4000-8000-000000000001';
+  if public.get_public_quote(repeat('a', 64)) is not null then
+    raise exception 'FALHA fraude: link do orçamento de empresa suspensa abriu';
+  end if;
+  update public.companies set suspended_at = null, suspension_reason = null where id = '5ec0c000-0000-4000-8000-000000000001';
+end $$;
+update public.companies set suspended_at = null, suspension_reason = null where id = '5ec0c000-0000-4000-8000-000000000002';
+set local role authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Foto de perfil desligada: ninguém grava foto no bucket nem o link dela no perfil; o nome segue.
 -- ---------------------------------------------------------------------------
 select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
@@ -1147,7 +1196,8 @@ begin
   where table_schema = 'public' and grantee in ('anon', 'authenticated')
     and (
       (table_name in ('subscriptions', 'audit_logs', 'plans', 'platform_admins', 'plan_audit_log',
-        'terms_acceptances', 'user_consents', 'signup_leads')
+        'terms_acceptances', 'user_consents', 'signup_leads', 'company_declarations', 'company_cnpj_checks',
+        'abuse_reports', 'company_suspension_events')
         and privilege_type <> 'SELECT')
       or (table_name = 'company_members' and privilege_type not in ('SELECT', 'UPDATE'))
     );

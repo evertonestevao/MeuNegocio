@@ -15,6 +15,7 @@ import { recordAudit } from "@/server/audit";
 import { rejectInDemo } from "@/server/demo/mode";
 import { createRateLimiter } from "@/server/rateLimit";
 import { getCompanyProfileService } from "@/server/quotes";
+import { checkCompanyCnpj, recordOwnershipDeclaration } from "@/server/companyTrust";
 import { isSignupOpen } from "@/server/signup";
 import {
   getSignupFlowService,
@@ -148,10 +149,13 @@ export async function completeOnboardingAction(_prev: ActionState | undefined, f
     if (!parsed.data.phone) return { error: "Informe o telefone com DDD." };
     const { name, ...profile } = parsed.data;
 
+    // A declaração vem antes de tudo: sem ela, nada é gravado.
+    await recordOwnershipDeclaration({ companyId: active.id, companyName: name, cnpj: profile.cnpj, accepted: formData.get("ownership_declaration") });
     const client = await getSupabaseServerClient();
     await createTenantService(createSupabaseTenantRepository(client)).updateCompany(active.id, { name });
     await (await getCompanyProfileService()).save({ companyId: active.id, role: active.role }, profile);
     await setOnboardingPending(active.id, false);
+    if (profile.cnpj) await checkCompanyCnpj({ companyId: active.id, cnpj: profile.cnpj, companyName: name });
     await getSignupFlowService().markDoneByCompany(active.id);
     await recordAudit({ companyId: active.id, action: "company.onboarding_completed", entityType: "company", entityId: active.id, metadata: { name } });
   } catch (err) {

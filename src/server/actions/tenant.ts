@@ -11,6 +11,7 @@ import { AppError } from "@/lib/errors";
 import { recordCompanyReferralFromCookie } from "@/modules/resellers/server";
 import { recordAudit } from "@/server/audit";
 import { getPlatformAdminId } from "@/server/plans";
+import { checkCompanyCnpj, recordOwnershipDeclaration } from "@/server/companyTrust";
 import { isSignupOpen } from "@/server/signup";
 import { getServerBillingService, syncCompanySeats } from "@/server/billing";
 import { getCompanyProfileService } from "@/server/quotes";
@@ -80,16 +81,23 @@ export async function createCompanyAction(
       );
     }
 
+    // Sem a declaração de responsabilidade, a empresa não é criada.
+    if (formData.get("ownership_declaration") !== "on") {
+      throw new AppError("validation_error", "Para continuar, marque a declaração de que é responsável pela empresa.");
+    }
+
     const tenant = await getTenantService();
     const company = await tenant.createCompany({ name: formData.get("name") });
     companyId = company.id;
     await setActiveCompanyCookie(companyId);
     await recordCompanyReferralFromCookie(companyId);
+    await recordOwnershipDeclaration({ companyId, companyName: company.name, cnpj: profile?.cnpj ?? null, accepted: "on" });
 
     if (profile) {
       try {
         const profiles = await getCompanyProfileService();
         await profiles.save({ companyId, role: company.role }, profile);
+        if (profile.cnpj) await checkCompanyCnpj({ companyId, cnpj: profile.cnpj, companyName: company.name });
       } catch (err) {
         // A empresa já existe: repetir o onboarding não é possível, então leva o usuário
         // até a tela onde ele preenche de novo, em vez de perder os dados em silêncio.

@@ -22,6 +22,7 @@ export const metadata: Metadata = { title: "Criar empresa" };
  */
 export default async function OnboardingPage() {
   const { active } = await getActiveTenant();
+  if (active?.suspended_at) redirect("/empresa-suspensa");
   if (active) {
     if (!permissionService.canEditCompany(active.role) || !(await isOnboardingPending(active.id))) redirect("/dashboard");
     const profile = await (await getCompanyProfileService()).get(active.id);

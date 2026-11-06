@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
-import { formatDocument, formatPhone, isValidCnpjLength, isValidPhone } from "@/lib/masks";
+import { formatDocument, formatPhone, isValidCnpj, isValidPhone } from "@/lib/masks";
 import type { ActorContext } from "@/server/actor";
 import type { CompanyProfile } from "@/types/database";
 import { permissionService } from "./permissionService";
@@ -20,7 +20,7 @@ const optionalText = (max: number) =>
 
 export const companyProfileSchema = z.object({
   cnpj: optionalText(20)
-    .refine((value) => value === null || isValidCnpjLength(value), "Informe o CNPJ com 14 dígitos.")
+    .refine((value) => value === null || isValidCnpj(value), "CNPJ inválido. Confira os números.")
     .transform((value) => (value ? formatDocument(value) : null)),
   phone: optionalText(30)
     .refine((value) => value === null || isValidPhone(value), "Informe o telefone com DDD.")

@@ -377,7 +377,7 @@ begin
     select 'anon', t, p from unnest(array['terms_versions']) t, unnest(array['SELECT']) p
     union all
     select 'authenticated', t, 'SELECT' from unnest(array[
-      'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'signup_leads', 'profiles', 'companies',
+      'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'signup_leads', 'company_declarations', 'company_cnpj_checks', 'abuse_reports', 'company_suspension_events', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
       'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'company_monthly_revenues', 'receivables', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
       'expense_categories', 'expense_templates', 'expenses', 'suppliers', 'time_entries', 'time_entry_dismissals',

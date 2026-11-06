@@ -35,6 +35,9 @@ export interface Company {
   created_by: string | null;
   /** Criada pelo cadastro em etapas: o nome é provisório até a pessoa preencher os dados essenciais. */
   onboarding_pending: boolean;
+  /** Suspensa pelo super admin (fraude, denúncia): sem acesso ao painel e sem link de orçamento. */
+  suspended_at?: string | null;
+  suspension_reason?: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -381,6 +384,9 @@ export interface Subscription {
 
 export type SignupStage = "contact" | "account" | "done";
 
+/** Conclusão da conferência do CNPJ na base pública. */
+export type CnpjCheckResult = "match" | "name_mismatch" | "inactive" | "not_found" | "unavailable";
+
 /** Cadastro em etapas: nome, e-mail e aceite guardados já na primeira tela (tabela da plataforma). */
 export interface SignupLead {
   id: string;
@@ -396,6 +402,63 @@ export interface SignupLead {
   company_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Declaração de responsabilidade pela empresa, guardada como prova (só inclusão). */
+export interface CompanyDeclaration {
+  id: string;
+  company_id: string;
+  user_id: string | null;
+  user_name: string;
+  user_email: string;
+  company_name: string;
+  cnpj: string | null;
+  statement: string;
+  terms_version_id: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  declared_at: string;
+}
+
+export interface CompanyCnpjCheck {
+  id: string;
+  company_id: string;
+  cnpj: string;
+  informed_name: string;
+  result: CnpjCheckResult;
+  official_name: string | null;
+  trade_name: string | null;
+  situation: string | null;
+  opened_on: string | null;
+  city: string | null;
+  state: string | null;
+  declarant_in_partners: boolean | null;
+  source: string;
+  checked_at: string;
+}
+
+export interface AbuseReport {
+  id: string;
+  company_id: string | null;
+  quote_id: string | null;
+  company_name: string | null;
+  reason: "impersonation" | "suspicious_charge" | "other";
+  message: string;
+  reporter_name: string | null;
+  reporter_contact: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface CompanySuspensionEvent {
+  id: string;
+  company_id: string;
+  action: "suspended" | "reactivated";
+  reason: string;
+  actor_id: string | null;
+  actor_email: string;
+  created_at: string;
 }
 
 export interface TermsVersion {

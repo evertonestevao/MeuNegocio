@@ -5,6 +5,8 @@ import { z } from "zod";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
 import { getCompanyLogoService } from "@/server/companyLogo";
+import { checkCompanyCnpj } from "@/server/companyTrust";
+import { getActiveTenant } from "@/server/tenant";
 import { rejectInDemo } from "@/server/demo/mode";
 import { getCompanyProfileService } from "@/server/quotes";
 import { companyProfileSchema } from "@/services/companyProfileService";
@@ -18,7 +20,13 @@ export async function saveCompanyProfileAction(
     const actor = await getActor();
     const input = companyProfileSchema.parse(Object.fromEntries(formData));
     const service = await getCompanyProfileService();
+    const previousCnpj = (await service.get(actor.companyId)).cnpj;
     await service.save(actor, input);
+    // CNPJ novo ou trocado: confere de novo na base pública.
+    if (input.cnpj && input.cnpj !== previousCnpj) {
+      const { active } = await getActiveTenant();
+      await checkCompanyCnpj({ companyId: actor.companyId, cnpj: input.cnpj, companyName: active?.name ?? "" });
+    }
     await recordAudit({ companyId: actor.companyId, action: "company_profile.updated", entityType: "company", entityId: actor.companyId });
     revalidatePath("/dashboard/settings");
     return { success: "Dados da empresa salvos" };

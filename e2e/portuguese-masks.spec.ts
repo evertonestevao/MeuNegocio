@@ -58,7 +58,7 @@ test("CNPJ, CPF, telefone e valor ganham máscara ao digitar e ao salvar", async
   // Número incompleto é recusado, mesmo com a máscara.
   await cnpj.fill("112223");
   await page.getByRole("button", { name: "Salvar dados" }).click();
-  await expect(page.getByText("Informe o CNPJ com 14 dígitos.")).toBeVisible();
+  await expect(page.getByText("CNPJ inválido. Confira os números.")).toBeVisible();
 
   await page.goto("/dashboard/clients");
   await page.getByRole("button", { name: "Novo cliente" }).or(page.getByRole("link", { name: "Novo cliente" })).click();

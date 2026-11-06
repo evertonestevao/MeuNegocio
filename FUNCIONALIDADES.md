@@ -36,6 +36,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 24. [Financeiro](#24-financeiro)
 25. [Custos e resultado por serviço](#25-custos-e-resultado-por-serviço)
 26. [Demonstração](#26-demonstração)
+27. [Prevenção de fraude e comprovantes](#27-prevenção-de-fraude-e-comprovantes)
 
 ---
 
@@ -308,6 +309,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, o que acontece sem assinatura (dados guardados, acesso pausado), membros extras e como pedir. |
+| `/denunciar` | Denúncia de uso indevido, sem login (seção 27). Também no rodapé da página inicial e no fim do link de cada orçamento. |
 | `/demo` | Demonstração sem login: abre as telas reais de `/dashboard` com uma empresa fictícia (seção 26). |
 | `/orcamento/[token]` | Link de aprovação do orçamento (seção 18). Sem login e fora de buscadores. |
 
@@ -324,7 +326,7 @@ CNPJ, endereço, email de suporte e do encarregado de dados.
 | **Health check** (`GET /api/health`) | Retorna 200 `{"status":"ok"}` ou 503 com o item que falhou. Checa o banco com timeout de 3 s e não expõe detalhes internos. |
 | **Monitoramento de erros** | `ERROR_REPORTER=console` (padrão, só log no servidor) ou `sentry` (exige `SENTRY_DSN`). Captura erros de actions, rotas de API e os que o Next pega sozinho. Remove dados sensíveis antes do envio. |
 | **Formato único de erro** | O usuário vê só uma mensagem segura. Stack trace e detalhes ficam no servidor (`src/lib/errors`). |
-| **Rate limit** | Login, cadastro e recuperação de senha (por email), início do cadastro (por endereço de rede e por e-mail), criação de conta pelo cadastro em etapas (por endereço de rede), convites (20/hora) e exportação/exclusão de conta (5/hora). Store `memory` (dev) ou `redis` (Upstash, produção). |
+| **Rate limit** | Login, cadastro e recuperação de senha (por email), denúncia de uso indevido (5 por hora por endereço de rede), início do cadastro (por endereço de rede e por e-mail), criação de conta pelo cadastro em etapas (por endereço de rede), convites (20/hora) e exportação/exclusão de conta (5/hora). Store `memory` (dev) ou `redis` (Upstash, produção). |
 
 ## 14. Integrações e provedores trocáveis
 
@@ -335,6 +337,7 @@ significa escrever um adapter novo, sem mexer em regra de negócio.
 |---|---|---|
 | `PaymentGateway` | Asaas, Stripe, fake | `PAYMENT_GATEWAY` |
 | `EmailProvider` | Resend, console | `EMAIL_PROVIDER` |
+| `CompanyRegistry` (consulta de CNPJ) | BrasilAPI (base pública da Receita, sem chave), fake (sem rede, para testes) | `COMPANY_REGISTRY` |
 | `StorageProvider` | Supabase Storage (logo da empresa em bucket público; fotos e assinaturas em bucket privado, com link temporário) | — |
 | `NotificationProvider` | console | `NOTIFICATION_PROVIDER` |
 | `ErrorReporter` | Sentry, console | `ERROR_REPORTER` |
@@ -641,3 +644,31 @@ Qualquer pessoa entra por "Ver demonstração", na página inicial, e navega pel
 | **Fora da demonstração** | Painel de planos, revendedores e demais áreas fora de `/dashboard` redirecionam para o início da demonstração. |
 
 Um cookie falso não dá acesso a nada: ele só faz o servidor entregar os dados fictícios.
+
+## 27. Prevenção de fraude e comprovantes
+
+Para dificultar que alguém cadastre uma empresa que não é dela e para guardar prova do que aconteceu.
+Nada aqui atrapalha quem é honesto: a declaração é um clique e a conferência do CNPJ só sinaliza.
+
+| Função | Como funciona | Regras |
+|---|---|---|
+| **Declaração de responsabilidade** | Obrigatória no último passo do cadastro e em "Nova empresa": "Declaro que sou responsável por esta empresa ou estou autorizado por ela a usar o MeuNegócio em seu nome, e que os dados informados são verdadeiros." | Sem marcar, a empresa não é criada nem concluída. Guardada em `company_declarations` com o texto exato, nome e e-mail de quem declarou, empresa e CNPJ da hora, versão dos termos, IP e navegador. Empresas criadas pelo super admin não têm declaração. |
+| **CNPJ válido** | O CNPJ dos dados da empresa precisa ter os dígitos verificadores certos ("CNPJ inválido. Confira os números."). | Vale no cadastro e em Configurações. |
+| **Conferência na base pública** | No cadastro com CNPJ e a cada troca de CNPJ, consulta a base pública da Receita (BrasilAPI) e guarda em `company_cnpj_checks`: CNPJ confere, nome não confere, CNPJ não ativo, CNPJ não existe ou consulta indisponível; razão social, nome fantasia, situação, abertura e município; e se o nome de quem declarou aparece no quadro de sócios (primeiro e último nome). | Não bloqueia: só sinaliza. A lista de sócios não é guardada, só o sim ou não. Falha da base fica como "indisponível" e não impede o cadastro. |
+| **Denúncia** (`/denunciar`) | Sem login: motivo (se passa por outra empresa, cobrança suspeita, outro), relato, nome opcional e contato. Vinda do link de um orçamento ("Denunciar uso indevido" no fim da página), já leva a empresa e o orçamento. O suporte (`brand.legal.supportEmail`) recebe um aviso por e-mail. | 5 por hora por endereço de rede e campo escondido contra robôs. Guardada em `abuse_reports` com IP e navegador. Na demonstração, é recusada. |
+| **Sinais em `/admin/empresas`** | Cada empresa mostra: suspensa, resultado da última conferência do CNPJ quando não confere, "Fora do quadro de sócios" e o número de denúncias. O nome abre os comprovantes. | Só super admin. |
+| **Denúncias** (`/admin/denuncias`) | As 100 mais recentes, com motivo, relato, contato e IP, ligadas à empresa. | Só super admin. |
+| **Comprovantes da empresa** (`/admin/empresas/[id]`) | Dados da empresa, declarações, conferências do CNPJ, denúncias e histórico de suspensão. "Imprimir ou salvar em PDF" imprime só o conteúdo, com a data em que foi gerado. | Só super admin. |
+| **Suspender e reativar** | Na página de comprovantes, com motivo obrigatório. Suspensa, a empresa não abre nenhuma tela do painel (vai para `/empresa-suspensa`, que mostra o contato do suporte sem citar o motivo), as ações do servidor recusam e os links de orçamento dela deixam de abrir (404). Os dados ficam guardados. | Cada suspensão e reativação vai para `company_suspension_events` (quem, quando, motivo) e para a auditoria da empresa. A empresa não consegue se reativar pela API. |
+
+**Prova guardada.** As quatro tabelas só recebem linhas novas, gravadas pelo servidor: ninguém edita
+nem apaga pela aplicação, e só o super admin lê. Cada linha guarda cópia dos dados da hora (nome,
+e-mail, empresa), então continua valendo mesmo se a conta for excluída. Não há exclusão automática.
+
+**Termos.** A versão 2 dos Termos (migration `20261106140000`) acrescenta "Uso em nome de uma
+empresa": proíbe usar nome, CNPJ ou logo de terceiros e prevê a suspensão. Quem aceitou a versão 1
+aceita de novo no próximo acesso.
+
+**Ainda não feito:** confirmação do e-mail no cadastro (depende do envio de e-mail configurado) e
+CPF ou CNPJ do pagador na assinatura (junto com a validação do Asaas no sandbox).
+

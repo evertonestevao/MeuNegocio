@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "2. Dados da conta e da empresa",
-    body: "Início do cadastro: nome, email, e IP e navegador no aceite dos termos. Guardamos assim que você continua, antes da senha, para você retomar de onde parou e para falarmos com você sobre o cadastro.\nCadastro: nome completo, email e senha (armazenada de forma protegida). Não pedimos foto de perfil.\nEmpresa: nome, logo (opcional), CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
+    body: "Início do cadastro: nome, email, e IP e navegador no aceite dos termos. Guardamos assim que você continua, antes da senha, para você retomar de onde parou e para falarmos com você sobre o cadastro.\nCadastro: nome completo, email e senha (armazenada de forma protegida). Não pedimos foto de perfil.\nEmpresa: nome, logo (opcional), CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa; IP e navegador no aceite dos termos, nos consentimentos e na declaração de responsabilidade pela empresa; e a conferência do CNPJ na base pública da Receita (situação, razão social e se o nome de quem cadastrou aparece no quadro de sócios, sem guardar a lista de sócios).\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
   },
   {
     title: "3. Dados cadastrados pelas empresas",
@@ -45,7 +45,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "10. Retenção",
-    body: "Mantemos os dados enquanto a conta e a empresa estiverem ativas e pelo prazo exigido por lei após o encerramento. Registros apagados nas telas e empresas encerradas saem de uso, mas podem continuar guardados. Fotos e assinaturas de ordens de serviço concluídas seguem esse mesmo tratamento. O início do cadastro (nome, email e aceite guardados antes da senha) é apagado automaticamente 90 dias depois da última atualização. Fora isso, não há exclusão automática por prazo: para pedir a eliminação, use o canal da seção 11.",
+    body: "Mantemos os dados enquanto a conta e a empresa estiverem ativas e pelo prazo exigido por lei após o encerramento. Registros apagados nas telas e empresas encerradas saem de uso, mas podem continuar guardados. Fotos e assinaturas de ordens de serviço concluídas seguem esse mesmo tratamento. O início do cadastro (nome, email e aceite guardados antes da senha) é apagado automaticamente 90 dias depois da última atualização. A declaração de responsabilidade pela empresa, a conferência do CNPJ na base pública da Receita, as denúncias de uso indevido e o histórico de suspensão são guardados enquanto forem necessários para prevenir fraude e para defesa em processo administrativo ou judicial (LGPD, art. 7º, VI e IX). Fora isso, não há exclusão automática por prazo: para pedir a eliminação, use o canal da seção 11.",
   },
   {
     title: "11. Seus direitos (LGPD, art. 18)",

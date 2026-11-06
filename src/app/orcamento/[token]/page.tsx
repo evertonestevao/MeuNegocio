@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicQuotePdfButton, PublicQuoteResponseForm } from "@/features/quotes/components/public-quote";
@@ -8,6 +9,7 @@ import { quoteItemDetail } from "@/features/quotes/pdf";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
+import { brand } from "@/config/brand";
 import { DEMO_QUOTE_TOKEN } from "@/config/demo";
 import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository, getPublicQuoteSignatureUrl } from "@/server/quotes";
 import { createRateLimiter } from "@/server/rateLimit";
@@ -198,6 +200,14 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
           )}
         </CardContent>
       </Card>
+      {isDemo ? null : (
+        <p className="text-center text-xs text-muted-foreground">
+          Este orçamento foi emitido pela {document.company.name} pelo {brand.name}. Desconfia dele?{" "}
+          <Link href={`/denunciar?orcamento=${token}`} className="underline underline-offset-4 hover:text-foreground">
+            Denunciar uso indevido
+          </Link>
+        </p>
+      )}
     </main>
   );
 }

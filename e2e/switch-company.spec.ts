@@ -14,6 +14,7 @@ test("usuário com duas empresas alterna a ativa pelo switcher", async ({ page }
   await page.getByRole("button", { name: /Primeira Empresa E2E/ }).click();
   await page.getByRole("menuitem", { name: "Nova empresa" }).click();
   await page.getByLabel("Nome da empresa").fill("Segunda Empresa E2E");
+  await page.getByRole("checkbox", { name: /Declaro que sou responsável/ }).check();
   await page.getByRole("button", { name: "Criar empresa" }).click();
 
   // nova empresa vira a ativa e, sem assinatura, passa pela tela de assinar

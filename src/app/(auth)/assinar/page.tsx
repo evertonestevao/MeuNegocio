@@ -37,6 +37,7 @@ export default async function SubscribePage() {
   if (!userData.user) redirect("/login");
   const { companies, active } = await getActiveTenant();
   if (!active) redirect("/dashboard");
+  if (active.suspended_at) redirect("/empresa-suspensa");
 
   const access = await getCompanyAccess(active.id);
   // Com acesso pago ou teste com cartão, não há o que assinar aqui. No teste sem cartão, dá para assinar antes do fim.
