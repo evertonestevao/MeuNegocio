@@ -7,11 +7,11 @@ import Link from "next/link";
  * separado — LGPD). Nativos: funcionam sem JS e postam "on" no FormData.
  * Reutilizados no onboarding e na página de reaceite.
  */
-export function TermsCheckboxes() {
+export function TermsCheckboxes({ accepted = false, emailConsent = false }: { accepted?: boolean; emailConsent?: boolean } = {}) {
   return (
     <div className="flex flex-col gap-3 text-sm">
       <label className="flex items-start gap-2">
-        <input type="checkbox" name="accept_terms" required className="mt-0.5 size-4 accent-primary" />
+        <input type="checkbox" name="accept_terms" required defaultChecked={accepted} className="mt-0.5 size-4 accent-primary" />
         <span>
           Li e aceito os{" "}
           <Link
@@ -27,7 +27,7 @@ export function TermsCheckboxes() {
         </span>
       </label>
       <label className="flex items-start gap-2 text-muted-foreground">
-        <input type="checkbox" name="email_consent" className="mt-0.5 size-4 accent-primary" />
+        <input type="checkbox" name="email_consent" defaultChecked={emailConsent} className="mt-0.5 size-4 accent-primary" />
         <span>Aceito receber comunicações por e-mail (opcional — pode revogar depois)</span>
       </label>
     </div>

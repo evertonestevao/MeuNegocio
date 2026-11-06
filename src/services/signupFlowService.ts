@@ -34,6 +34,8 @@ export interface SignupLeadRepository {
     evidence: RequestEvidence;
   }): Promise<string>;
   findById(id: string): Promise<SignupLead | null>;
+  /** Apaga só cadastro que ainda espera a senha. */
+  deletePending(id: string): Promise<void>;
   markAccount(id: string, data: { userId: string; companyId: string }): Promise<void>;
   markDoneByCompany(companyId: string): Promise<void>;
   listRecent(limit: number): Promise<SignupLead[]>;
@@ -48,6 +50,13 @@ interface Deps {
 }
 
 export function createSignupFlowService({ repo, ipLimiter, emailLimiter }: Deps) {
+  /** Cadastro que ainda espera a senha. Já usado ou inexistente: o primeiro passo recomeça. */
+  async function getPending(leadId: string | undefined): Promise<SignupLead | null> {
+    if (!leadId || !z.uuid().safeParse(leadId).success) return null;
+    const lead = await repo.findById(leadId);
+    return lead?.stage === "contact" ? lead : null;
+  }
+
   return {
     /**
      * Primeiro passo. Campo escondido preenchido é robô: responde como se tivesse dado certo e não
@@ -55,7 +64,7 @@ export function createSignupFlowService({ repo, ipLimiter, emailLimiter }: Deps)
      */
     async start(
       input: Record<string, unknown>,
-      context: { evidence: RequestEvidence; termsVersionId: string | null },
+      context: { evidence: RequestEvidence; termsVersionId: string | null; previousLeadId?: string },
     ): Promise<{ leadId: string | null }> {
       await ipLimiter.consume(`signup-lead-ip:${context.evidence.ipAddress ?? "desconhecido"}`);
       if (typeof input.website === "string" && input.website.trim() !== "") return { leadId: null };
@@ -72,15 +81,13 @@ export function createSignupFlowService({ repo, ipLimiter, emailLimiter }: Deps)
         emailConsent: parsed.data.email_consent === "on",
         evidence: context.evidence,
       });
+      // Voltou para corrigir e trocou o e-mail: o cadastro com o e-mail errado não fica para trás.
+      const previous = await getPending(context.previousLeadId);
+      if (previous && previous.id !== leadId) await repo.deletePending(previous.id);
       return { leadId };
     },
 
-    /** Cadastro que ainda espera a senha. Já usado ou inexistente: o primeiro passo recomeça. */
-    async getPending(leadId: string | undefined): Promise<SignupLead | null> {
-      if (!leadId || !z.uuid().safeParse(leadId).success) return null;
-      const lead = await repo.findById(leadId);
-      return lead?.stage === "contact" ? lead : null;
-    },
+    getPending,
 
     markAccount: repo.markAccount,
     markDoneByCompany: repo.markDoneByCompany,

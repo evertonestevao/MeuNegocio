@@ -14,7 +14,8 @@ const open: RateLimiter = { consume: async () => {} };
 function setup({ repo: overrides = {}, ipLimiter = open, emailLimiter = open }: { repo?: Partial<SignupLeadRepository>; ipLimiter?: RateLimiter; emailLimiter?: RateLimiter } = {}) {
   const repo = {
     upsertByEmail: vi.fn(async () => LEAD_ID),
-    findById: vi.fn(async () => null),
+    findById: vi.fn(async (): Promise<SignupLead | null> => null),
+    deletePending: vi.fn(async () => {}),
     markAccount: vi.fn(async () => {}),
     markDoneByCompany: vi.fn(async () => {}),
     listRecent: vi.fn(async () => []),
@@ -73,6 +74,31 @@ describe("cadastro em etapas: primeiro passo", () => {
     await expect(
       service.start({ ...INPUT, email: "ANA@exemplo.com" }, { ...CONTEXT, evidence: { ...EVIDENCE, ipAddress: "10.0.0.9" } }),
     ).rejects.toThrow("Muitas tentativas");
+  });
+});
+
+describe("cadastro em etapas: voltar para corrigir", () => {
+  const OLD_ID = "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+
+  it("trocou o e-mail: apaga o cadastro com o e-mail errado", async () => {
+    const findById = vi.fn(async () => ({ id: OLD_ID, stage: "contact" }) as SignupLead);
+    const { repo, service } = setup({ repo: { findById } });
+    expect(await service.start(INPUT, { ...CONTEXT, previousLeadId: OLD_ID })).toEqual({ leadId: LEAD_ID });
+    expect(repo.deletePending).toHaveBeenCalledWith(OLD_ID);
+  });
+
+  it("mesmo e-mail atualiza o mesmo cadastro, sem apagar nada", async () => {
+    const findById = vi.fn(async () => ({ id: LEAD_ID, stage: "contact" }) as SignupLead);
+    const { repo, service } = setup({ repo: { findById } });
+    await service.start(INPUT, { ...CONTEXT, previousLeadId: LEAD_ID });
+    expect(repo.deletePending).not.toHaveBeenCalled();
+  });
+
+  it("cadastro anterior que já virou conta não é apagado", async () => {
+    const findById = vi.fn(async () => ({ id: OLD_ID, stage: "account" }) as SignupLead);
+    const { repo, service } = setup({ repo: { findById } });
+    await service.start(INPUT, { ...CONTEXT, previousLeadId: OLD_ID });
+    expect(repo.deletePending).not.toHaveBeenCalled();
   });
 });
 

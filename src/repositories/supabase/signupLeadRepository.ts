@@ -38,6 +38,11 @@ export function createSupabaseSignupLeadRepository(adminClient: SupabaseClient):
       return data;
     },
 
+    async deletePending(id) {
+      const { error } = await adminClient.from("signup_leads").delete().eq("id", id).eq("stage", "contact");
+      if (error) throw new AppError("internal_error", "Falha ao apagar o cadastro", error);
+    },
+
     async markAccount(id, { userId, companyId }) {
       const { error } = await adminClient
         .from("signup_leads")

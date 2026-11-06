@@ -46,7 +46,7 @@ export default async function CreatePasswordPage() {
           </div>
         </AuthForm>
         <p className="text-center text-sm text-muted-foreground">
-          E-mail errado?{" "}
+          Nome ou e-mail errado?{" "}
           <Link href="/comecar" className="text-foreground underline underline-offset-4">
             Corrigir
           </Link>

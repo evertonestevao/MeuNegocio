@@ -8,8 +8,17 @@ import { AuthForm } from "@/features/auth/components/auth-form";
 import { TermsCheckboxes } from "@/features/terms/components/terms-checkboxes";
 import { startSignupAction } from "@/server/actions/signup";
 
-/** Primeiro passo: nome, e-mail e aceite. Tudo é guardado ao continuar; o plano vem no passo seguinte. */
-export function LeadForm({ trialDays }: { trialDays: number }) {
+export interface LeadFormValues {
+  fullName: string;
+  email: string;
+  emailConsent: boolean;
+}
+
+/**
+ * Primeiro passo: nome, e-mail e aceite. Tudo é guardado ao continuar; o plano vem no passo seguinte.
+ * Quem volta do passo da senha para corrigir encontra o que já tinha preenchido.
+ */
+export function LeadForm({ trialDays, initial }: { trialDays: number; initial?: LeadFormValues }) {
   return (
     <AuthForm action={startSignupAction} submitLabel="Continuar">
       <p className="flex gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-3 text-sm">
@@ -21,11 +30,11 @@ export function LeadForm({ trialDays }: { trialDays: number }) {
       </p>
       <div className="flex flex-col gap-2">
         <Label htmlFor="fullName">Seu nome</Label>
-        <Input id="fullName" name="fullName" autoComplete="name" minLength={2} maxLength={120} required />
+        <Input id="fullName" name="fullName" autoComplete="name" minLength={2} maxLength={120} defaultValue={initial?.fullName} required />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" maxLength={254} required />
+        <Input id="email" name="email" type="email" autoComplete="email" maxLength={254} defaultValue={initial?.email} required />
       </div>
       {/* Campo isca: invisível para pessoas, robôs costumam preencher. */}
       <div className="absolute -left-[9999px] size-px overflow-hidden" aria-hidden>
@@ -42,7 +51,7 @@ export function LeadForm({ trialDays }: { trialDays: number }) {
           </Link>
         </span>
       </p>
-      <TermsCheckboxes />
+      <TermsCheckboxes accepted={Boolean(initial)} emailConsent={initial?.emailConsent} />
     </AuthForm>
   );
 }

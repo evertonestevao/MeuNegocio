@@ -52,14 +52,14 @@ function requireOpenSignup() {
 export async function startSignupAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
   try {
     requireOpenSignup();
-    const [evidence, terms] = await Promise.all([getRequestEvidence(), getTermsService()]);
+    const [evidence, terms, cookieStore] = await Promise.all([getRequestEvidence(), getTermsService(), cookies()]);
     const current = await terms.getCurrentTerms();
     const { leadId } = await getSignupFlowService().start(Object.fromEntries(formData), {
       evidence,
       termsVersionId: current?.id ?? null,
+      previousLeadId: cookieStore.get(SIGNUP_LEAD_COOKIE)?.value,
     });
     if (leadId) {
-      const cookieStore = await cookies();
       cookieStore.set(SIGNUP_LEAD_COOKIE, leadId, {
         path: "/",
         httpOnly: true,

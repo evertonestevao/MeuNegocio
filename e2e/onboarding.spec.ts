@@ -76,6 +76,32 @@ test("teste sem cartão na tela de assinar também leva aos dados da empresa", a
   await expect(page.getByText(/Faltam 7 dias do seu teste grátis/)).toBeVisible();
 });
 
+test("corrigir volta ao primeiro passo preenchido e não deixa o e-mail errado guardado", async ({ page }) => {
+  const wrong = uniqueEmail("errado");
+  const right = uniqueEmail("certo");
+  await page.goto("/comecar");
+  await page.getByLabel("Seu nome").fill("Edu Corrige");
+  await page.getByLabel("E-mail", { exact: true }).fill(wrong);
+  await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
+  await page.getByRole("checkbox", { name: /comunicações por e-mail/ }).check();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page).toHaveURL(/\/comecar\/senha/);
+
+  await page.getByRole("link", { name: "Corrigir" }).click();
+  await expect(page).toHaveURL(/\/comecar$/);
+  await expect(page.getByLabel("Seu nome")).toHaveValue("Edu Corrige");
+  await expect(page.getByLabel("E-mail", { exact: true })).toHaveValue(wrong);
+  await expect(page.getByRole("checkbox", { name: /Li e aceito/ })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /comunicações por e-mail/ })).toBeChecked();
+
+  await page.getByLabel("E-mail", { exact: true }).fill(right);
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page).toHaveURL(/\/comecar\/senha/);
+  await expect(page.getByLabel("E-mail", { exact: true })).toHaveValue(right);
+  expect(await leadOf(wrong)).toBeNull();
+  expect(await leadOf(right)).toMatchObject({ full_name: "Edu Corrige", email_consent: true, stage: "contact" });
+});
+
 test("passo da senha sem o primeiro passo volta ao começo", async ({ page }) => {
   await page.goto("/comecar/senha");
   await expect(page).toHaveURL(/\/comecar$/);
