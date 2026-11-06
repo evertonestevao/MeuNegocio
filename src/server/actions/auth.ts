@@ -9,6 +9,7 @@ import { getSupabaseServerClient } from "@/server/supabase-server";
 import { createAuthService } from "@/services/authService";
 import { toActionError, type ActionState } from "./action-state";
 import { AppError } from "@/lib/errors";
+import { safeInternalPath } from "@/lib/safeRedirect";
 import { hasPendingInvite, isSignupOpen } from "@/server/signup";
 
 /**
@@ -49,12 +50,7 @@ export async function signUpAction(
     return toActionError(err);
   }
   // Preserva o destino (ex.: convidado voltando para /invites/accept).
-  // Só caminho relativo interno — nunca URL absoluta (open redirect).
-  const safeNext =
-    typeof next === "string" && next.startsWith("/") && !next.startsWith("//")
-      ? next
-      : "/onboarding";
-  redirect(safeNext);
+  redirect(safeInternalPath(next, "/onboarding"));
 }
 
 export async function signInAction(
@@ -69,11 +65,7 @@ export async function signInAction(
       email: formData.get("email"),
       password: formData.get("password"),
     });
-    // Só aceita caminho relativo interno — nunca URL absoluta (open redirect).
-    destination =
-      typeof next === "string" && next.startsWith("/") && !next.startsWith("//")
-        ? next
-        : await resolvePostLoginPath();
+    destination = safeInternalPath(next, "") || (await resolvePostLoginPath());
   } catch (err) {
     return toActionError(err);
   }

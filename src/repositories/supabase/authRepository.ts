@@ -29,7 +29,8 @@ export function createSupabaseAuthRepository(client: SupabaseClient): AuthReposi
     },
 
     async signOut() {
-      await client.auth.signOut();
+      // Só este aparelho: sair no computador não derruba o celular (e vice-versa).
+      await client.auth.signOut({ scope: "local" });
     },
 
     async resetPasswordForEmail(email, redirectTo) {

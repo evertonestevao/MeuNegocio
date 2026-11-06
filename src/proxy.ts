@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { isAuthApiError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { DEMO_COOKIE, isDemoPath } from "@/config/demo";
 import { getClientEnv } from "@/config/env";
@@ -101,12 +102,33 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthenticated && AUTH_ONLY_ANONYMOUS.some((p) => pathname.startsWith(p))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
+    // getClaims só confere o JWT, que segue válido até expirar mesmo depois de a sessão ser
+    // encerrada no servidor (saiu em outro aparelho, conta excluída). O painel confere de
+    // verdade e manda para o login; mandar de volta sem conferir aqui fazia um loop.
+    const { data: userData, error } = await supabase.auth.getUser();
+    if (userData.user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    if (isAuthApiError(error) && (error.status === 401 || error.status === 403)) {
+      return clearSessionCookies(request);
+    }
   }
 
+  return response;
+}
+
+/** Cookies da sessão Supabase (`sb-<ref>-auth-token`, inteiro ou em pedaços `.0`, `.1`…). */
+const SESSION_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
+
+/** Sessão recusada pelo servidor: some com os cookies dela e deixa a tela de login abrir. */
+function clearSessionCookies(request: NextRequest) {
+  const names = request.cookies.getAll().map((cookie) => cookie.name).filter((name) => SESSION_COOKIE.test(name));
+  for (const name of names) request.cookies.delete(name);
+  const response = NextResponse.next({ request });
+  for (const name of names) response.cookies.delete(name);
   return response;
 }
 
