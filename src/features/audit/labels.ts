@@ -18,6 +18,8 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "company.onboarding_completed": "Dados da empresa preenchidos no cadastro",
   "company.ownership_transferred": "Propriedade transferida",
   "company_profile.updated": "Dados da empresa alterados",
+  "company_profile.logo_updated": "Logo da empresa trocado",
+  "company_profile.logo_removed": "Logo da empresa removido",
   "employee.created": "Pessoa da equipe criada",
   "employee.updated": "Pessoa da equipe alterada",
   "employee.deleted": "Pessoa da equipe excluída",

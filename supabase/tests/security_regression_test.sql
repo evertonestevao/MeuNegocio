@@ -1083,6 +1083,26 @@ delete from public.platform_admins where user_id = '5ec00000-0000-4000-8000-0000
 set local role authenticated;
 
 -- ---------------------------------------------------------------------------
+-- Logo da empresa: o caminho só aponta para a pasta da própria empresa, e o arquivo só o servidor
+-- grava. Sem isso, um owner exibiria nos PDFs dele a imagem de outra empresa (ou outro arquivo).
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.company_profiles (company_id) values ('5ec0c000-0000-4000-8000-000000000001') on conflict (company_id) do nothing;
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select sec_test.must_fail('owner aponta o logo para a pasta de outra empresa',
+  $$update public.company_profiles set logo_path = '5ec0c000-0000-4000-8000-000000000002/5ec0c000-0000-4000-8000-0000000000aa.png'
+    where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_fail('owner aponta o logo para fora do padrão',
+  $$update public.company_profiles set logo_path = '5ec0c000-0000-4000-8000-000000000001/../avatars/x.png'
+    where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_fail('owner grava arquivo no bucket de logos pela API',
+  $$insert into storage.objects (bucket_id, name) values ('company-logos', '5ec0c000-0000-4000-8000-000000000001/5ec0c000-0000-4000-8000-0000000000bb.png')$$);
+select sec_test.must_pass('owner aponta o logo para a pasta da própria empresa',
+  $$update public.company_profiles set logo_path = '5ec0c000-0000-4000-8000-000000000001/5ec0c000-0000-4000-8000-0000000000cc.png'
+    where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

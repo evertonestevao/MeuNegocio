@@ -149,8 +149,21 @@ export interface ClientPickerOption {
 /** Regime tributário para o imposto estimado do serviço. */
 export type TaxRegime = "mei" | "simples" | "other";
 
+/** Empresa no cabeçalho dos documentos que vão para o cliente (orçamento, ordem de serviço, recibo). */
+export interface DocumentCompany {
+  name: string;
+  cnpj: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  /** Link público do logo; null sem logo enviado. */
+  logoUrl: string | null;
+}
+
 export interface CompanyProfile {
   company_id: string;
+  /** Logo no bucket público company-logos: <company_id>/<uuid>.png. */
+  logo_path?: string | null;
   cnpj: string | null;
   phone: string | null;
   email: string | null;

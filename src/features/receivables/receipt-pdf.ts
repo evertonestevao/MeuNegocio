@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/dates";
 import { centsToWords } from "@/lib/extenso";
 import { formatDocument, formatPhone } from "@/lib/masks";
 import { formatCents } from "@/lib/money";
+import { loadPdfLogo } from "@/features/documents/pdf-image";
 import type { ReceiptData } from "@/types/finance";
 
 /** Número do recibo: o orçamento e a parcela ("0054-2"). */
@@ -26,6 +27,12 @@ async function buildReceiptPdf(receipt: ReceiptData) {
   const width = pdf.internal.pageSize.getWidth();
   const margin = 20;
   let y = 24;
+
+  const logo = await loadPdfLogo(receipt.company.logoUrl, 45, 18);
+  if (logo) {
+    pdf.addImage(logo.data, logo.format, margin, 14, logo.width, logo.height, undefined, "FAST");
+    y = 14 + logo.height + 7;
+  }
 
   pdf.setFont("helvetica", "bold").setFontSize(15).setTextColor(20).text(receipt.company.name, margin, y);
   pdf.setFontSize(13).text(`Recibo Nº ${receiptNumber(receipt)}`, width - margin, y, { align: "right" });

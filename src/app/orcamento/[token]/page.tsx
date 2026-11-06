@@ -59,6 +59,16 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
         </p>
       ) : null}
       <header className="flex flex-col gap-1">
+        {document.company.logoUrl ? (
+          <Image
+            src={document.company.logoUrl}
+            alt={`Logo da ${document.company.name}`}
+            width={192}
+            height={64}
+            unoptimized
+            className="mb-2 h-14 w-auto max-w-48 object-contain object-left"
+          />
+        ) : null}
         <h1 className="text-xl font-semibold break-words">{document.company.name}</h1>
         <p className="text-sm text-muted-foreground">
           {[document.company.phone ? formatPhone(document.company.phone) : null, document.company.email].filter(Boolean).join(" · ")}

@@ -1,4 +1,5 @@
 import "server-only";
+import { companyLogoUrl } from "./companyLogo";
 import { randomUUID } from "node:crypto";
 import { createSupabaseStorageProvider } from "@/adapters/storage/supabaseStorageProvider";
 import { createDemoClient } from "./demo/client";
@@ -66,11 +67,11 @@ export function getPublicQuoteUrl(token: string): string {
 /** Link público: sem sessão, com service_role, sempre a partir do token. */
 /** Orçamento fictício para o link enviado da demonstração. Não fala com o banco. */
 export function getDemoPublicQuote(token: string) {
-  return createSupabasePublicQuoteRepository(createDemoClient("owner")).getByToken(token);
+  return createSupabasePublicQuoteRepository(createDemoClient("owner"), companyLogoUrl).getByToken(token);
 }
 
 export function getPublicQuoteRepository(): PublicQuoteRepository {
-  return createSupabasePublicQuoteRepository(getSupabaseAdminClient());
+  return createSupabasePublicQuoteRepository(getSupabaseAdminClient(), companyLogoUrl);
 }
 
 const QUOTE_SIGNATURES_BUCKET = "quote-signatures";
@@ -81,7 +82,7 @@ export function getPublicQuoteService(): PublicQuoteService {
   const admin = getSupabaseAdminClient();
   const storage = createSupabaseStorageProvider(admin, QUOTE_SIGNATURES_BUCKET);
   return createPublicQuoteService({
-    repo: createSupabasePublicQuoteRepository(admin),
+    repo: createSupabasePublicQuoteRepository(admin, companyLogoUrl),
     files: {
       upload: async (path, content, contentType) => {
         await storage.upload({ path, content, contentType });

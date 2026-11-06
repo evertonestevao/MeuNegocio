@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fitInFrame, photoLabel, workedTime, workOrderFileName } from "./pdf";
+import { fitInFrame } from "@/features/documents/pdf-image";
+import { photoLabel, workedTime, workOrderFileName } from "./pdf";
 
 describe("fitInFrame", () => {
   it("mantém a proporção e centraliza sem passar da moldura", () => {

@@ -1,4 +1,4 @@
-import type { ContractType } from "./database";
+import type { ContractType, DocumentCompany } from "./database";
 
 export type TimeEntryStatus = "pending" | "approved" | "paid";
 
@@ -167,7 +167,7 @@ export interface InstallmentInput {
 
 /** O que o recibo de uma parcela recebida mostra. */
 export interface ReceiptData {
-  company: { name: string; cnpj: string | null; phone: string | null; email: string | null; address: string | null };
+  company: DocumentCompany;
   client: { name: string; document: string | null } | null;
   quoteNumber: number;
   quoteTitle: string | null;

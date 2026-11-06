@@ -4,6 +4,7 @@ import { BellRing, ChevronRight, ClipboardList, CreditCard, Percent, ScrollText 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AccountDataSection } from "@/features/account/components/account-data-section";
+import { CompanyLogoField } from "@/features/company/components/company-logo-field";
 import { CompanyProfileForm } from "@/features/company/components/company-profile-form";
 import { AcceptInviteButton } from "@/features/companies/components/accept-invite-button";
 import {
@@ -16,6 +17,7 @@ import { createSupabaseInviteRepository } from "@/repositories/supabase/inviteRe
 import { createSupabaseUserRepository } from "@/repositories/supabase/userRepository";
 import { getAccountService } from "@/server/account";
 import { createMemoryRateLimiter } from "@/server/rateLimit";
+import { companyLogoUrl } from "@/server/companyLogo";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
@@ -42,6 +44,7 @@ export default async function SettingsPage() {
   ]);
 
   const canEditCompany = permissionService.canEditCompany(active.role);
+  const companyProfile = canEditCompany ? await (await getCompanyProfileService()).get(active.id) : null;
   const isOwner = active.role === "owner";
   const companyLinks = [
     ...(canEditCompany
@@ -147,14 +150,15 @@ export default async function SettingsPage() {
         </Card>
       ) : null}
 
-      {canEditCompany ? (
+      {companyProfile ? (
         <Card>
           <CardHeader>
             <CardTitle>Dados para orçamentos</CardTitle>
             <CardDescription>Aparecem no PDF e no link de aprovação.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <CompanyProfileForm profile={await (await getCompanyProfileService()).get(active.id)} />
+          <CardContent className="flex flex-col gap-6">
+            <CompanyLogoField initialUrl={companyLogoUrl(companyProfile.logo_path)} />
+            <CompanyProfileForm profile={companyProfile} />
           </CardContent>
         </Card>
       ) : null}

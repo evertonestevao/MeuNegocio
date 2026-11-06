@@ -249,7 +249,7 @@ function demoPublicQuoteRow(token: string): Row | null {
     total_cents: quote.total_cents,
     notes: quote.notes,
     payment_plan: quote.payment_plan ?? null,
-    company: { name: company?.name, cnpj: profile?.cnpj, phone: profile?.phone, email: profile?.email, address: profile?.address },
+    company: { name: company?.name, cnpj: profile?.cnpj, phone: profile?.phone, email: profile?.email, address: profile?.address, logo_path: profile?.logo_path },
     client: { name: client?.name, document: client?.document },
     location: location ? { name: location.name, address: location.address } : null,
     items: tables.quote_items.filter((item) => item.quote_id === quote.id && !item.deleted_at),

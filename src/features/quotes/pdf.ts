@@ -3,7 +3,7 @@ import { formatDate, formatQuantity, formatTimestamp } from "@/lib/dates";
 import type { QuoteDocument } from "@/types/quotes";
 import { formatQuoteNumber } from "./status";
 import { formatDocument, formatPhone } from "@/lib/masks";
-import { loadImage } from "@/features/work-orders/pdf";
+import { loadImage, loadPdfLogo } from "@/features/documents/pdf-image";
 
 function itemDetail(item: QuoteDocument["items"][number]): string {
   if (item.pricingMode === "hourly") {
@@ -24,6 +24,12 @@ async function buildQuotePdf(quote: QuoteDocument) {
   const number = formatQuoteNumber(quote.number);
   const margin = 16;
   let y = 20;
+
+  const logo = await loadPdfLogo(quote.company.logoUrl, 45, 18);
+  if (logo) {
+    pdf.addImage(logo.data, logo.format, margin, 12, logo.width, logo.height, undefined, "FAST");
+    y = 12 + logo.height + 7;
+  }
 
   pdf.setFont("helvetica", "bold").setFontSize(15).text(quote.company.name, margin, y);
   pdf.setFontSize(13).text(`Orçamento Nº ${number}`, width - margin, y, { align: "right" });

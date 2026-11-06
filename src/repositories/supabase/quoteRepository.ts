@@ -214,7 +214,7 @@ interface PublicQuoteRow {
   total_cents: number;
   notes: string | null;
   payment_plan?: QuotePaymentPlan | null;
-  company: PublicQuote["document"]["company"];
+  company: Omit<PublicQuote["document"]["company"], "logoUrl"> & { logo_path?: string | null };
   client: { name: string; document: string | null };
   location: { name: string; address: string } | null;
   items: {
@@ -229,8 +229,14 @@ interface PublicQuoteRow {
   response: { decision: "approved" | "refused"; name: string; comment: string | null; created_at: string; signature_path?: string | null } | null;
 }
 
-/** Recebe o client de service_role: o link público não tem sessão. */
-export function createSupabasePublicQuoteRepository(client: SupabaseClient): PublicQuoteRepository {
+/**
+ * Recebe o client de service_role: o link público não tem sessão. logoUrl transforma o caminho do
+ * logo em link (o storage é outra peça); sem ela, o documento sai sem logo.
+ */
+export function createSupabasePublicQuoteRepository(
+  client: SupabaseClient,
+  logoUrl: (path: string | null | undefined) => string | null = () => null,
+): PublicQuoteRepository {
   return {
     async getByToken(token) {
       const { data, error } = await client.rpc("get_public_quote", { p_token: token });
@@ -256,7 +262,14 @@ export function createSupabasePublicQuoteRepository(client: SupabaseClient): Pub
           status: row.status,
           createdAt: row.created_at,
           validUntil: row.valid_until,
-          company: row.company,
+          company: {
+            name: row.company.name,
+            cnpj: row.company.cnpj,
+            phone: row.company.phone,
+            email: row.company.email,
+            address: row.company.address,
+            logoUrl: logoUrl(row.company.logo_path),
+          },
           client: row.client,
           location: row.location,
           items: row.items.map((item) => ({

@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CompanyLogoField } from "@/features/company/components/company-logo-field";
 import { TIMEZONE_LABEL } from "@/features/company/components/company-profile-fields";
 import { completeOnboardingAction } from "@/server/actions/signup";
 import type { ActionState } from "@/server/actions/action-state";
@@ -16,7 +17,7 @@ import { COMPANY_TIMEZONES, DEFAULT_COMPANY_PROFILE } from "@/services/companyPr
  * Último passo do cadastro: só o que o orçamento precisa para sair com a cara da empresa. O resto
  * fica recolhido e pode ser preenchido depois em Configurações.
  */
-export function CompleteCompanyForm() {
+export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
   const [state, dispatch, pending] = useActionState(
     (prev: ActionState | undefined, data: FormData) => completeOnboardingAction(prev, data),
     undefined,
@@ -61,6 +62,7 @@ export function CompleteCompanyForm() {
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="flex flex-col gap-4 pt-3 pb-1">
+          <CompanyLogoField initialUrl={logoUrl} />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="profile-email">E-mail da empresa</Label>
@@ -95,7 +97,7 @@ export function CompleteCompanyForm() {
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? "Salvando..." : "Concluir e entrar no sistema"}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">Validade do orçamento e observações padrão você ajusta depois em Configurações.</p>
+      <p className="text-center text-xs text-muted-foreground">Logo, validade do orçamento e observações padrão você ajusta depois em Configurações.</p>
     </form>
   );
 }

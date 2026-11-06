@@ -1,11 +1,13 @@
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatDocument, formatPhone } from "@/lib/masks";
+import type { DocumentCompany } from "@/types/database";
 import type { VisitSheet } from "@/types/workOrders";
 import { VISIT_KIND_DOCUMENT_LABEL } from "./schemas";
+import { fitInFrame, loadImage, loadPdfLogo } from "@/features/documents/pdf-image";
 
 export interface WorkOrderPdfInput {
   sheet: VisitSheet;
-  company: { name: string; cnpj: string | null; phone: string | null; email: string | null; address: string | null };
+  company: DocumentCompany;
   photoUrls: Record<string, string>;
   signatureUrl: string | null;
 }
@@ -27,14 +29,6 @@ const FOOTER_SPACE = 18;
 const PHOTO_FRAME_HEIGHT = 60;
 const PHOTO_GAP = 6;
 const CAPTION_LINE = 4.2;
-
-/** Medidas para a imagem caber na moldura sem cortar nem deformar, centralizada. */
-export function fitInFrame(imageWidth: number, imageHeight: number, frameWidth: number, frameHeight: number) {
-  const scale = Math.min(frameWidth / imageWidth, frameHeight / imageHeight);
-  const width = imageWidth * scale;
-  const height = imageHeight * scale;
-  return { width, height, offsetX: (frameWidth - width) / 2, offsetY: (frameHeight - height) / 2 };
-}
 
 /** Rótulo numerado da foto, com a legenda quando houver. */
 export function photoLabel(index: number, caption: string | null): string {
@@ -65,20 +59,6 @@ export function workOrderFileName(clientName: string, date: string): string {
   return `ordem-de-servico-${slug ? `${slug}-` : ""}${date}.pdf`;
 }
 
-/** Baixa a imagem pelo link temporário e devolve como data URL, para o jsPDF. */
-export async function loadImage(url: string): Promise<{ data: string; width: number; height: number; format: "JPEG" | "PNG" }> {
-  const blob = await (await fetch(url)).blob();
-  const data = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
-    reader.readAsDataURL(blob);
-  });
-  const bitmap = await createImageBitmap(blob);
-  const size = { width: bitmap.width, height: bitmap.height };
-  bitmap.close();
-  return { data, ...size, format: blob.type === "image/png" ? "PNG" : "JPEG" };
-}
 
 /** Gera o PDF no navegador, com as fotos e a assinatura. As bibliotecas só carregam ao pedir. */
 export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatureUrl }: WorkOrderPdfInput): Promise<void> {
@@ -132,22 +112,32 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
     company.address,
     [company.phone ? formatPhone(company.phone) : null, company.email].filter(Boolean).join("  ·  ") || null,
   ].filter((line): line is string => Boolean(line));
+  // Logo numa caixa branca: no fundo escuro, um logo de traço escuro sumiria.
+  const logo = await loadPdfLogo(company.logoUrl, 30, 16);
+  const logoBox = logo ? { width: logo.width + 4, height: logo.height + 4 } : null;
+  const textX = logoBox ? MARGIN + logoBox.width + 5 : MARGIN;
+  const textWidth = usable * 0.6 - (textX - MARGIN);
   font("bold", 16, WHITE);
-  const nameLines = wrap(company.name, usable * 0.6).slice(0, 2);
-  const bandHeight = Math.max(32, 13 + nameLines.length * 6.5 + companyLines.length * 3.9);
+  const nameLines = wrap(company.name, textWidth).slice(0, 2);
+  const bandHeight = Math.max(32, 13 + nameLines.length * 6.5 + companyLines.length * 3.9, logoBox ? logoBox.height + 14 : 0);
   fill(NAVY);
   pdf.rect(0, 0, pageWidth, bandHeight, "F");
   fill(AMBER);
   pdf.rect(0, bandHeight, pageWidth, 1.1, "F");
+  if (logo && logoBox) {
+    fill(WHITE);
+    pdf.roundedRect(MARGIN, 7, logoBox.width, logoBox.height, 1.5, 1.5, "F");
+    pdf.addImage(logo.data, logo.format, MARGIN + 2, 9, logo.width, logo.height, undefined, "FAST");
+  }
   let headerY = 13;
   for (const line of nameLines) {
-    pdf.text(line, MARGIN, headerY);
+    pdf.text(line, textX, headerY);
     headerY += 6.5;
   }
   font("normal", 8.5, [205, 213, 224]);
   headerY -= 1.5;
   for (const line of companyLines) {
-    pdf.text(wrap(line, usable * 0.62)[0], MARGIN, headerY);
+    pdf.text(wrap(line, textWidth + 2)[0], textX, headerY);
     headerY += 3.9;
   }
   font("bold", 8.5, AMBER);

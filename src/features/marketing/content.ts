@@ -153,7 +153,7 @@ export const pains = [
 ];
 
 export const journey = [
-  { title: "Orçamento", description: "Monte com materiais e horas, envie em PDF ou pelo WhatsApp." },
+  { title: "Orçamento", description: "Monte com materiais e horas, envie em PDF com o seu logo ou pelo WhatsApp." },
   { title: "Aprovação", description: "O cliente abre o link, sem criar conta, e aprova com assinatura ou recusa." },
   { title: "Agenda", description: "Escale a equipe. Quem já tem visita no horário é bloqueado." },
   { title: "Execução", description: "No celular, o técnico faz o checklist, fotografa e colhe a assinatura." },
@@ -165,7 +165,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: FileText,
     title: "Orçamentos",
     description:
-      "Número automático, validade, desconto e margem estimada só para quem pode ver. O vencido expira sozinho, e você sabe o que está parado esperando resposta.",
+      "Com o logo da sua empresa, número automático, validade, desconto e margem estimada só para quem pode ver. O vencido expira sozinho, e você sabe o que está parado esperando resposta.",
   },
   {
     icon: CalendarDays,

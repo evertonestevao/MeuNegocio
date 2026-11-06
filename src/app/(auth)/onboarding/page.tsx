@@ -10,6 +10,8 @@ import { isSignupOpen } from "@/server/signup";
 import { isOnboardingPending } from "@/server/signupFlow";
 import { getActiveTenant } from "@/server/tenant";
 import { getTermsService } from "@/server/terms";
+import { companyLogoUrl } from "@/server/companyLogo";
+import { getCompanyProfileService } from "@/server/quotes";
 import { permissionService } from "@/services/permissionService";
 
 export const metadata: Metadata = { title: "Criar empresa" };
@@ -22,6 +24,7 @@ export default async function OnboardingPage() {
   const { active } = await getActiveTenant();
   if (active) {
     if (!permissionService.canEditCompany(active.role) || !(await isOnboardingPending(active.id))) redirect("/dashboard");
+    const profile = await (await getCompanyProfileService()).get(active.id);
     return (
       <Card data-wide>
         <CardHeader className="gap-4">
@@ -32,7 +35,7 @@ export default async function OnboardingPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <CompleteCompanyForm />
+          <CompleteCompanyForm logoUrl={companyLogoUrl(profile.logo_path)} />
         </CardContent>
       </Card>
     );

@@ -3,7 +3,7 @@ import type { ReceiptData } from "@/types/finance";
 import { receiptNumber, receiptText } from "./receipt-pdf";
 
 const RECEIPT: ReceiptData = {
-  company: { name: "Refrigeração Exemplo", cnpj: "12345678000190", phone: null, email: null, address: null },
+  company: { name: "Refrigeração Exemplo", cnpj: "12345678000190", phone: null, email: null, address: null, logoUrl: null },
   client: { name: "Condomínio Jardim das Flores", document: "10031676000104" },
   quoteNumber: 54,
   quoteTitle: "Adequação do quadro elétrico",

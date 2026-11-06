@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { WorkOrderSheet } from "@/features/work-orders/components/work-order-sheet";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getActiveTenant } from "@/server/tenant";
+import { companyLogoUrl } from "@/server/companyLogo";
 import { getWorkOrderService } from "@/server/workOrders";
 
 export const metadata: Metadata = { title: "Ordem de serviço" };
@@ -49,6 +50,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ visi
           phone: profile.phone,
           email: profile.email,
           address: profile.address,
+          logoUrl: companyLogoUrl(profile.logo_path),
         }}
         photoUrls={files.photos}
         signatureUrl={files.signature}

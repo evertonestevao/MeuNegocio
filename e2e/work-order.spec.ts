@@ -68,6 +68,11 @@ test("técnico conclui a ordem de serviço e as horas chegam ao escritório", as
   await expect(technician).toHaveURL(/./);
   await expect(technician.getByRole("button", { name: /Empresa Campo E2E/ })).toBeVisible();
 
+  // Logo da empresa: vai no cabeçalho do PDF da ordem de serviço.
+  await owner.goto("/dashboard/settings");
+  await owner.getByLabel("Arquivo do logo").setInputFiles("public/demo/logo-refrigeracao-exemplo.png");
+  await expect(owner.getByRole("button", { name: "Trocar logo" })).toBeVisible();
+
   await createEmployee(owner, "Carlos Equipe", "clt");
   await owner.getByRole("button", { name: "Editar Carlos Equipe" }).click();
   await owner.getByRole("dialog").getByLabel("Usuário vinculado").selectOption({ label: "Carlos Técnico" });
@@ -151,6 +156,11 @@ test("técnico conclui a ordem de serviço e as horas chegam ao escritório", as
   await expect(owner.getByText("Renato Cliente")).toBeVisible();
   await expect(owner.getByRole("button", { name: "Concluir ordem de serviço" })).toBeHidden();
   await expect(owner.getByRole("img", { name: "Antes do serviço" })).toBeVisible();
+  const pdfDownload = owner.waitForEvent("download");
+  await owner.getByRole("button", { name: "Baixar PDF" }).click();
+  const pdf = await pdfDownload;
+  expect(pdf.suggestedFilename()).toMatch(/^ordem-de-servico-.+\.pdf$/);
+  if (process.env.E2E_SAVE_PDF) await pdf.saveAs(process.env.E2E_SAVE_PDF);
 
   await owner.goto(`/dashboard/hours?m=${today.slice(0, 7)}&clt=1`);
   await owner.locator("main a", { hasText: "Carlos Equipe" }).click();

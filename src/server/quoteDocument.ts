@@ -2,6 +2,7 @@ import "server-only";
 import type { Client, ClientLocation, CompanyProfile, Quote, QuoteItem } from "@/types/database";
 import { paymentPlanText } from "@/lib/installments";
 import type { QuoteDocument } from "@/types/quotes";
+import { companyLogoUrl } from "./companyLogo";
 
 export function buildQuoteDocument(params: {
   quote: Quote;
@@ -19,7 +20,14 @@ export function buildQuoteDocument(params: {
     status: quote.status,
     createdAt: quote.created_at,
     validUntil: quote.valid_until,
-    company: { name: companyName, cnpj: profile.cnpj, phone: profile.phone, email: profile.email, address: profile.address },
+    company: {
+      name: companyName,
+      cnpj: profile.cnpj,
+      phone: profile.phone,
+      email: profile.email,
+      address: profile.address,
+      logoUrl: companyLogoUrl(profile.logo_path),
+    },
     client: client ? { name: client.name, document: client.document } : null,
     location: location ? { name: location.name, address: location.address } : null,
     items: items.map((item) => ({

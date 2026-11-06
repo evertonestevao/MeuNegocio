@@ -34,7 +34,11 @@ function toReceivable({ quote, ...row }: Row): Receivable {
 }
 
 /** Parcelas a receber. A RLS restringe a leitura ao proprietário e ao administrador. */
-export function createSupabaseReceivableRepository(client: SupabaseClient): ReceivableRepository {
+/** logoUrl transforma o caminho do logo em link para o recibo; sem ela, o recibo sai sem logo. */
+export function createSupabaseReceivableRepository(
+  client: SupabaseClient,
+  logoUrl: (path: string | null | undefined) => string | null = () => null,
+): ReceivableRepository {
   return {
     async listOpen(companyId) {
       const { data, error } = await client
@@ -111,14 +115,14 @@ export function createSupabaseReceivableRepository(client: SupabaseClient): Rece
       if (!row?.received_on || row.received_cents === null) return null;
       const [siblings, profile] = await Promise.all([
         client.from("receivables").select("id").eq("company_id", companyId).eq("quote_id", row.quote_id).is("deleted_at", null).order("due_date").order("created_at"),
-        client.from("company_profiles").select("cnpj, phone, email, address").eq("company_id", companyId).is("deleted_at", null).maybeSingle(),
+        client.from("company_profiles").select("cnpj, phone, email, address, logo_path").eq("company_id", companyId).is("deleted_at", null).maybeSingle(),
       ]);
       if (siblings.error) fail(siblings.error);
       if (profile.error) fail(profile.error);
       const ids = ((siblings.data ?? []) as { id: string }[]).map((sibling) => sibling.id);
-      const company = (profile.data ?? {}) as { cnpj?: string | null; phone?: string | null; email?: string | null; address?: string | null };
+      const company = (profile.data ?? {}) as { cnpj?: string | null; phone?: string | null; email?: string | null; address?: string | null; logo_path?: string | null };
       return {
-        company: { name: row.quote?.company?.name ?? "", cnpj: company.cnpj ?? null, phone: company.phone ?? null, email: company.email ?? null, address: company.address ?? null },
+        company: { name: row.quote?.company?.name ?? "", cnpj: company.cnpj ?? null, phone: company.phone ?? null, email: company.email ?? null, address: company.address ?? null, logoUrl: logoUrl(company.logo_path) },
         client: row.quote?.client ? { name: row.quote.client.name, document: row.quote.client.document } : null,
         quoteNumber: row.quote?.number ?? 0,
         quoteTitle: row.quote?.title ?? null,
