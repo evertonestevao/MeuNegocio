@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { ReceiptData } from "@/types/finance";
 import { createReceivableService, receiveInstallmentSchema, rescheduleInstallmentSchema } from "./receivableService";
 
 const OWNER = { companyId: "co", role: "owner" as const };
@@ -13,6 +14,7 @@ function setup() {
     receive: vi.fn(async () => undefined),
     undoReceive: vi.fn(async () => undefined),
     reschedule: vi.fn(async () => undefined),
+    getReceipt: vi.fn(async (_companyId: string, id: string) => (id === "recebida" ? ({ receivedCents: 100 } as ReceiptData) : null)),
   };
   return { repo, service: createReceivableService(repo) };
 }
@@ -46,5 +48,14 @@ describe("baixa de parcela", () => {
     expect(repo.receive).not.toHaveBeenCalled();
     await service.receive({ companyId: "co", role: "admin" }, input, "2026-11-04");
     expect(repo.receive).toHaveBeenCalledWith("co", input);
+  });
+});
+
+describe("recibo", () => {
+  it("só de parcela recebida, e só para quem vê o financeiro", async () => {
+    const { service } = setup();
+    expect(await service.getReceipt(OWNER, "recebida")).toMatchObject({ receivedCents: 100 });
+    await expect(service.getReceipt(OWNER, "a-receber")).rejects.toMatchObject({ code: "not_found" });
+    await expect(service.getReceipt(MEMBER, "recebida")).rejects.toMatchObject({ code: "forbidden" });
   });
 });

@@ -164,3 +164,16 @@ export interface InstallmentInput {
   method: PaymentMethod | null;
   received: boolean;
 }
+
+/** O que o recibo de uma parcela recebida mostra. */
+export interface ReceiptData {
+  company: { name: string; cnpj: string | null; phone: string | null; email: string | null; address: string | null };
+  client: { name: string; document: string | null } | null;
+  quoteNumber: number;
+  quoteTitle: string | null;
+  /** Parcela desta no serviço: 2 de 3. */
+  installment: { index: number; total: number };
+  receivedCents: number;
+  receivedOn: string;
+  method: PaymentMethod | null;
+}

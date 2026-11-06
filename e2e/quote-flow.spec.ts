@@ -101,6 +101,10 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
   await receipts.getByRole("button", { name: "Recebido" }).first().click();
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
+  // Recibo da parcela recebida: no computador, baixa o PDF.
+  const receiptDownload = page.waitForEvent("download");
+  await receipts.getByRole("button", { name: "Recibo" }).first().click();
+  expect((await receiptDownload).suggestedFilename()).toMatch(/^recibo-0001-\d\.pdf$/);
 
   // Custos do serviço: o gasto lançado aqui entra no resultado e também no caixa do mês.
   await expect(page.getByRole("heading", { name: "Custos e resultado do serviço" })).toBeVisible();

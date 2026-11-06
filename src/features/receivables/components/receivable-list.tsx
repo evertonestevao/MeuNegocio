@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { CalendarClock, Check, HandCoins, MessageCircle, Undo2 } from "lucide-react";
+import { CalendarClock, Check, FileText, HandCoins, MessageCircle, Undo2 } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { DialogForm } from "@/components/dialog-form";
 import { MaskedInput } from "@/components/masked-input";
@@ -17,7 +17,8 @@ import { expectedCents, receivableStatus } from "@/lib/installments";
 import { whatsappUrl } from "@/features/quotes/pdf";
 import { reminderText } from "../reminder";
 import { centsToMoneyInput, formatCents } from "@/lib/money";
-import { receiveInstallmentAction, rescheduleInstallmentAction, undoReceiveInstallmentAction } from "@/server/actions/receivables";
+import { getReceiptAction, receiveInstallmentAction, rescheduleInstallmentAction, undoReceiveInstallmentAction } from "@/server/actions/receivables";
+import { shareReceiptPdf } from "../receipt-pdf";
 import type { PaymentMethod, Receivable } from "@/types/finance";
 
 const SELECT_CLASS =
@@ -89,6 +90,30 @@ function QuickReceiveButton({ item, today }: { item: Receivable; today: string }
   return (
     <Button size="sm" onClick={receive} disabled={pending}>
       <Check className="size-4" /> {pending ? "Salvando..." : "Recebido"}
+    </Button>
+  );
+}
+
+/** Recibo da parcela recebida: no celular abre o compartilhar com o PDF; no computador, baixa. */
+function ReceiptButton({ item }: { item: Receivable }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          const result = await getReceiptAction(item.id);
+          if (!result.receipt) {
+            toast.error(result.error ?? "Não foi possível gerar o recibo.");
+            return;
+          }
+          await shareReceiptPdf(result.receipt);
+        })
+      }
+    >
+      <FileText className="size-4" /> {pending ? "Gerando..." : "Recibo"}
     </Button>
   );
 }
@@ -215,6 +240,7 @@ export function ReceivableList({
                   <MessageCircle className="size-4" />
                 </Button>
               ) : null}
+              {item.received_on ? <ReceiptButton item={item} /> : null}
               {item.received_on ? (
                 <ActionButton
                   action={undoReceiveInstallmentAction}

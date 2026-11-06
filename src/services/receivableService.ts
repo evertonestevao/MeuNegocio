@@ -2,7 +2,7 @@ import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { parseMoneyToCents } from "@/lib/money";
 import type { ActorContext } from "@/server/actor";
-import type { PaymentMethod, Receivable } from "@/types/finance";
+import type { PaymentMethod, Receivable, ReceiptData } from "@/types/finance";
 import { permissionService } from "./permissionService";
 
 /**
@@ -52,6 +52,8 @@ export interface ReceivableRepository {
   receive(companyId: string, input: ReceiveInstallmentInput): Promise<void>;
   undoReceive(companyId: string, id: string): Promise<void>;
   reschedule(companyId: string, input: RescheduleInstallmentInput): Promise<void>;
+  /** Dados do recibo; null se a parcela não existe ou não foi recebida. */
+  getReceipt(companyId: string, id: string): Promise<ReceiptData | null>;
 }
 
 export function createReceivableService(repo: ReceivableRepository) {
@@ -92,6 +94,14 @@ export function createReceivableService(repo: ReceivableRepository) {
     async undoReceive(actor: ActorContext, id: string) {
       requireFinance(actor);
       await repo.undoReceive(actor.companyId, id);
+    },
+
+    /** Recibo só de parcela recebida: é o comprovante do que entrou. */
+    async getReceipt(actor: ActorContext, id: string): Promise<ReceiptData> {
+      requireFinance(actor);
+      const receipt = await repo.getReceipt(actor.companyId, id);
+      if (!receipt) throw new AppError("not_found", "Recibo disponível só para parcela recebida.");
+      return receipt;
     },
 
     async reschedule(actor: ActorContext, input: RescheduleInstallmentInput) {

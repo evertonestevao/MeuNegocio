@@ -92,6 +92,43 @@ export function createSupabaseReceivableRepository(client: SupabaseClient): Rece
       if (error) fail(error);
     },
 
+    async getReceipt(companyId, id) {
+      const { data, error } = await client
+        .from("receivables")
+        .select("id, quote_id, received_on, received_cents, method, quote:quotes(number, title, client:clients(name, document), company:companies(name))")
+        .eq("company_id", companyId)
+        .eq("id", id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) fail(error);
+      const row = data as unknown as {
+        quote_id: string;
+        received_on: string | null;
+        received_cents: number | null;
+        method: Receivable["method"];
+        quote: { number: number; title: string | null; client: { name: string; document: string | null } | null; company: { name: string } | null } | null;
+      } | null;
+      if (!row?.received_on || row.received_cents === null) return null;
+      const [siblings, profile] = await Promise.all([
+        client.from("receivables").select("id").eq("company_id", companyId).eq("quote_id", row.quote_id).is("deleted_at", null).order("due_date").order("created_at"),
+        client.from("company_profiles").select("cnpj, phone, email, address").eq("company_id", companyId).is("deleted_at", null).maybeSingle(),
+      ]);
+      if (siblings.error) fail(siblings.error);
+      if (profile.error) fail(profile.error);
+      const ids = ((siblings.data ?? []) as { id: string }[]).map((sibling) => sibling.id);
+      const company = (profile.data ?? {}) as { cnpj?: string | null; phone?: string | null; email?: string | null; address?: string | null };
+      return {
+        company: { name: row.quote?.company?.name ?? "", cnpj: company.cnpj ?? null, phone: company.phone ?? null, email: company.email ?? null, address: company.address ?? null },
+        client: row.quote?.client ? { name: row.quote.client.name, document: row.quote.client.document } : null,
+        quoteNumber: row.quote?.number ?? 0,
+        quoteTitle: row.quote?.title ?? null,
+        installment: { index: ids.indexOf(id) + 1, total: ids.length },
+        receivedCents: row.received_cents,
+        receivedOn: row.received_on,
+        method: row.method,
+      };
+    },
+
     async reschedule(companyId, input) {
       const { error } = await client.rpc("reschedule_installment", {
         p_company_id: companyId,

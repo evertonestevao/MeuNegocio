@@ -9,6 +9,7 @@ import { recordAudit } from "@/server/audit";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getReceivableService } from "@/server/receivables";
 import { receiveInstallmentSchema, rescheduleInstallmentSchema } from "@/services/receivableService";
+import type { ReceiptData } from "@/types/finance";
 import { toActionError, type ActionState } from "./action-state";
 
 function handleError(err: unknown): ActionState {
@@ -90,5 +91,17 @@ export async function rescheduleInstallmentAction(_prev: ActionState | undefined
     return { success: "Parcela alterada" };
   } catch (err) {
     return handleError(err);
+  }
+}
+
+/** Dados do recibo de uma parcela recebida; o PDF é montado no navegador. */
+export async function getReceiptAction(receivableId: string): Promise<{ receipt?: ReceiptData; error?: string }> {
+  try {
+    const actor = await getActor();
+    const id = z.uuid().safeParse(receivableId);
+    if (!id.success) throw new AppError("validation_error", "Parcela inválida.");
+    return { receipt: await (await getReceivableService()).getReceipt(actor, id.data) };
+  } catch (err) {
+    return { error: toActionError(err).error };
   }
 }

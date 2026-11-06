@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v8";
+export const LANDING_SCREENS = "/landing/v9";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -248,7 +248,7 @@ export const faq = [
   },
   {
     question: "Dá para controlar quem pagou parcelado?",
-    answer: "Sim. Ao fechar o serviço, você registra se foi à vista, entrada + parcelas ou cartão, e o sistema separa o que já entrou do que falta receber. Ele avisa das parcelas atrasadas, desconta a taxa da maquininha do resultado e abre um lembrete pronto no WhatsApp para o cliente.",
+    answer: "Sim. Ao fechar o serviço, você registra se foi à vista, entrada + parcelas ou cartão, e o sistema separa o que já entrou do que falta receber. Ele avisa das parcelas atrasadas, desconta a taxa da maquininha do resultado, abre um lembrete pronto no WhatsApp e gera o recibo de cada pagamento.",
   },
   {
     question: "O registro de horas substitui o ponto eletrônico?",
