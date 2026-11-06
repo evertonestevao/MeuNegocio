@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { finishMoney, formatDocument, formatPhone, isValidCnpj, maskCnpj, maskCpfCnpj, maskMoney, maskPhone } from "./masks";
+import {
+  documentProblem,
+  finishMoney,
+  formatDocument,
+  formatPhone,
+  isValidCnpj,
+  isValidCpf,
+  maskCnpj,
+  maskCpfCnpj,
+  maskMoney,
+  maskPhone,
+} from "./masks";
 import { parseMoneyToCents } from "./money";
 
 describe("máscaras", () => {
@@ -64,5 +75,32 @@ describe("isValidCnpj", () => {
     expect(isValidCnpj("1122233300018")).toBe(false);
     expect(isValidCnpj("00000000000000")).toBe(false);
     expect(isValidCnpj("11111111111111")).toBe(false);
+  });
+});
+
+describe("isValidCpf", () => {
+  it("aceita CPF com dígitos verificadores certos, com ou sem máscara", () => {
+    expect(isValidCpf("111.444.777-35")).toBe(true);
+    expect(isValidCpf("52998224725")).toBe(true);
+  });
+
+  it("recusa dígito errado, tamanho errado e sequência repetida", () => {
+    expect(isValidCpf("111.444.777-00")).toBe(false);
+    expect(isValidCpf("1114447773")).toBe(false);
+    expect(isValidCpf("00000000000")).toBe(false);
+    expect(isValidCpf("99999999999")).toBe(false);
+  });
+});
+
+describe("documentProblem", () => {
+  it.each([
+    ["", null],
+    ["111.444.777-35", null],
+    ["11.222.333/0001-81", null],
+    ["111.444.777-00", "CPF inválido. Confira os números."],
+    ["12.345.678/0001-90", "CNPJ inválido. Confira os números."],
+    ["123.456", "CPF ou CNPJ incompleto."],
+  ])("%j → %j", (input, expected) => {
+    expect(documentProblem(input)).toBe(expected);
   });
 });

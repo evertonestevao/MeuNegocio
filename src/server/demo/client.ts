@@ -174,10 +174,15 @@ class DemoQuery implements PromiseLike<Result> {
   gt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) > 0); }
   lt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) < 0); }
   not(column: string, _operator: string, value: unknown) { return this.where((row) => (valueAt(row, column) ?? null) !== value); }
-  /** Só a busca por texto: name.ilike."%x%",document.ilike."%x%". */
+  /** Só a busca: search_text.ilike."%x%",id.in.(a,b). */
   or(expression: string) {
     const terms = [...expression.matchAll(/(\w+)\.ilike\."?%?((?:[^"%]|\\.)*)%?"?/g)].map((match) => ({ column: match[1], text: match[2].toLowerCase() }));
-    return this.where((row) => terms.some(({ column, text }) => String(row[column] ?? "").toLowerCase().includes(text)));
+    const lists = [...expression.matchAll(/(\w+)\.in\.\(([^)]*)\)/g)].map((match) => ({ column: match[1], values: match[2].split(",") }));
+    return this.where(
+      (row) =>
+        terms.some(({ column, text }) => String(row[column] ?? "").toLowerCase().includes(text)) ||
+        lists.some(({ column, values }) => values.includes(String(row[column]))),
+    );
   }
   filter(column: string, _operator: string, value: unknown) { return this.eq(column, value); }
   order(column: string, options?: { ascending?: boolean }) { this.sorts.push({ column, ascending: options?.ascending ?? true }); return this; }

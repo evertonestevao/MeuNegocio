@@ -57,7 +57,7 @@ export default async function ClientsPage({
       </div>
 
       <form action="/dashboard/clients" className="flex max-w-md gap-2" role="search">
-        <Input name="q" defaultValue={search} placeholder="Buscar por nome ou documento" aria-label="Buscar clientes" />
+        <Input name="q" defaultValue={search} placeholder="Buscar por nome, CPF/CNPJ ou telefone" aria-label="Buscar clientes" />
         <Button type="submit" variant="outline">
           <Search className="size-4" /> Buscar
         </Button>

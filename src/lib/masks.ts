@@ -85,6 +85,32 @@ export function isValidCnpj(value: string): boolean {
   return digits.endsWith(`${first}${second}`);
 }
 
+/** CPF com 11 dígitos e dígitos verificadores certos. Sequência repetida (000…, 111…) não vale. */
+export function isValidCpf(value: string): boolean {
+  const digits = digitsOnly(value);
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+  const check = (base: string) => {
+    const sum = [...base].reduce((total, digit, index) => total + Number(digit) * (base.length + 1 - index), 0);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  const first = check(digits.slice(0, 9));
+  const second = check(digits.slice(0, 9) + first);
+  return digits.endsWith(`${first}${second}`);
+}
+
+/**
+ * Por que um CPF ou CNPJ não vale, ou null se vale. Vazio vale: o documento do cliente é opcional.
+ * Mesmas mensagens no formulário, na importação e no servidor.
+ */
+export function documentProblem(value: string): string | null {
+  const digits = digitsOnly(value);
+  if (digits.length === 0) return null;
+  if (digits.length === 11) return isValidCpf(digits) ? null : "CPF inválido. Confira os números.";
+  if (digits.length === 14) return isValidCnpj(digits) ? null : "CNPJ inválido. Confira os números.";
+  return "CPF ou CNPJ incompleto.";
+}
+
 /** Para exibir: telefone conhecido ganha a máscara; outro formato volta como veio. */
 export function formatPhone(value: string): string {
   return isValidPhone(value) ? maskPhone(value) : value;

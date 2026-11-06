@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapHeaders, previewImport } from "./import";
+import { composeAddress, describeColumns, mapHeaders, previewImport } from "./import";
 
 const HEADER = ["Razão Social", "CNPJ", "Celular", "E-mail", "Responsável", "Endereço", "Cidade", "Obs"];
 
@@ -11,13 +11,13 @@ describe("importação de clientes", () => {
 
   it("monta cliente, contato principal e local; sem contato, o contato leva o nome do cliente", () => {
     const [first, second] = previewImport(
-      [HEADER, ["Padaria", "12345678000190", "14999990000", "a@b.com", "João", "Rua A, 10", "Bauru/SP", "manhã"], ["Ana Lima", "", "14 3333-1000", "", "", "", "", ""]],
+      [HEADER, ["Padaria", "11222333000181", "14999990000", "a@b.com", "João", "Rua A, 10", "Bauru/SP", "manhã"], ["Ana Lima", "", "14 3333-1000", "", "", "", "", ""]],
       [],
     );
     expect(first).toMatchObject({
       line: 2,
       status: "ready",
-      row: { name: "Padaria", document: "12345678000190", contact: { name: "João", phone: "(14) 99999-0000", email: "a@b.com" }, location: { name: "Principal", address: "Rua A, 10 - Bauru/SP" } },
+      row: { name: "Padaria", document: "11222333000181", contact: { name: "João", phone: "(14) 99999-0000", email: "a@b.com" }, location: { name: "Principal", address: "Rua A, 10 - Bauru/SP" } },
     });
     expect(second.row).toMatchObject({ contact: { name: "Ana Lima", phone: "(14) 3333-1000", email: null }, location: null, document: null });
   });
@@ -49,6 +49,58 @@ describe("importação de clientes", () => {
       [9, "ready", null],
       [10, "duplicate", "Cliente com este nome já cadastrado."],
     ]);
+  });
+
+  it("CPF ou CNPJ com dígito verificador errado é erro", () => {
+    const lines = previewImport(
+      [
+        ["Nome", "CPF/CNPJ"],
+        ["Ana", "111.444.777-00"],
+        ["Padaria", "12.345.678/0001-90"],
+      ],
+      [],
+    );
+    expect(lines.map((line) => line.message)).toEqual(["CPF inválido. Confira os números.", "CNPJ inválido. Confira os números."]);
+  });
+
+  it("monta o endereço com número, complemento, bairro, cidade, estado e CEP", () => {
+    const [line] = previewImport(
+      [
+        ["Nome", "Endereço", "Número", "Complemento", "Bairro", "Cidade", "Estado", "CEP"],
+        ["Ana", "Rua Olavo Bilac", "120", "apto 42", "Centro", "Lins", "SP", "16400010"],
+      ],
+      [],
+    );
+    expect(line.row?.location).toEqual({ name: "Principal", address: "Rua Olavo Bilac, 120, apto 42 - Centro, Lins/SP - CEP 16400-010" });
+  });
+
+  it("linha só com a cidade entra, com a cidade como endereço", () => {
+    const [line] = previewImport([["Nome", "Cidade", "UF"], ["Rosângela", "Lins", "SP"]], []);
+    expect(line).toMatchObject({ status: "ready", row: { location: { address: "Lins/SP" } } });
+  });
+
+  it("duplicado aparece como duplicado mesmo com outro erro na linha", () => {
+    const [line] = previewImport([["Nome", "E-mail"], ["Raimundo", "sem-arroba"]], [{ name: "Raimundo", document: null }]);
+    expect(line).toMatchObject({ status: "duplicate", message: "Cliente com este nome já cadastrado." });
+  });
+
+  it("diz quais colunas entram e quais ficam de fora", () => {
+    expect(describeColumns(["Nome", "CEP", "Nº", "UF", "Data de nascimento", ""])).toEqual({
+      used: [
+        { header: "Nome", label: "Nome" },
+        { header: "CEP", label: "CEP" },
+        { header: "Nº", label: "Número" },
+        { header: "UF", label: "Estado" },
+      ],
+      ignored: ["Data de nascimento"],
+    });
+  });
+
+  it("endereço sem partes vazias", () => {
+    const empty = { address: "", number: "", complement: "", district: "", city: "", state: "", zip: "" };
+    expect(composeAddress({ ...empty, address: "Rua A", number: "10", city: "Bauru/SP", state: "SP" })).toBe("Rua A, 10 - Bauru/SP");
+    expect(composeAddress({ ...empty, state: "SP" })).toBe("SP");
+    expect(composeAddress(empty)).toBe("");
   });
 
   it("sem coluna de nome, não há o que importar", () => {

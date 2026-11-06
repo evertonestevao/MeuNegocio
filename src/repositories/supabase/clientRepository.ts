@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
+import { searchTerms } from "@/lib/search";
 import type { ClientRepository } from "@/services/clientService";
 import type { Client, ClientContact, ClientListItem, ClientLocation } from "@/types/database";
 
@@ -34,9 +35,25 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
         .eq("company_id", companyId)
         .is("deleted_at", null);
       if (search) {
-        // A busca entra como padrão ilike; os curingas digitados valem como texto.
-        const pattern = `%${search.replace(/[%_\\]/g, "\\$&")}%`;
-        query = query.or(`name.ilike.${JSON.stringify(pattern)},document.ilike.${JSON.stringify(pattern)}`);
+        // Padrão ilike; os curingas digitados valem como texto.
+        const pattern = (value: string) => JSON.stringify(`%${value.replace(/[%_\\]/g, "\\$&")}%`);
+        const { text, digits } = searchTerms(search);
+        const conditions = [`search_text.ilike.${pattern(text)}`];
+        if (digits) {
+          conditions.push(`search_text.ilike.${pattern(digits)}`);
+          // Telefone fica nos contatos: acha os clientes deles primeiro.
+          const { data: contacts, error: contactsError } = await client
+            .from("client_contacts")
+            .select("client_id")
+            .eq("company_id", companyId)
+            .is("deleted_at", null)
+            .or(`phone_digits.ilike.${pattern(digits)}`)
+            .limit(200);
+          if (contactsError) fail(contactsError);
+          const ids = [...new Set((contacts ?? []).map((contact: { client_id: string }) => contact.client_id))];
+          if (ids.length > 0) conditions.push(`id.in.(${ids.join(",")})`);
+        }
+        query = query.or(conditions.join(","));
       }
       const { data, error, count } = await query.order("name").range(offset, offset + limit - 1);
       if (error) fail(error);

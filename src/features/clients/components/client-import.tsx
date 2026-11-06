@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { decodeSpreadsheet, parseCsv } from "@/lib/csv";
 import { importClientsAction } from "@/server/actions/clients";
 import type { ActionState } from "@/server/actions/action-state";
-import { IMPORT_TEMPLATE, MAX_IMPORT_ROWS, previewImport, type ImportPreviewLine } from "../import";
+import { describeColumns, IMPORT_TEMPLATE, MAX_IMPORT_ROWS, previewImport, type ImportPreviewLine } from "../import";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
@@ -36,6 +36,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
   const router = useRouter();
   const [fileName, setFileName] = useState<string | null>(null);
   const [lines, setLines] = useState<ImportPreviewLine[] | null>(null);
+  const [columns, setColumns] = useState<ReturnType<typeof describeColumns> | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await importClientsAction(prev, data);
@@ -51,6 +52,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
 
   async function choose(file: File | undefined) {
     setLines(null);
+    setColumns(null);
     setProblem(null);
     if (!file) return;
     setFileName(file.name);
@@ -69,6 +71,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
       return;
     }
     if (rows.length - 1 > MAX_IMPORT_ROWS) setProblem(`A planilha tem mais de ${MAX_IMPORT_ROWS} clientes: só os ${MAX_IMPORT_ROWS} primeiros entram nesta importação.`);
+    setColumns(describeColumns(rows[0] ?? []));
     setLines(preview);
   }
 
@@ -78,8 +81,8 @@ export function ClientImport({ existing }: { existing: { name: string; document:
         <CardHeader>
           <CardTitle>1. Prepare a planilha</CardTitle>
           <CardDescription>
-            Uma linha por cliente, com os títulos das colunas na primeira linha. Só o nome é obrigatório; CPF/CNPJ, telefone, e-mail, contato, endereço, cidade e
-            observações entram se existirem. Colunas com outros nomes são ignoradas.
+            Uma linha por cliente, com os títulos das colunas na primeira linha. Só o nome é obrigatório; CPF/CNPJ, telefone, e-mail, contato, endereço, número,
+            complemento, bairro, cidade, estado, CEP e observações entram se existirem. Antes de importar, você vê quais colunas entraram e quais ficaram de fora.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,6 +127,20 @@ export function ClientImport({ existing }: { existing: { name: string; document:
                 <AlertDescription>{state.error}</AlertDescription>
               </Alert>
             ) : null}
+            {columns ? (
+              <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                <p>
+                  <span className="font-medium">Colunas usadas: </span>
+                  {columns.used.map((column) => (column.header === column.label ? column.label : `${column.header} (${column.label})`)).join(", ")}
+                </p>
+                {columns.ignored.length > 0 ? (
+                  <p className="text-warning">
+                    <span className="font-medium">Ficam de fora: </span>
+                    {columns.ignored.join(", ")}. Para entrarem, renomeie como no modelo.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <ul className="flex max-h-[28rem] flex-col divide-y overflow-y-auto text-sm">
               {/* O que precisa de atenção primeiro: é o que a pessoa vai corrigir na planilha. */}
               {[...attention, ...ready].map((line) => (
@@ -132,6 +149,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
                     <span className="text-muted-foreground">Linha {line.line} · </span>
                     {line.name || "Sem nome"}
                     {line.row?.contact?.phone ? <span className="text-muted-foreground"> · {line.row.contact.phone}</span> : null}
+                    {line.row?.location ? <span className="block text-xs text-muted-foreground">{line.row.location.address}</span> : null}
                   </span>
                   <span className={`shrink-0 text-xs font-medium ${STATUS[line.status].tone}`}>{line.message ?? STATUS[line.status].label}</span>
                 </li>

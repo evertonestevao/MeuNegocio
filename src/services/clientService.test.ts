@@ -66,7 +66,7 @@ function makeRepo() {
     updateLocation: vi.fn(async () => undefined),
     softDeleteLocation: vi.fn(async () => undefined),
     locationHasHistory: vi.fn(async () => false),
-    listIdentities: vi.fn(async (): Promise<{ name: string; document: string | null }[]> => [{ name: "Hotel Central", document: "12345678000190" }]),
+    listIdentities: vi.fn(async (): Promise<{ name: string; document: string | null }[]> => [{ name: "Hotel Central", document: "11444777000161" }]),
     importMany: vi.fn(async (_companyId: string, rows: unknown[]) => rows.length),
   } satisfies ClientRepository;
 }
@@ -210,7 +210,7 @@ describe("importação de clientes", () => {
 
   it("pula quem já está cadastrado e grava o resto de uma vez", async () => {
     const repo = makeRepo();
-    const result = await makeService(repo).importMany(OWNER, [row("Padaria"), row("Hotel com outro nome", "12.345.678/0001-90"), row("Mercado")]);
+    const result = await makeService(repo).importMany(OWNER, [row("Padaria"), row("Hotel com outro nome", "11.444.777/0001-61"), row("Mercado")]);
     expect(result).toEqual({ imported: 2, skipped: 1 });
     expect(repo.importMany).toHaveBeenCalledWith("co-1", [row("Padaria"), row("Mercado")]);
   });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
+import { documentProblem, formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
 
 /** Validação de clientes, contatos e locais: roda no navegador e de novo no servidor. */
 
@@ -15,10 +15,10 @@ export const clientSchema = z.object({
   document: z
     .string()
     .trim()
-    .refine((value) => {
-      const digits = value.replace(/\D/g, "");
-      return value === "" || digits.length === 11 || digits.length === 14;
-    }, "Informe um CPF com 11 dígitos ou um CNPJ com 14.")
+    .superRefine((value, ctx) => {
+      const problem = documentProblem(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    })
     .transform((value) => value || null),
   notes: optionalText(2000),
 });
