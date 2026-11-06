@@ -34,7 +34,6 @@ export const metadata: Metadata = {
   description: brand.tagline,
   applicationName: brand.name,
   appleWebApp: { capable: true, title: brand.name, statusBarStyle: "black" },
-  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export default function RootLayout({

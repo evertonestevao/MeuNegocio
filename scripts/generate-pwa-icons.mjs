@@ -18,7 +18,8 @@ const outputs = [
   ["public/icons/icon-192.png", standard, 192],
   ["public/icons/icon-512.png", standard, 512],
   ["public/icons/icon-maskable-512.png", maskable, 512],
-  ["public/icons/apple-touch-icon.png", apple, 180],
+  // Convenção do Next: vira <link rel="apple-touch-icon"> em todas as páginas.
+  ["src/app/apple-icon.png", apple, 180],
 ];
 
 const browser = await chromium.launch();
@@ -28,5 +29,30 @@ for (const [path, svg, size] of outputs) {
   await page.screenshot({ path, omitBackground: true });
   await page.close();
 }
+// favicon.ico (16, 32 e 48 px, PNG embutido): o que o navegador pede sozinho em /favicon.ico.
+const faviconSizes = [16, 32, 48];
+const favicons = [];
+for (const size of faviconSizes) {
+  const page = await browser.newPage({ viewport: { width: size, height: size } });
+  await page.setContent(`<!doctype html><style>html,body{margin:0;background:transparent}svg{display:block;width:${size}px;height:${size}px}</style>${standard}`);
+  favicons.push(await page.screenshot({ omitBackground: true }));
+  await page.close();
+}
 await browser.close();
+const header = Buffer.alloc(6);
+header.writeUInt16LE(1, 2);
+header.writeUInt16LE(favicons.length, 4);
+let offset = 6 + 16 * favicons.length;
+const entries = favicons.map((png, index) => {
+  const entry = Buffer.alloc(16);
+  entry[0] = faviconSizes[index];
+  entry[1] = faviconSizes[index];
+  entry.writeUInt16LE(1, 4);
+  entry.writeUInt16LE(32, 6);
+  entry.writeUInt32LE(png.length, 8);
+  entry.writeUInt32LE(offset, 12);
+  offset += png.length;
+  return entry;
+});
+writeFileSync("src/app/favicon.ico", Buffer.concat([header, ...entries, ...favicons]));
 writeFileSync("src/app/icon.svg", standard);

@@ -45,3 +45,16 @@ test("a entrada fica fora do navegador comum e marca a abertura uma única vez",
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/pwa-splash-seen/);
 });
+
+test("a guia do navegador mostra o ícone da marca em todas as áreas", async ({ page, request }) => {
+  for (const path of ["/", "/login", "/comecar"]) {
+    await page.goto(path);
+    const icons = await page.locator('link[rel="icon"]').evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""));
+    expect(icons.some((href) => href.startsWith("/favicon.ico")), path).toBe(true);
+    expect(icons.some((href) => href.startsWith("/icon.svg")), path).toBe(true);
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
+  }
+  for (const href of ["/favicon.ico", "/icon.svg", "/apple-icon.png"]) {
+    expect((await request.get(href)).ok(), href).toBe(true);
+  }
+});
