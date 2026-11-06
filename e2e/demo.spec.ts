@@ -92,7 +92,7 @@ test("demonstração não dá acesso a áreas restritas e termina ao sair", asyn
   // Criar conta encerra a demonstração.
   await page.goto("/demo");
   await page.getByRole("link", { name: "Criar minha conta" }).click();
-  await expect(page).toHaveURL(/\/signup/);
+  await expect(page).toHaveURL(/\/comecar$/);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login/);
 });

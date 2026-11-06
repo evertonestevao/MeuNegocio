@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { COMPANY_TIMEZONES } from "@/services/companyProfileService";
 import type { CompanyProfile } from "@/types/database";
 
-const TIMEZONE_LABEL: Record<(typeof COMPANY_TIMEZONES)[number], string> = {
+export const TIMEZONE_LABEL: Record<(typeof COMPANY_TIMEZONES)[number], string> = {
   "America/Sao_Paulo": "Brasília",
   "America/Manaus": "Manaus",
   "America/Cuiaba": "Cuiabá",

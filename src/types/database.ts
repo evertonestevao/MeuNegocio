@@ -33,6 +33,8 @@ export interface Company {
   slug: string;
   /** NULL se quem criou excluiu a conta. */
   created_by: string | null;
+  /** Criada pelo cadastro em etapas: o nome é provisório até a pessoa preencher os dados essenciais. */
+  onboarding_pending: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -360,6 +362,25 @@ export interface Subscription {
   /** false: compra parcelada, sem renovação. Vale até current_period_end. */
   renews: boolean;
   deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SignupStage = "contact" | "account" | "done";
+
+/** Cadastro em etapas: nome, e-mail e aceite guardados já na primeira tela (tabela da plataforma). */
+export interface SignupLead {
+  id: string;
+  email: string;
+  full_name: string;
+  stage: SignupStage;
+  terms_version_id: string | null;
+  accepted_at: string;
+  email_consent: boolean;
+  ip_address: string | null;
+  user_agent: string | null;
+  user_id: string | null;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }

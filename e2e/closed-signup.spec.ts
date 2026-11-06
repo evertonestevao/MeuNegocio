@@ -8,10 +8,12 @@ import { admin, makeSuperAdmin } from "./reseller-helpers";
 test("sem cadastro aberto: nada oferece criar conta e a rota não abre", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Criar conta" })).toHaveCount(0);
-  await expect(page.locator('a[href^="/signup"]')).toHaveCount(0);
+  await expect(page.locator('a[href^="/signup"], a[href^="/comecar"]')).toHaveCount(0);
   const whatsapp = await page.getByRole("button", { name: "Quero contratar" }).first().getAttribute("href");
   expect(whatsapp).toMatch(/^https:\/\/wa\.me\/5514997122258\?text=/);
   await page.goto("/signup");
+  await expect(page).toHaveURL(/\/login/);
+  await page.goto("/comecar");
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("link", { name: "Criar conta" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Conhecer o sistema sem criar conta" })).toBeVisible();

@@ -17,7 +17,8 @@ export default async function SignUpPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  if (!isSignupOpen() && !next?.startsWith("/invites/accept")) redirect("/login");
+  const invited = Boolean(next?.startsWith("/invites/accept"));
+  if (!invited) redirect(isSignupOpen() ? "/comecar" : "/login");
   return (
     <Card>
       <CardHeader>

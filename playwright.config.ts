@@ -52,6 +52,8 @@ export default defineConfig({
       RATE_LIMIT_STORE: "memory",
       APP_URL: `http://localhost:${port}`,
       SIGNUP_ENABLED: signup,
+      // Todos os cadastros dos testes saem do mesmo endereço.
+      SIGNUP_RATE_LIMIT_PER_IP: "1000",
     },
   })),
 });

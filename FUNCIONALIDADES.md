@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-05
+**Última atualização:** 2026-11-06
 
 ## Sumário
 
@@ -82,23 +82,26 @@ mas não outros admins nem o owner.
 | Função | Como funciona | Regras |
 |---|---|---|
 | **Telas de acesso** | Login, cadastro e recuperação de senha têm painel com a marca no computador e cabeçalho compacto no celular. A senha pode ser exibida, e o login oferece a demonstração. | — |
-| **Cadastro fechado** | Padrão (`SIGNUP_ENABLED=false`). A página inicial e o login não oferecem criar conta: "Quero contratar" abre o WhatsApp comercial (`brand.salesWhatsapp`) com a mensagem pronta, e o servidor recusa o cadastro, salvo para e-mail com convite pendente. Para abrir, `SIGNUP_ENABLED=true`. | — |
-| **Cadastro** (`/signup`) | Nome completo, email e senha. Mostra links para Termos e Privacidade. | Senha com no mínimo 8 caracteres. Rate limit por email. |
+| **Cadastro fechado** | Padrão (`SIGNUP_ENABLED=false`). A página inicial e o login não oferecem criar conta: "Quero contratar" abre o WhatsApp comercial (`brand.salesWhatsapp`) com a mensagem pronta, `/comecar` leva ao login e o servidor recusa o cadastro, salvo para e-mail com convite pendente. Para abrir, `SIGNUP_ENABLED=true`. | — |
+| **Cadastro em etapas** (`/comecar`) | Com o cadastro aberto, "Assinar" e "Assinar com 7 dias grátis" da página inicial levam a ele. Não há escolha entre assinar e testar: o caminho é sempre o da assinatura, com o destaque "Os primeiros 7 dias são grátis. Escolha o plano no próximo passo. Se cancelar nesse período, não paga nada." **1. Seus dados:** nome, e-mail, aceite dos Termos e da Privacidade (obrigatório) e consentimento de e-mail (opcional). Um aviso com ícone de informação diz que nome e e-mail ficam guardados a partir dali. Ao continuar, tudo é gravado em `signup_leads`, com versão dos termos, IP e navegador. **2. Senha** (`/comecar/senha`): o e-mail vem do passo anterior e não muda ali. A senha cria a conta, registra o aceite do passo 1 (se a versão ainda é a vigente) e cria a empresa com nome provisório ("Empresa de ‹nome›"). Em seguida vem **3. Assinatura** (`/assinar`), com o teste com cartão quando o meio de pagamento permite e o teste sem cartão no fim da tela. **4. Sua empresa** (`/onboarding`): nome e telefone obrigatórios, CNPJ opcional e, recolhidos, e-mail, fuso e endereço. Até concluir, o painel manda o proprietário de volta para esse passo. | Primeiro passo: 5 envios por endereço de rede a cada 10 minutos (`SIGNUP_RATE_LIMIT_PER_IP`) e 3 por e-mail por hora. Campo escondido contra robôs: preenchido, responde normal e não grava. O passo 2 só abre com o cookie httpOnly do passo 1 (2 dias) e cria no máximo 5 contas por endereço por hora. Mesmo e-mail de novo atualiza o cadastro, sem duplicar. Senha com no mínimo 8 caracteres. |
+| **Cadastro por convite** (`/signup?next=/invites/accept…`) | Nome completo, e-mail e senha, para quem recebeu convite. Sem convite, `/signup` leva a `/comecar` (aberto) ou ao login (fechado). | Rate limit por email. |
 | **Login** (`/login`) | Email e senha. Respeita `?next=` para voltar à página de origem. | 10 tentativas por minuto por email. |
 | **Logout** | Menu do usuário, no topo do painel. | — |
 | **Esqueci a senha** (`/forgot-password`) | Envia um link de redefinição por email. | Sempre responde "se o email existir…", para não revelar quais emails têm conta. Rate limit por email. |
 | **Redefinir senha** (`/reset-password`) | Abre pelo link do email (fluxo PKCE via `/auth/confirm`). | Só aceita redirects para domínios permitidos. |
 
-Rotas do painel exigem login. Usuário logado que abre `/login` ou `/signup` é redirecionado.
+Rotas do painel exigem login. Usuário logado que abre `/login`, `/signup` ou `/comecar` é redirecionado.
 
-Código: `src/services/authService.ts`, `src/server/actions/auth.ts`, `src/proxy.ts`.
+**Cadastros iniciados** (`/admin/cadastros`, só super admin): lista os 100 mais recentes com nome, e-mail, até onde chegou (antes da senha; conta criada sem terminar; concluído) e data. A tabela só é lida pelo super admin (RLS) e só o servidor grava. Os registros são apagados automaticamente 90 dias depois da última atualização (`pg_cron`, diário).
+
+Código: `src/services/authService.ts`, `src/services/signupFlowService.ts`, `src/server/actions/auth.ts`, `src/server/actions/signup.ts`, `src/proxy.ts`.
 
 ## 3. Termos de uso e consentimentos
 
 | Função | Como funciona |
 |---|---|
 | **Termos versionados** | Cada versão fica em `terms_versions`; só uma é a vigente. A página pública `/terms` mostra a vigente. |
-| **Aceite no onboarding** | A primeira empresa só é criada depois do aceite da versão vigente. |
+| **Aceite no cadastro** | No cadastro em etapas, o aceite é marcado no primeiro passo, junto com nome e e-mail, e vira o aceite da conta quando a senha é criada. Quem cria empresa sem ter aceitado (convite, conta antiga) aceita em `/onboarding`. |
 | **Reaceite obrigatório** | Ao publicar uma versão nova, todo usuário é levado a `/accept-terms` antes de continuar. |
 | **Evidência do aceite** | Grava data, IP e navegador de cada aceite (LGPD). Só o servidor grava, com os dados da request, e o usuário não consegue inserir nem alterar o registro. |
 | **Consentimento por finalidade** | Hoje existe a finalidade `email_communications` (opcional, revogável). Cada mudança gera um registro novo, com histórico. |
@@ -112,7 +115,8 @@ Código: `src/services/termsService.ts`, `src/server/actions/terms.ts`.
 | Função | Quem | Como funciona |
 |---|---|---|
 | **Criar empresa e acesso** (`/admin/empresas`) | Super admin | Cria a empresa, o proprietário e, se escolhido, libera um plano sem cobrança, pelo período dele e sem renovar. Mostra uma senha temporária uma única vez; no primeiro acesso, a pessoa precisa trocá-la. Falhou no meio, nada fica para trás. |
-| **Criar empresa** (`/onboarding`) | Com o cadastro aberto, qualquer usuário logado; fechado, só o super admin | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
+| **Dados essenciais da empresa** (`/onboarding`) | Owner e admin da empresa criada pelo cadastro em etapas | Último passo do cadastro: troca o nome provisório pelo nome de verdade e grava telefone (obrigatórios), CNPJ, e-mail, fuso e endereço; validade e margem ficam no padrão. Erro não apaga o que foi digitado. Concluído, não abre de novo. Empresas antigas ou criadas pelo super admin não passam por aqui. |
+| **Criar empresa** (`/onboarding`, conta sem empresa; seletor "Nova empresa") | Com o cadastro aberto, qualquer usuário logado; fechado, só o super admin | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
 | **Várias empresas por usuário** | Todos | O seletor no topo do painel troca a **empresa ativa**. |
 | **Empresa ativa** | Todos | Guardada em cookie só como preferência. A cada request o servidor confere se o usuário ainda é membro. |
 | **Editar nome** (Configurações) | Owner, admin | — |
@@ -300,7 +304,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 | Página | Conteúdo |
 |---|---|
-| `/` | Landing page: proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, bloco "Você sabe quanto sobrou no último serviço?" com exemplo fictício de resultado de um serviço, funções, contato pelo WhatsApp comercial (sem planos nem preços por enquanto), dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. |
+| `/` | Landing page: com o cadastro aberto, "Assinar" no topo, "Assinar com 7 dias grátis" no início e "Assinar agora" no fim levam ao cadastro em etapas; proposta, dores, caminho do serviço, telas reais do sistema com dados fictícios (`public/landing/`), gráficos de exemplo avisados como fictícios, animações sutis que respeitam a preferência de menos movimento, bloco "Você sabe quanto sobrou no último serviço?" com exemplo fictício de resultado de um serviço, funções, contato pelo WhatsApp comercial (sem planos nem preços por enquanto), dúvidas e dados legais. O texto fica em `src/features/marketing/content.ts`. |
 | `/terms` | Termos de Uso vigentes (versionados no banco). |
 | `/privacy` | Política de Privacidade: controlador e operador, dados da conta e das empresas, fotos e assinaturas em campo, link de aprovação, bases legais, suboperadores, cookies, retenção e direitos. |
 | `/refund` | Política de Reembolso: arrependimento em 7 dias (CDC), cancelamento, o que acontece sem assinatura (dados guardados, acesso pausado), membros extras e como pedir. |
@@ -320,7 +324,7 @@ CNPJ, endereço, email de suporte e do encarregado de dados.
 | **Health check** (`GET /api/health`) | Retorna 200 `{"status":"ok"}` ou 503 com o item que falhou. Checa o banco com timeout de 3 s e não expõe detalhes internos. |
 | **Monitoramento de erros** | `ERROR_REPORTER=console` (padrão, só log no servidor) ou `sentry` (exige `SENTRY_DSN`). Captura erros de actions, rotas de API e os que o Next pega sozinho. Remove dados sensíveis antes do envio. |
 | **Formato único de erro** | O usuário vê só uma mensagem segura. Stack trace e detalhes ficam no servidor (`src/lib/errors`). |
-| **Rate limit** | Login, cadastro e recuperação de senha (por email), convites (20/hora) e exportação/exclusão de conta (5/hora). Store `memory` (dev) ou `redis` (Upstash, produção). |
+| **Rate limit** | Login, cadastro e recuperação de senha (por email), início do cadastro (por endereço de rede e por e-mail), criação de conta pelo cadastro em etapas (por endereço de rede), convites (20/hora) e exportação/exclusão de conta (5/hora). Store `memory` (dev) ou `redis` (Upstash, produção). |
 
 ## 14. Integrações e provedores trocáveis
 

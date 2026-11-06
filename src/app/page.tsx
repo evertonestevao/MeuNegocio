@@ -8,6 +8,7 @@ import { SampleCharts } from "@/features/marketing/components/sample-charts";
 import { SampleServiceResult } from "@/features/marketing/components/sample-service-result";
 import { benefits, faq, hero, journey, LANDING_SCREENS, pains, profitPitch, showcases } from "@/features/marketing/content";
 import { isSignupOpen } from "@/server/signup";
+import { TRIAL_DAYS } from "@/services/billingService";
 
 // O cadastro aberto ou fechado vem do servidor: a página não pode ficar presa ao build.
 export const dynamic = "force-dynamic";
@@ -47,8 +48,8 @@ export default async function LandingPage() {
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/login" />}>
               Entrar
             </Button>
-            <Button size="sm" nativeButton={false} render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
-              {signupOpen ? "Criar conta" : "Quero contratar"}
+            <Button size="sm" nativeButton={false} render={signupOpen ? <Link href="/comecar" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
+              {signupOpen ? "Assinar" : "Quero contratar"}
             </Button>
           </nav>
         </div>
@@ -65,8 +66,8 @@ export default async function LandingPage() {
             <h1 style={{ "--lp-delay": "80ms" } as React.CSSProperties} className="lp-enter text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">{hero.title}</h1>
             <p style={{ "--lp-delay": "160ms" } as React.CSSProperties} className="lp-enter max-w-2xl text-pretty text-sidebar-foreground/80 lg:text-lg">{hero.description}</p>
             <div style={{ "--lp-delay": "240ms" } as React.CSSProperties} className="lp-fade flex flex-wrap justify-center gap-3">
-              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={<a href={contactHref} target="_blank" rel="noreferrer" />}>
-                Falar com a gente <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={signupOpen ? <Link href="/comecar" /> : <a href={contactHref} target="_blank" rel="noreferrer" />}>
+                {signupOpen ? `Assinar com ${TRIAL_DAYS} dias grátis` : "Falar com a gente"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
               </Button>
               <Button
                 size="lg"
@@ -268,8 +269,8 @@ export default async function LandingPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Tire sua empresa do caderno</h2>
             <p className="max-w-xl text-pretty text-sidebar-foreground/80">Veja o sistema funcionando e monte o primeiro orçamento da sua empresa.</p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={signupOpen ? <Link href="/signup" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
-                {signupOpen ? "Criar conta" : "Quero contratar"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+              <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={signupOpen ? <Link href="/comecar" /> : <a href={salesWhatsappHref(`Olá! Quero contratar o ${brand.name}.`)} target="_blank" rel="noreferrer" />}>
+                {signupOpen ? "Assinar agora" : "Quero contratar"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
               </Button>
               <Button
                 size="lg"

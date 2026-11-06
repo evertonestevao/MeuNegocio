@@ -1051,6 +1051,38 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Cadastro em etapas: nome e e-mail de quem começou o cadastro só o super admin lê; ninguém grava
+-- pela API, nem anônimo nem logado.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.signup_leads (email, full_name, accepted_at)
+values ('lead@test.local', 'Pessoa Lead', now());
+insert into public.platform_admins (user_id) values ('5ec00000-0000-4000-8000-000000000006');
+grant usage on schema sec_test to anon;
+grant execute on all functions in schema sec_test to anon;
+
+set local role anon;
+select sec_test.must_fail('anônimo lê cadastros iniciados', $$select * from public.signup_leads$$);
+select sec_test.must_fail('anônimo grava cadastro iniciado',
+  $$insert into public.signup_leads (email, full_name, accepted_at) values ('x@test.local', 'Xx', now())$$);
+
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('usuário comum lê cadastros iniciados', $$select * from public.signup_leads$$);
+select sec_test.must_fail('usuário comum grava cadastro iniciado',
+  $$insert into public.signup_leads (email, full_name, accepted_at) values ('y@test.local', 'Yy', now())$$);
+select sec_test.must_fail('usuário comum altera cadastro iniciado', $$update public.signup_leads set stage = 'done'$$);
+select sec_test.must_fail('usuário comum apaga cadastro iniciado', $$delete from public.signup_leads$$);
+select sec_test.must_fail('usuário comum apaga cadastros antigos', $$select public.purge_old_signup_leads()$$);
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000006', 'sec-guest@test.local');
+select sec_test.must_pass('super admin lê cadastros iniciados', $$select * from public.signup_leads$$);
+select sec_test.must_fail('super admin grava cadastro iniciado pela API', $$update public.signup_leads set stage = 'done'$$);
+reset role;
+delete from public.platform_admins where user_id = '5ec00000-0000-4000-8000-000000000006';
+set local role authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -1086,7 +1118,7 @@ begin
   where table_schema = 'public' and grantee in ('anon', 'authenticated')
     and (
       (table_name in ('subscriptions', 'audit_logs', 'plans', 'platform_admins', 'plan_audit_log',
-        'terms_acceptances', 'user_consents')
+        'terms_acceptances', 'user_consents', 'signup_leads')
         and privilege_type <> 'SELECT')
       or (table_name = 'company_members' and privilege_type not in ('SELECT', 'UPDATE'))
     );

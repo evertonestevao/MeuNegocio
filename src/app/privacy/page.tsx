@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "2. Dados da conta e da empresa",
-    body: "Cadastro: nome completo, email, foto de perfil opcional e senha (armazenada de forma protegida).\nEmpresa: nome, CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
+    body: "Início do cadastro: nome, email, e IP e navegador no aceite dos termos. Guardamos assim que você continua, antes da senha, para você retomar de onde parou e para falarmos com você sobre o cadastro.\nCadastro: nome completo, email, foto de perfil opcional e senha (armazenada de forma protegida).\nEmpresa: nome, CNPJ, telefone, email, endereço e membros com seus papéis.\nRegistros: histórico das ações na empresa, e IP e navegador no aceite dos termos e nos consentimentos.\nPagamento: plano, situação da assinatura e identificadores do processador. Não armazenamos dados de cartão.",
   },
   {
     title: "3. Dados cadastrados pelas empresas",
@@ -45,7 +45,7 @@ const sections: LegalSection[] = [
   },
   {
     title: "10. Retenção",
-    body: "Mantemos os dados enquanto a conta e a empresa estiverem ativas e pelo prazo exigido por lei após o encerramento. Registros apagados nas telas e empresas encerradas saem de uso, mas podem continuar guardados. Fotos e assinaturas de ordens de serviço concluídas seguem esse mesmo tratamento. Hoje não há exclusão automática por prazo: para pedir a eliminação, use o canal da seção 11.",
+    body: "Mantemos os dados enquanto a conta e a empresa estiverem ativas e pelo prazo exigido por lei após o encerramento. Registros apagados nas telas e empresas encerradas saem de uso, mas podem continuar guardados. Fotos e assinaturas de ordens de serviço concluídas seguem esse mesmo tratamento. O início do cadastro (nome, email e aceite guardados antes da senha) é apagado automaticamente 90 dias depois da última atualização. Fora isso, não há exclusão automática por prazo: para pedir a eliminação, use o canal da seção 11.",
   },
   {
     title: "11. Seus direitos (LGPD, art. 18)",

@@ -9,12 +9,14 @@ import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
 import { annualSavingsCents, planMonthlyCents, planOfferLines, plansForSale } from "@/config/planFeatures";
 import { SubscribePanel } from "@/features/billing/components/subscribe-panel";
+import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { formatDate } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import { TenantProvider } from "@/providers/tenant-provider";
 import { signOutAction } from "@/server/actions/auth";
 import { getCompanyAccess } from "@/server/billing";
 import { getDemoProfile } from "@/server/demo/mode";
+import { isOnboardingPending } from "@/server/signupFlow";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
 import { TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
@@ -54,6 +56,8 @@ export default async function SubscribePage() {
   const gateway = getPaymentGateway();
   const isFakeGateway = getServerEnv().PAYMENT_GATEWAY === "fake";
   const ended = !access.hasAccess && !access.trialAvailable;
+  // Veio do cadastro em etapas: mostra onde está e que os dados da empresa vêm depois.
+  const inSignup = !access.hasAccess && (await isOnboardingPending(active.id));
 
   return (
     <TenantProvider value={{ companies, active }}>
@@ -70,6 +74,7 @@ export default async function SubscribePage() {
           </div>
         </header>
 
+        {inSignup ? <SignupSteps current={3} /> : null}
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-3xl font-extrabold tracking-tight">Assine o {brand.name}</h1>
           <p className="text-muted-foreground">
@@ -77,7 +82,9 @@ export default async function SubscribePage() {
               ? `Seu teste grátis vai até ${formatDate(access.trialEndsAt.slice(0, 10))}. Assine agora e continue sem interrupção.`
               : ended
                 ? `O acesso da ${active.name} está pausado. Seus dados continuam guardados: assine e tudo volta como estava.`
-                : `Orçamentos, agenda, ordem de serviço e financeiro da ${active.name} em um só lugar.`}
+                : inSignup
+                  ? "Orçamentos, agenda, ordem de serviço e financeiro em um só lugar. Depois de assinar, você informa os dados da empresa."
+                  : `Orçamentos, agenda, ordem de serviço e financeiro da ${active.name} em um só lugar.`}
           </p>
         </div>
 

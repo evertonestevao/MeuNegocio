@@ -10,6 +10,7 @@ import { getActiveTenant } from "@/server/tenant";
 import { DemoBanner } from "@/features/demo/components/demo-banner";
 import { getDemoProfile } from "@/server/demo/mode";
 import { isSignupOpen } from "@/server/signup";
+import { isOnboardingPending } from "@/server/signupFlow";
 import { getTermsService } from "@/server/terms";
 import { createUserService } from "@/services/userService";
 import { getAreaLinks, getNoCompanyDestination } from "@/modules/resellers/areaAccess";
@@ -63,6 +64,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // não tem assinatura de verdade e nunca bloqueia.
   const access = demoProfile ? null : await getCompanyAccess(active.id);
   if (access && !access.hasAccess) redirect("/assinar");
+  // Cadastro em etapas: depois de assinar (ou começar o teste), o proprietário completa os dados da empresa.
+  if (!demoProfile && permissionService.canEditCompany(active.role) && (await isOnboardingPending(active.id))) redirect("/onboarding");
   const canCreateCompany = isSignupOpen() || areaLinks.some((link) => link.href === "/admin/planos");
   const cookieStore = await cookies();
   const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "true";

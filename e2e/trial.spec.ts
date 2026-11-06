@@ -1,16 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, uniqueEmail } from "./helpers";
+import { completeCompany, PASSWORD, signupUntilSubscribe, uniqueEmail } from "./helpers";
 import { admin } from "./reseller-helpers";
 
 test("empresa nova escolhe como começar: cartão primeiro, teste sem cartão no fim", async ({ page }) => {
-  await page.goto("/signup");
-  await page.getByLabel("Nome completo").fill("Dona Teste");
-  await page.getByLabel("E-mail").fill(uniqueEmail("teste-gratis"));
-  await page.getByLabel("Senha").fill(PASSWORD);
-  await page.getByRole("button", { name: "Criar conta" }).click();
-  await page.getByLabel("Nome da empresa").fill("Empresa Teste Grátis");
-  await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
-  await page.getByRole("button", { name: "Criar empresa" }).click();
+  await signupUntilSubscribe(page, { email: uniqueEmail("teste-gratis"), password: PASSWORD, name: "Dona Teste" });
 
   // Sem assinatura, o painel manda para a tela de assinar.
   await expect(page).toHaveURL(/\/assinar/);
@@ -22,6 +15,7 @@ test("empresa nova escolhe como começar: cartão primeiro, teste sem cartão no
   await expect(page.getByRole("button", { name: /Assinar o plano Anual/ })).toBeVisible();
 
   await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
+  await completeCompany(page, "Empresa Teste Grátis");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByText(/Faltam 7 dias do seu teste grátis/)).toBeVisible();
 

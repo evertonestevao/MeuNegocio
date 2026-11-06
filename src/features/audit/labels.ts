@@ -15,6 +15,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "company.created": "Empresa criada",
   "company.closed": "Empresa encerrada",
   "company.updated": "Empresa alterada",
+  "company.onboarding_completed": "Dados da empresa preenchidos no cadastro",
   "company.ownership_transferred": "Propriedade transferida",
   "company_profile.updated": "Dados da empresa alterados",
   "employee.created": "Pessoa da equipe criada",

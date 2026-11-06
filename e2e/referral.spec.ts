@@ -93,8 +93,8 @@ test("?ref= grava o cookie e preserva os demais parâmetros", async ({ page, con
   expect((await referralCookie(context))?.value).toBe(reseller.referral_code);
 
   await context.clearCookies();
-  await page.goto(`/signup?ref=${reseller.referral_code}`);
-  await expect(page).toHaveURL(/\/signup$/);
+  await page.goto(`/comecar?ref=${reseller.referral_code}`);
+  await expect(page).toHaveURL(/\/comecar$/);
   expect((await referralCookie(context))?.value).toBe(reseller.referral_code);
 });
 

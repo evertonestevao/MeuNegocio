@@ -42,6 +42,8 @@ const serverEnvSchema = z.object({
   EMAIL_FROM: z.email().optional(),
   /** Cadastro público. Fechado por padrão: quem cria empresa é o super admin. */
   SIGNUP_ENABLED: z.enum(["true", "false"]).default("false"),
+  /** Cadastros iniciados por endereço de rede a cada 10 minutos (anti envio repetido). */
+  SIGNUP_RATE_LIMIT_PER_IP: z.coerce.number().int().positive().default(5),
   /** URL pública da app, usada em links de emails transacionais. */
   APP_URL: z.url().default("http://localhost:3000"),
   /** Notificações externas (WhatsApp/SMS/push). Só "console" implementado. */

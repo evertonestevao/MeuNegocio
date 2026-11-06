@@ -16,7 +16,7 @@ export function DemoBanner({ profile, signupOpen }: { profile: DemoProfile; sign
         <a href="/demo/sair" className="underline underline-offset-4">
           Sair
         </a>
-        <a href={signupOpen ? "/signup" : CONTACT_HREF} {...(signupOpen ? {} : { target: "_blank", rel: "noreferrer" })} className="rounded-md bg-sidebar px-2 py-1 sm:px-3 font-medium text-sidebar-foreground">
+        <a href={signupOpen ? "/comecar" : CONTACT_HREF} {...(signupOpen ? {} : { target: "_blank", rel: "noreferrer" })} className="rounded-md bg-sidebar px-2 py-1 sm:px-3 font-medium text-sidebar-foreground">
           {signupOpen ? "Criar minha conta" : "Quero contratar"}
         </a>
       </div>

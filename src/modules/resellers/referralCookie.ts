@@ -7,7 +7,7 @@ export const REFERRAL_COOKIE = "reseller_ref";
 export const REFERRAL_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 /** Páginas de venda: as únicas que aceitam ?ref= e os únicos destinos de /r/[codigo]. */
-export const SALES_PATHS: ReadonlySet<string> = new Set(["/", "/signup"]);
+export const SALES_PATHS: ReadonlySet<string> = new Set(["/", "/signup", "/comecar"]);
 const DEFAULT_SALES_PATH = "/";
 
 const REFERRAL_CODE_FORMAT = /^[a-z0-9]+(-[a-z0-9]+)*$/;

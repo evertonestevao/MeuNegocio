@@ -1,6 +1,29 @@
 import { expect, type Page } from "@playwright/test";
 
-/** Cria conta nova + primeira empresa e chega ao dashboard. */
+/** Cadastro em etapas até a senha: nome, e-mail e aceite; depois a senha, que leva à tela de assinar. */
+export async function signupUntilSubscribe(page: Page, { email, password, name }: { email: string; password: string; name: string }) {
+  await page.goto("/comecar");
+  await page.getByLabel("Seu nome").fill(name);
+  await page.getByLabel("E-mail", { exact: true }).fill(email);
+  await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(page).toHaveURL(/\/comecar\/senha/);
+  await page.getByLabel("Senha").fill(password);
+  await page.getByRole("button", { name: "Criar conta e escolher o plano" }).click();
+  await expect(page).toHaveURL(/\/assinar/);
+}
+
+/** Último passo: nome de verdade e telefone da empresa, e entra no painel. */
+export async function completeCompany(page: Page, company: string) {
+  await expect(page).toHaveURL(/\/onboarding/);
+  await page.getByLabel("Nome da empresa").fill(company);
+  await page.getByLabel("Telefone ou WhatsApp").fill("(14) 99999-0000");
+  await page.getByRole("button", { name: "Concluir e entrar no sistema" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+}
+
+/** Cria conta nova + primeira empresa (no teste grátis sem cartão) e chega ao dashboard. */
 export async function signupAndOnboard(
   page: Page,
   { email, password, name, company }: {
@@ -10,21 +33,9 @@ export async function signupAndOnboard(
     company: string;
   },
 ) {
-  await page.goto("/signup");
-  await page.getByLabel("Nome completo").fill(name);
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(password);
-  await page.getByRole("button", { name: "Criar conta" }).click();
-
-  // onboarding: aceite dos termos vigentes + primeira empresa
-  await expect(page).toHaveURL(/\/onboarding/);
-  await expect(page.getByText("Crie sua empresa")).toBeVisible();
-  await page.getByLabel("Nome da empresa").fill(company);
-  await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
-  await page.getByRole("button", { name: "Criar empresa" }).click();
-
-  // Empresa nova ainda não tem assinatura: começa o teste de 7 dias sem cartão.
-  await startCardlessTrial(page);
+  await signupUntilSubscribe(page, { email, password, name });
+  await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
+  await completeCompany(page, company);
   await expect(page.locator("main").getByText(company).first()).toBeVisible();
 }
 

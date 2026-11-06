@@ -15,5 +15,5 @@ test("reembolso explica o cancelamento e mantém o aviso", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Política de Reembolso");
   await expect(page.getByRole("note")).toContainText("Texto de exemplo");
   await expect(page.getByText(/continua até o fim do período já pago/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: /plano gratuito/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /dados sem assinatura/ })).toBeVisible();
 });

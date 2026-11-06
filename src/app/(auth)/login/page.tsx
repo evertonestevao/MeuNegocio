@@ -59,7 +59,7 @@ export default async function LoginPage({
             Não tem conta?{" "}
             <Link
               // preserva o destino (ex.: link de convite) através do cadastro
-              href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+              href={next ? `/signup?next=${encodeURIComponent(next)}` : "/comecar"}
               className="text-foreground underline underline-offset-4"
             >
               Criar conta
