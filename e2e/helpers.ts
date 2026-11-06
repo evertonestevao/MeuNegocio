@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { admin } from "./reseller-helpers";
 
 /** Cadastro em etapas até a senha: nome, e-mail e aceite; depois a senha, que leva à tela de assinar. */
 export async function signupUntilSubscribe(page: Page, { email, password, name }: { email: string; password: string; name: string }) {
@@ -23,7 +24,7 @@ export async function completeCompany(page: Page, company: string) {
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
-/** Cria conta nova + primeira empresa (no teste grátis sem cartão) e chega ao dashboard. */
+/** Cria conta nova + primeira empresa (nos 7 dias grátis do mensal) e chega ao dashboard. */
 export async function signupAndOnboard(
   page: Page,
   { email, password, name, company }: {
@@ -34,15 +35,44 @@ export async function signupAndOnboard(
   },
 ) {
   await signupUntilSubscribe(page, { email, password, name });
-  await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
+  await page.getByRole("button", { name: "Começar agora: 7 dias grátis" }).click();
   await completeCompany(page, company);
   await expect(page.locator("main").getByText(company).first()).toBeVisible();
 }
 
-/** Na tela de assinar, começa o teste sem cartão e volta ao painel. */
-export async function startCardlessTrial(page: Page) {
+/**
+ * Conta nova numa empresa em teste sem cartão, ainda sem vínculo com o meio de pagamento. A tela não
+ * oferece mais esse teste: a assinatura é criada direto no banco, como as dos testes antigos em
+ * andamento, para os cenários que começam numa empresa que ainda não pagou nada.
+ */
+export async function signupWithCardlessTrial(
+  page: Page,
+  { email, password, name, company }: { email: string; password: string; name: string; company: string },
+) {
+  await signupUntilSubscribe(page, { email, password, name });
+  const { data: member } = await admin.rpc("find_user_id_by_email", { p_email: email });
+  const { data: membership } = await admin.from("company_members").select("company_id").eq("user_id", member).single();
+  const { data: plan } = await admin.from("plans").select("id").eq("code", "pro").single();
+  const now = Date.now();
+  const { error } = await admin.from("subscriptions").insert({
+    company_id: membership!.company_id,
+    plan_id: plan!.id,
+    status: "trialing",
+    current_period_start: new Date(now).toISOString(),
+    current_period_end: new Date(now + 7 * 86_400_000).toISOString(),
+    cancel_at_period_end: false,
+    renews: false,
+  });
+  if (error) throw error;
+  await page.goto("/dashboard");
+  await completeCompany(page, company);
+  await expect(page.locator("main").getByText(company).first()).toBeVisible();
+}
+
+/** Na tela de assinar, começa os 7 dias grátis do mensal (gateway de teste) e volta ao painel. */
+export async function startTrial(page: Page) {
   await expect(page).toHaveURL(/\/assinar/);
-  await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
+  await page.getByRole("button", { name: "Começar agora: 7 dias grátis" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 }
 

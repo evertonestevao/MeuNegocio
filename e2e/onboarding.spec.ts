@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeCompany, PASSWORD, signupUntilSubscribe, uniqueEmail } from "./helpers";
+import { completeCompany, PASSWORD, uniqueEmail } from "./helpers";
 import { admin } from "./reseller-helpers";
 
 async function leadOf(email: string) {
@@ -66,14 +66,6 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   // Concluído, o último passo não abre de novo.
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/dashboard$/);
-});
-
-test("teste sem cartão na tela de assinar também leva aos dados da empresa", async ({ page }) => {
-  await signupUntilSubscribe(page, { email: uniqueEmail("etapas-teste"), password: PASSWORD, name: "Bia Teste" });
-  await page.getByRole("button", { name: "Teste por 7 dias sem cartão" }).click();
-  await expect(page.getByText("Falta pouco: sua empresa")).toBeVisible();
-  await completeCompany(page, "Empresa Teste Etapas E2E");
-  await expect(page.getByText(/Faltam 7 dias do seu teste grátis/)).toBeVisible();
 });
 
 test("corrigir volta ao primeiro passo preenchido e não deixa o e-mail errado guardado", async ({ page }) => {

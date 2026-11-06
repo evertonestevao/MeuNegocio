@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, signupAndOnboard, startCardlessTrial, uniqueEmail } from "./helpers";
+import { PASSWORD, signupAndOnboard, startTrial, uniqueEmail } from "./helpers";
 
 /** Fluxo crítico 3: trocar empresa ativa (plano §12). */
 test("usuário com duas empresas alterna a ativa pelo switcher", async ({ page }) => {
@@ -17,7 +17,7 @@ test("usuário com duas empresas alterna a ativa pelo switcher", async ({ page }
   await page.getByRole("button", { name: "Criar empresa" }).click();
 
   // nova empresa vira a ativa e, sem assinatura, passa pela tela de assinar
-  await startCardlessTrial(page);
+  await startTrial(page);
   await expect(page.locator("main").getByText("Segunda Empresa E2E")).toBeVisible();
 
   // troca de volta para a primeira

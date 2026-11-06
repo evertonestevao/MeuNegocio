@@ -1,7 +1,7 @@
 import { E2E_SUPABASE_URL } from "./supabase-url";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
+import { PASSWORD, signupAndOnboard, signupWithCardlessTrial, uniqueEmail } from "./helpers";
 
 /** Fluxo link → contratação → pagamento → lançamento, com o gateway fake. */
 
@@ -81,7 +81,7 @@ test("link, contratação, pagamento e lançamento, com repetição, estorno e m
   const reseller = await createResellerWithRule();
 
   await page.goto(`/r/${reseller.referral_code}`);
-  await signupAndOnboard(page, {
+  await signupWithCardlessTrial(page, {
     email: uniqueEmail("comprador"),
     password: PASSWORD,
     name: "Comprador",

@@ -19,7 +19,7 @@ export interface SubscribePlan {
 
 /**
  * Assinar com cartão em primeiro lugar: o teste de 7 dias com cartão é o botão grande. O teste sem
- * cartão fica no fim, para quem ainda está na dúvida.
+ * cartão, quando oferecido, fica no fim, para quem ainda está na dúvida.
  */
 export function SubscribePanel({
   companyId,
@@ -28,6 +28,7 @@ export function SubscribePanel({
   savingsCents,
   trialAvailable,
   cardTrial,
+  cardlessTrial,
   firstChargeDate,
   gatewayName,
   isFakeGateway,
@@ -40,6 +41,8 @@ export function SubscribePanel({
   trialAvailable: boolean;
   /** O meio de pagamento guarda o cartão e só cobra depois do teste. */
   cardTrial: boolean;
+  /** Oferece também o teste sem cartão (decisão comercial; ver CARDLESS_TRIAL_OFFERED). */
+  cardlessTrial: boolean;
   firstChargeDate: string;
   gatewayName: string;
   isFakeGateway: boolean;
@@ -134,7 +137,7 @@ export function SubscribePanel({
         </p>
       </form>
 
-      {trialAvailable ? (
+      {trialAvailable && cardlessTrial ? (
         <form
           action={startTrial}
           className="flex flex-col items-center gap-2 border-t pt-5 text-center text-sm"

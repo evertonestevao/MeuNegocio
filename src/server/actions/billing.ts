@@ -15,7 +15,7 @@ import { getCompanyAccess, getExternalPriceId } from "@/server/billing";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getTenantService } from "@/server/tenant";
-import { createBillingService, isCardlessTrial, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
+import { CARDLESS_TRIAL_OFFERED, createBillingService, isCardlessTrial, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import { createUserService } from "@/services/userService";
 import type { NormalizedPaymentEvent } from "@/types/billing";
@@ -202,6 +202,7 @@ export async function cancelSubscriptionAction(
 /** Teste de 7 dias sem cartão, com tudo liberado. Um por empresa; só o proprietário inicia. */
 export async function startTrialAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
   try {
+    if (!CARDLESS_TRIAL_OFFERED) throw new AppError("forbidden", "O teste sem cartão não está disponível.");
     const companyId = String(formData.get("companyId") ?? "");
     await requireOwner(companyId);
     // service_role: usuário não escreve em subscriptions; requireOwner já validou o ator.

@@ -19,7 +19,7 @@ import { getDemoProfile } from "@/server/demo/mode";
 import { isOnboardingPending } from "@/server/signupFlow";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
-import { TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
+import { CARDLESS_TRIAL_OFFERED, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
@@ -96,6 +96,7 @@ export default async function SubscribePage() {
             savingsCents={annualSavingsCents(forSale)}
             trialAvailable={access.trialAvailable}
             cardTrial={gateway.supportsTrial}
+            cardlessTrial={CARDLESS_TRIAL_OFFERED}
             firstChargeDate={formatDate(trialEndsAt().slice(0, 10))}
             gatewayName={GATEWAY_LABEL[gateway.name] ?? gateway.name}
             isFakeGateway={isFakeGateway}
@@ -106,7 +107,7 @@ export default async function SubscribePage() {
               <p className="font-medium">Quem assina é o proprietário da empresa.</p>
               <p className="text-muted-foreground">
                 Peça ao proprietário da {active.name} para assinar o {brand.name}
-                {access.trialAvailable ? ` ou começar o teste grátis de ${TRIAL_DAYS} dias` : ""}. Os dados continuam guardados enquanto isso.
+                {access.trialAvailable && gateway.supportsTrial ? ` com ${TRIAL_DAYS} dias grátis` : ""}. Os dados continuam guardados enquanto isso.
               </p>
             </CardContent>
           </Card>

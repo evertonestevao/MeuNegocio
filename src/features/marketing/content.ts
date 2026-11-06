@@ -256,7 +256,7 @@ export const faq = [
   },
   {
     question: "Dá para testar antes de assinar?",
-    answer: "Sim, por 7 dias, com tudo liberado e sem cartão. Se no fim não quiser assinar, nada é cobrado e seus dados continuam guardados.",
+    answer: "Sim. No plano mensal, os primeiros 7 dias são grátis, com tudo liberado: você cadastra o cartão e a primeira cobrança só acontece no fim do teste. Cancele antes e não paga nada.",
   },
   {
     question: "Como funciona o pagamento e o cancelamento?",

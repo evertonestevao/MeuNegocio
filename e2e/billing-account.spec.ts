@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
+import { PASSWORD, signupAndOnboard, signupWithCardlessTrial, uniqueEmail } from "./helpers";
 
 /**
  * Caminho que passa por service_role e pelos GRANTs do client: assinar (gateway
@@ -8,7 +8,7 @@ import { PASSWORD, signupAndOnboard, uniqueEmail } from "./helpers";
 test("assinatura, reativação, exportação e exclusão de conta", async ({ page }) => {
   const email = uniqueEmail("billing");
 
-  await signupAndOnboard(page, {
+  await signupWithCardlessTrial(page, {
     email,
     password: PASSWORD,
     name: "Usuária Billing",

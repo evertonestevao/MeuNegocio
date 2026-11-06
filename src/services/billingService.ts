@@ -49,6 +49,11 @@ export const DEFAULT_PLAN_CODE = "free";
 /** Teste grátis: dias e plano, com tudo liberado. */
 export const TRIAL_DAYS = 7;
 export const TRIAL_PLAN_CODE = "pro";
+/**
+ * Teste sem cartão oferecido na tela de assinar. Desligado por decisão comercial: por enquanto só o
+ * teste de 7 dias com cartão. Quem já está num teste sem cartão segue até o fim dele.
+ */
+export const CARDLESS_TRIAL_OFFERED = false;
 
 /** Teste sem cartão: assinatura em teste, sem gateway, que não renova e acaba no fim do período. */
 export function isCardlessTrial(subscription: Subscription | null): boolean {
