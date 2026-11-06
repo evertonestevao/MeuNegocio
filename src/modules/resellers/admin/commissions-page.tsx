@@ -46,7 +46,7 @@ export default async function CommissionsPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Lançamentos</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Lançamentos</h1>
           <p className="text-sm text-muted-foreground">Vendas e comissões de todos os vendedores</p>
         </div>
         {/* <a>, não Link: é download, não navegação. */}

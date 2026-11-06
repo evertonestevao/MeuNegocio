@@ -6,6 +6,18 @@ import { isAppError, type AppErrorCode } from "@/lib/errors";
 export interface ActionState {
   error?: string;
   success?: string;
+  /** Mensagem de cada campo com problema, pelo name do campo, para mostrar junto dele. */
+  fieldErrors?: Record<string, string>;
+}
+
+/** Primeira mensagem de cada campo, a partir dos problemas do Zod. */
+export function fieldErrorsOf(issues: readonly { path: readonly PropertyKey[]; message: string }[]): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const issue of issues) {
+    const field = String(issue.path[0] ?? "");
+    if (field && !(field in errors)) errors[field] = issue.message;
+  }
+  return errors;
 }
 
 /** Códigos que indicam falha nossa ou de provedor — vão ao monitoramento. */

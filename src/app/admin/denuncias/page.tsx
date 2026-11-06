@@ -18,7 +18,7 @@ export default async function AbuseReportsAdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Denúncias</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Denúncias</h1>
         <p className="text-sm text-muted-foreground">Enviadas pelo link do orçamento ou pela página “Denunciar uso indevido”. Ninguém consegue apagar.</p>
       </div>
       <Card>

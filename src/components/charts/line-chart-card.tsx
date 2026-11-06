@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  allZero,
+  autoYAxisWidth,
   ChartLegend,
   normalizeSeriesList,
   resolveFormatter,
@@ -61,19 +63,8 @@ export function LineChartCard(props: LineChartCardProps) {
   );
   const chartId = useId();
 
-  // Largura do eixo Y proporcional ao maior rótulo formatado (ex.: "R$ 3.800"),
-  // senão valores longos são cortados. ~7.5px por caractere em fonte 12px.
-  const longestLabel = data.reduce((longest, row) => {
-    for (const s of series) {
-      const value = row[s.key];
-      if (typeof value === "number") {
-        const label = valueFormatter(value);
-        if (label.length > longest) longest = label.length;
-      }
-    }
-    return longest;
-  }, 1);
-  const yAxisWidth = Math.min(110, Math.max(40, 14 + longestLabel * 7.5));
+  const yAxisWidth = autoYAxisWidth(data, series, valueFormatter);
+  const empty = allZero(data, series);
 
   return (
     <Card>
@@ -102,6 +93,8 @@ export function LineChartCard(props: LineChartCardProps) {
               />
               <YAxis
                 width={yAxisWidth}
+                ticks={empty ? [0] : undefined}
+                domain={empty ? [0, 1] : undefined}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}

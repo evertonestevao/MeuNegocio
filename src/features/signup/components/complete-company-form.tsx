@@ -24,6 +24,12 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
     undefined,
   );
 
+  const errors = state?.fieldErrors ?? {};
+  // Erro em campo recolhido: abre "Mais dados" para a pessoa ver onde está.
+  const hiddenFieldError = Boolean(errors.email || errors.address || errors.timezone);
+  const invalid = (field: string) =>
+    errors[field] ? { "aria-invalid": true as const, "aria-describedby": `${field}-error` } : {};
+
   return (
     <form
       // onSubmit em vez de action: um erro não apaga o que já foi digitado.
@@ -41,23 +47,26 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
       ) : null}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="name">Nome da empresa</Label>
-        <Input id="name" name="name" placeholder="Ex.: Clima Sul Refrigeração" minLength={2} maxLength={80} required autoFocus />
+        <Input id="name" name="name" placeholder="Ex.: Clima Sul Refrigeração" minLength={2} maxLength={80} required autoFocus {...invalid("name")} />
+        <FieldError field="name" message={errors.name} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="profile-phone">Telefone ou WhatsApp</Label>
-          <MaskedInput mask="phone" id="profile-phone" name="phone" required />
+          <MaskedInput mask="phone" id="profile-phone" name="phone" required {...invalid("phone")} />
+          <FieldError field="phone" message={errors.phone} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="profile-cnpj">
             CNPJ <span className="font-normal text-muted-foreground">(opcional)</span>
           </Label>
-          <MaskedInput mask="cnpj" id="profile-cnpj" name="cnpj" />
+          <MaskedInput mask="cnpj" id="profile-cnpj" name="cnpj" {...invalid("cnpj")} />
+          <FieldError field="cnpj" message={errors.cnpj} />
         </div>
       </div>
       <p className="text-xs text-muted-foreground">Nome e telefone aparecem nos orçamentos que você mandar para os clientes.</p>
 
-      <details className="group rounded-lg border px-3 py-2">
+      <details className="group rounded-lg border px-3 py-2" open={hiddenFieldError || undefined}>
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-medium">
           Mais dados (opcional)
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
@@ -67,7 +76,8 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="profile-email">E-mail da empresa</Label>
-              <Input id="profile-email" name="email" type="email" />
+              <Input id="profile-email" name="email" type="email" {...invalid("email")} />
+              <FieldError field="email" message={errors.email} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="profile-timezone">Fuso</Label>
@@ -87,7 +97,8 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="profile-address">Endereço</Label>
-            <Input id="profile-address" name="address" />
+            <Input id="profile-address" name="address" {...invalid("address")} />
+            <FieldError field="address" message={errors.address} />
           </div>
         </div>
       </details>
@@ -102,5 +113,14 @@ export function CompleteCompanyForm({ logoUrl }: { logoUrl: string | null }) {
       </Button>
       <p className="text-center text-xs text-muted-foreground">Logo, validade do orçamento e observações padrão você ajusta depois em Configurações.</p>
     </form>
+  );
+}
+
+function FieldError({ field, message }: { field: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={`${field}-error`} className="text-xs text-destructive">
+      {message}
+    </p>
   );
 }

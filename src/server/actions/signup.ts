@@ -35,7 +35,7 @@ import { permissionService } from "@/services/permissionService";
 import { provisionalCompanyName } from "@/services/signupFlowService";
 import { createTenantService } from "@/services/tenantService";
 import { createTermsService } from "@/services/termsService";
-import { toActionError, type ActionState } from "./action-state";
+import { fieldErrorsOf, toActionError, type ActionState } from "./action-state";
 
 /**
  * Cadastro em etapas. Passo 1 guarda nome, e-mail e aceite; passo 2 cria a conta e a empresa e leva
@@ -144,9 +144,14 @@ export async function completeOnboardingAction(_prev: ActionState | undefined, f
     if (!permissionService.canEditCompany(active.role)) {
       throw new AppError("forbidden", "Só o proprietário completa os dados da empresa");
     }
+    // Todos os problemas de uma vez, cada um junto do seu campo: corrigir um e descobrir o próximo cansa.
     const parsed = essentialsSchema.safeParse(Object.fromEntries(formData));
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-    if (!parsed.data.phone) return { error: "Informe o telefone com DDD." };
+    const fieldErrors = parsed.success ? {} : fieldErrorsOf(parsed.error.issues);
+    if (!fieldErrors.phone && !(parsed.success ? parsed.data.phone : String(formData.get("phone") ?? "").trim())) fieldErrors.phone = "Informe o telefone com DDD.";
+    if (!parsed.success || Object.keys(fieldErrors).length > 0) {
+      const count = Object.keys(fieldErrors).length;
+      return { error: count > 1 ? "Confira os campos destacados." : "Confira o campo destacado.", fieldErrors };
+    }
     const { name, ...profile } = parsed.data;
 
     // A declaração vem antes de tudo: sem ela, nada é gravado.

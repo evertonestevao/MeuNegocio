@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  allZero,
+  autoYAxisWidth,
   ChartLegend,
   normalizeSeriesList,
   resolveFormatter,
@@ -44,13 +46,15 @@ export interface BarChartCardProps {
 }
 
 export function BarChartCard(props: BarChartCardProps) {
-  const { title, description, data, xKey, height = 240, yAxisWidth = 48, integerValues = false } = props;
+  const { title, description, data, xKey, height = 240, integerValues = false } = props;
   const valueFormatter = resolveFormatter(props.valueFormatter, props.valueFormat);
   const series = normalizeSeriesList(
     props.series ?? (props.yKey ? [props.yKey] : []),
     "BarChartCard",
   );
   const chartId = useId();
+  const yAxisWidth = props.yAxisWidth ?? autoYAxisWidth(data, series, valueFormatter);
+  const empty = allZero(data, series);
 
   return (
     <Card>
@@ -78,6 +82,8 @@ export function BarChartCard(props: BarChartCardProps) {
               />
               <YAxis
                 width={yAxisWidth}
+                ticks={empty ? [0] : undefined}
+                domain={empty ? [0, 1] : undefined}
                 allowDecimals={!integerValues}
                 tickLine={false}
                 axisLine={false}

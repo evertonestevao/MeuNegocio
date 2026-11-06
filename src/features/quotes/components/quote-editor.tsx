@@ -41,7 +41,7 @@ export function QuoteEditor({
   items: QuoteItem[];
   catalog: CatalogItem[];
   clients: ClientPickerOption[];
-  initial: { clientId: string | null; validUntil: string | null; notes: string };
+  initial: { clientId: string | null; locationId?: string | null; validUntil: string | null; notes: string };
   aside?: React.ReactNode;
   /** Owner e admin: custo e acréscimo por item, que o cliente nunca vê. */
   canSeeCost?: boolean;
@@ -103,7 +103,11 @@ export function QuoteEditor({
                 className={SELECT_CLASS}
                 disabled={readOnly}
                 value={editor.clientId ?? ""}
-                onChange={(event) => editor.chooseClient(event.target.value || null)}
+                onChange={(event) => {
+                  const id = event.target.value || null;
+                  const locations = clients.find((option) => option.id === id)?.locations ?? [];
+                  editor.chooseClient(id, locations.map((location) => location.id));
+                }}
               >
                 <option value="">Escolha o cliente</option>
                 {clients.map((option) => (

@@ -14,7 +14,17 @@ export interface AuditRepository {
     companyId: string,
     opts: { limit: number; offset: number },
   ): Promise<{ items: AuditLog[]; total: number }>;
+  /**
+   * Nome de cada registro citado, por "tipo:id" (orçamento com número e título, cliente, pessoa da
+   * equipe, item do catálogo). Registro excluído não aparece (a RLS esconde): fica só o tipo.
+   */
+  describeEntities(companyId: string, refs: { entityType: string; entityId: string }[]): Promise<Record<string, string>>;
 }
+
+/** Entrada da auditoria com o nome do registro, quando dá para saber. */
+export type AuditEntry = AuditLog & { entity_name: string | null };
+
+export const DESCRIBED_ENTITIES = ["quote", "client", "employee", "catalog_item"] as const;
 
 const auditEntrySchema = z.object({
   companyId: z.uuid(),
@@ -63,10 +73,21 @@ export function createAuditService(repo: AuditRepository) {
   async function listRecent(
     companyId: string,
     params?: PageParams,
-  ): Promise<Paginated<AuditLog>> {
+  ): Promise<Paginated<AuditEntry>> {
     const { page, pageSize, offset } = normalizePageParams(params, 20, 100);
     const { items, total } = await repo.listByCompany(companyId, { limit: pageSize, offset });
-    return { items, total, page, pageSize };
+    const refs = items.flatMap((item) =>
+      item.entity_id && item.entity_type && (DESCRIBED_ENTITIES as readonly string[]).includes(item.entity_type)
+        ? [{ entityType: item.entity_type, entityId: item.entity_id }]
+        : [],
+    );
+    const names = refs.length > 0 ? await repo.describeEntities(companyId, refs) : {};
+    return {
+      items: items.map((item) => ({ ...item, entity_name: names[`${item.entity_type}:${item.entity_id}`] ?? null })),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   return { record, listRecent };

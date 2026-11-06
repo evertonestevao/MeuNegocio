@@ -1,3 +1,4 @@
+import { initialsOf } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 
 const TONES = [
@@ -6,13 +7,6 @@ const TONES = [
   "bg-warning/15 text-warning",
   "bg-chart-1/15 text-chart-1",
 ];
-
-function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/);
-  const first = words[0]?.[0] ?? "?";
-  const last = words.length > 1 ? words[words.length - 1][0] : "";
-  return `${first}${last}`.toUpperCase();
-}
 
 /** Iniciais com cor fixa por nome: ajuda a achar a pessoa ou o cliente na lista pelo olhar. */
 export function InitialsAvatar({ name, className }: { name: string; className?: string }) {

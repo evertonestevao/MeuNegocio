@@ -40,7 +40,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Catálogo</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Catálogo</h1>
           <p className="text-sm text-muted-foreground">
             Materiais que você vende e serviços que você presta, com os preços usados nos orçamentos.
           </p>

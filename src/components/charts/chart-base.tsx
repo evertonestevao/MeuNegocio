@@ -36,6 +36,30 @@ export function resolveFormatter(
   return (v: number) => String(v);
 }
 
+/**
+ * Largura do eixo Y pelo maior rótulo. Os valores do eixo são arredondados pelo gráfico
+ * ("R$ 13,5 mil") e podem ter um caractere a mais que os dados: soma uma folga.
+ */
+export function autoYAxisWidth(
+  data: Array<Record<string, unknown>>,
+  series: ChartSeries[],
+  valueFormatter: (value: number) => string,
+): number {
+  const longest = data.reduce((size, row) => {
+    for (const s of series) {
+      const value = row[s.key];
+      if (typeof value === "number") size = Math.max(size, valueFormatter(value).length);
+    }
+    return size;
+  }, 1);
+  return Math.min(120, Math.max(32, 16 + (longest + 1) * 7));
+}
+
+/** Tudo zero: o gráfico inventaria uma escala (R$ 1, R$ 2…). Só o zero no eixo. */
+export function allZero(data: Array<Record<string, unknown>>, series: ChartSeries[]): boolean {
+  return data.every((row) => series.every((s) => !row[s.key]));
+}
+
 export function normalizeSeriesList(
   raw: Array<string | ChartSeries>,
   componentName: string,

@@ -10,7 +10,7 @@ export default async function SellerAccountPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <h2 className="font-heading text-2xl font-extrabold tracking-tight">Minha conta</h2>
+      <h1 className="font-heading text-2xl font-extrabold tracking-tight">Minha conta</h1>
       <Card>
         <CardHeader>
           <CardTitle>Seus dados</CardTitle>

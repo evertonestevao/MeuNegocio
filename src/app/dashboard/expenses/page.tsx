@@ -129,7 +129,7 @@ export default async function ExpensesPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Gastos</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Gastos</h1>
           <p className="text-sm text-muted-foreground">Despesas fixas, pontuais e de funcionários.</p>
         </div>
         {tab === "entries" ? <NewExpenseButton options={options} defaultDate={selected ?? defaultDate} /> : null}

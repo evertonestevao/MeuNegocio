@@ -18,6 +18,9 @@ function makeRepo(inserted: NewAuditEntry[]): AuditRepository {
     async listByCompany() {
       return { items: [] as AuditLog[], total: 0 };
     },
+    async describeEntities() {
+      return {};
+    },
   };
 }
 
@@ -94,5 +97,26 @@ describe("auditService.record", () => {
     await expect(
       service.record({ companyId: COMPANY_ID, userId: null, action: "" }),
     ).rejects.toMatchObject({ code: "validation_error" });
+  });
+});
+
+describe("listRecent", () => {
+  it("traz o nome do registro citado e só consulta os tipos que sabe descrever", async () => {
+    const log = (id: string, entity_type: string | null, entity_id: string | null) =>
+      ({ id, company_id: COMPANY_ID, user_id: USER_ID, action: "x", entity_type, entity_id, metadata: {}, created_at: "2026-11-06T20:00:00Z" }) as AuditLog;
+    const asked: { entityType: string; entityId: string }[][] = [];
+    const service = createAuditService({
+      async insert() {},
+      async listByCompany() {
+        return { items: [log("1", "quote", "q1"), log("2", "client", null), log("3", "subscription", "s1")], total: 3 };
+      },
+      async describeEntities(_companyId, refs) {
+        asked.push(refs);
+        return { "quote:q1": "Nº 0008 · Câmeras" };
+      },
+    });
+    const page = await service.listRecent(COMPANY_ID);
+    expect(page.items.map((item) => item.entity_name)).toEqual(["Nº 0008 · Câmeras", null, null]);
+    expect(asked).toEqual([[{ entityType: "quote", entityId: "q1" }]]);
   });
 });

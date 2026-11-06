@@ -14,6 +14,7 @@ import { AppError } from "@/lib/errors";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { formatCents } from "@/lib/money";
+import { nextChargeNotice } from "@/features/billing/charge-notice";
 import { getActiveTenant } from "@/server/tenant";
 import { createBillingService, hasPlanAccess, isCardlessTrial } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
@@ -82,11 +83,12 @@ export default async function BillingPage() {
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Assinatura</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Assinatura</h1>
         <p className="text-sm text-muted-foreground">
           Plano atual: <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
           {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}
         </p>
+        {nextChargeNotice(subscription) ? <p className="mt-1 text-sm text-muted-foreground">{nextChargeNotice(subscription)}</p> : null}
         {inTrial ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Teste grátis até {new Date(subscription!.current_period_end!).toLocaleDateString("pt-BR")}, sem cobrança.{" "}

@@ -49,10 +49,16 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   // Erro do servidor não apaga o que foi digitado.
   await page.getByLabel("Nome da empresa").fill("Empresa Etapas E2E");
   await page.getByLabel("Telefone ou WhatsApp").fill("(14) 9999");
+  await page.locator("#profile-cnpj").fill("11.222.333/0001-80");
   await page.getByRole("checkbox", { name: /Declaro que sou responsável/ }).check();
   await page.getByRole("button", { name: "Concluir e entrar no sistema" }).click();
+  // Todos os problemas de uma vez, cada um junto do seu campo.
+  await expect(page.getByText("Confira os campos destacados.")).toBeVisible();
   await expect(page.getByText("Informe o telefone com DDD.")).toBeVisible();
+  await expect(page.getByText("CNPJ inválido. Confira os números.")).toBeVisible();
+  await expect(page.getByLabel("Telefone ou WhatsApp")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Nome da empresa")).toHaveValue("Empresa Etapas E2E");
+  await page.locator("#profile-cnpj").fill("");
 
   await page.getByText("Mais dados (opcional)").click();
   await page.getByLabel("Endereço").fill("Rua das Flores, 10");

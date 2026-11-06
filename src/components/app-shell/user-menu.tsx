@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { initialsOf } from "@/lib/initials";
 import { useTransition } from "react";
 import { useTheme } from "next-themes";
 import { LogOut, Moon, Sun } from "lucide-react";
@@ -29,12 +30,7 @@ export function UserMenu({ userName, userEmail, avatarUrl, areaLinks = [] }: Use
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [, startTransition] = useTransition();
-  const initials = userName
-    .split(/\s+/)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = initialsOf(userName);
 
   return (
     <DropdownMenu>

@@ -73,7 +73,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
   if (!(await service.canUse(actor))) {
     return (
       <div className="flex flex-col gap-6">
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h1>
         <EmptyState icon={Clock} title="Recurso fora do plano" description="As horas não estão incluídas no plano da empresa." />
       </div>
     );
@@ -108,7 +108,7 @@ export default async function HoursPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Horas</h1>
         <p className="text-sm text-muted-foreground">
           Horas sugeridas pela agenda de visitas. Confira, ajuste o que for preciso e feche o período dos prestadores.
         </p>

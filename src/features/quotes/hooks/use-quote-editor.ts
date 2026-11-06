@@ -64,14 +64,14 @@ export function useQuoteEditor(params: {
   quote: Quote | null;
   items: QuoteItem[];
   catalog: CatalogItem[];
-  initial: { clientId: string | null; validUntil: string | null; notes: string };
+  initial: { clientId: string | null; locationId?: string | null; validUntil: string | null; notes: string };
   canSeeCost: boolean;
   /** Alíquota do imposto estimado: a do orçamento ou a padrão da empresa; null sem regime informado. */
   taxRateBps?: number | null;
 }) {
   const { quote, items, catalog, initial, canSeeCost, taxRateBps = null } = params;
   const [clientId, setClientId] = useState(quote?.client_id ?? initial.clientId);
-  const [locationId, setLocationId] = useState(quote?.location_id ?? null);
+  const [locationId, setLocationId] = useState(quote ? quote.location_id : (initial.locationId ?? null));
   const [title, setTitle] = useState(quote?.title ?? "");
   const [validUntil, setValidUntil] = useState(quote ? (quote.valid_until ?? "") : (initial.validUntil ?? ""));
   const [discount, setDiscount] = useState(quote ? centsToMoneyInput(quote.discount_cents) : "0");
@@ -103,9 +103,10 @@ export function useQuoteEditor(params: {
   );
   const catalogCost = (id: string | null) => (id ? (catalog.find((item) => item.id === id)?.cost_cents ?? null) : null);
 
-  function chooseClient(id: string | null) {
+  /** Troca o cliente; com um local só, ele já vem escolhido. */
+  function chooseClient(id: string | null, locationIds: string[] = []) {
     setClientId(id);
-    setLocationId(null);
+    setLocationId(locationIds.length === 1 ? locationIds[0] : null);
   }
 
   function addFromCatalog(itemId: string) {

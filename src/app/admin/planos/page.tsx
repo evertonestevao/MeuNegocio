@@ -60,7 +60,7 @@ export default async function PlansPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Planos</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Planos</h1>
         <p className="text-sm text-muted-foreground">
           Limites e recursos valem na hora para as empresas do plano. Desativar tira o plano da oferta, e quem já
           assina continua nele.

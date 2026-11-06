@@ -92,7 +92,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Financeiro</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-sm text-muted-foreground">Faturado é o que foi vendido (serviços fechados); recebido é o dinheiro que entrou. Gastos e caixa, lado a lado.</p>
       </div>
 
@@ -136,7 +136,6 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
               { key: "recebido", label: "Recebido" },
             ]}
             valueFormat={{ style: "currency", currency: "BRL", maximumFractionDigits: 0 }}
-            yAxisWidth={72}
           />
           {/* No computador fica sempre à vista, ao lado das categorias; no celular, recolhido para não alongar a tela. */}
           <Card className="max-lg:hidden lg:flex-1">

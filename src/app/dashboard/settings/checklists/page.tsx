@@ -22,7 +22,7 @@ export default async function ChecklistsPage() {
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Checklists</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Checklists</h1>
         <p className="text-sm text-muted-foreground">
           Itens que cada ordem de serviço já traz ao ser iniciada. Mudar aqui não altera ordens já iniciadas. Para ajustar um atendimento só, edite a visita na agenda.
         </p>

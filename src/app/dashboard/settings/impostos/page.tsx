@@ -30,7 +30,7 @@ export default async function TaxSettingsPage() {
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Impostos e taxas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Impostos e taxas</h1>
         <p className="text-sm text-muted-foreground">
           Imposto estimado que sai do resultado de cada serviço. É uma estimativa para medir a margem: o valor oficial é o da guia apurada pelo contador. Só você e o
           administrador veem.

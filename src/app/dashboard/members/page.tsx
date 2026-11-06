@@ -43,7 +43,7 @@ export default async function MembersPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Membros</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Membros</h1>
         <p className="text-sm text-muted-foreground">
           Gerencie quem tem acesso a {active.name}
         </p>

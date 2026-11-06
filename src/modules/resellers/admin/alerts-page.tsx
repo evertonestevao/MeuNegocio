@@ -14,7 +14,7 @@ export default async function AlertsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Alertas e falhas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Alertas e falhas</h1>
         <p className="text-sm text-muted-foreground">O que precisa da sua atenção no módulo</p>
       </div>
 

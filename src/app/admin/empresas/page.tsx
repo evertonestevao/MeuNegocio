@@ -33,7 +33,7 @@ export default async function CompaniesAdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Empresas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Empresas</h1>
         <p className="text-sm text-muted-foreground">Crie empresas com acesso do responsável e confira os comprovantes de cada uma.</p>
       </div>
       <Card>

@@ -23,7 +23,7 @@ export default async function ImportClientsPage() {
         <ChevronLeft className="size-4" /> Clientes
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Importar clientes</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Importar clientes</h1>
         <p className="text-sm text-muted-foreground">Traga sua lista de clientes de uma planilha, com contato e endereço, de uma vez.</p>
       </div>
       <ClientImport existing={existing} />

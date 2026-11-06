@@ -19,7 +19,10 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
 
   const actor = { companyId: active.id, role: active.role };
   const [{ clients, catalog, profile }, taxRateBps] = await Promise.all([loadQuoteEditorData(actor), (await getTaxService()).getRate(actor)]);
-  const clientId = clients.some((option) => option.id === client) ? (client as string) : null;
+  const chosen = clients.find((option) => option.id === client) ?? null;
+  const clientId = chosen?.id ?? null;
+  // Vindo da tela do cliente: com um local só, ele já vem escolhido.
+  const locationId = chosen?.locations.length === 1 ? chosen.locations[0].id : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +30,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         <Link href="/dashboard/quotes" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" /> Orçamentos
         </Link>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Novo orçamento</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Novo orçamento</h1>
       </div>
       <QuoteEditor
         quote={null}
@@ -38,6 +41,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
         clients={clients}
         initial={{
           clientId,
+          locationId,
           validUntil: addDays(todayInTimezone(profile.timezone), profile.quote_validity_days),
           notes: profile.quote_default_notes ?? "",
         }}

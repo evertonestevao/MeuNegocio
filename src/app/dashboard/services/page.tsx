@@ -56,7 +56,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Serviços</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Serviços</h1>
         <p className="text-sm text-muted-foreground">
           {seesMoney
             ? "Orçamentos aprovados em execução: acompanhe as visitas, lance os gastos e conclua para faturar."

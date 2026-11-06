@@ -47,7 +47,7 @@ export default async function ReceivablesPage({ searchParams }: { searchParams: 
         <ChevronLeft className="size-4" /> Financeiro
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Contas a receber</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Contas a receber</h1>
         <p className="text-sm text-muted-foreground">As parcelas dos serviços fechados. Registre cada uma quando o dinheiro entrar.</p>
       </div>
 

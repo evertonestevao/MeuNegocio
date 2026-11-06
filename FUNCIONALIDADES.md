@@ -116,7 +116,7 @@ Código: `src/services/termsService.ts`, `src/server/actions/terms.ts`.
 | Função | Quem | Como funciona |
 |---|---|---|
 | **Criar empresa e acesso** (`/admin/empresas`) | Super admin | Cria a empresa, o proprietário e, se escolhido, libera um plano sem cobrança, pelo período dele e sem renovar. Mostra uma senha temporária uma única vez; no primeiro acesso, a pessoa precisa trocá-la. Falhou no meio, nada fica para trás. |
-| **Dados essenciais da empresa** (`/onboarding`) | Owner e admin da empresa criada pelo cadastro em etapas | Último passo do cadastro: troca o nome provisório pelo nome de verdade e grava telefone (obrigatórios), CNPJ, e-mail, fuso e endereço; validade e margem ficam no padrão. Erro não apaga o que foi digitado. Concluído, não abre de novo. Empresas antigas ou criadas pelo super admin não passam por aqui. |
+| **Dados essenciais da empresa** (`/onboarding`) | Owner e admin da empresa criada pelo cadastro em etapas | Último passo do cadastro: troca o nome provisório pelo nome de verdade e grava telefone (obrigatórios), CNPJ, e-mail, fuso e endereço; validade e margem ficam no padrão. Erro não apaga o que foi digitado, e todos os problemas aparecem de uma vez, cada um junto do seu campo (com "Mais dados" aberto quando o erro está lá). Concluído, não abre de novo. Empresas antigas ou criadas pelo super admin não passam por aqui. |
 | **Criar empresa** (`/onboarding`, conta sem empresa; seletor "Nova empresa") | Com o cadastro aberto, qualquer usuário logado; fechado, só o super admin | Quem cria vira owner. O slug é gerado a partir do nome (com sufixo se já existir). No primeiro acesso, pede também os dados da empresa usados nos orçamentos: CNPJ, telefone, e-mail, endereço, fuso, validade padrão e observações. Só o nome é obrigatório. Dado inválido é recusado antes de criar a empresa, sem apagar o que foi digitado. A empresa nova começa sem dados de exemplo. |
 | **Várias empresas por usuário** | Todos | O seletor no topo do painel troca a **empresa ativa**. |
 | **Empresa ativa** | Todos | Guardada em cookie só como preferência. A cada request o servidor confere se o usuário ainda é membro. |
@@ -227,7 +227,7 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Ver plano e uso de vagas** (`/dashboard/billing`, em Configurações › Assinatura) | Owner | — |
+| **Ver plano e uso de vagas** (`/dashboard/billing`, em Configurações › Assinatura) | Owner | No teste com cartão, mostra até quando vai o teste e o valor e a data da primeira cobrança; assinatura ativa que renova mostra a data da próxima cobrança. |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
 | **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois o acesso pausa até assinar de novo, com os dados guardados. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
 | **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e o acesso pausa até assinar de novo. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |
@@ -265,7 +265,7 @@ Código: `src/services/featureFlagService.ts`.
 
 | Função | Quem | Como funciona |
 |---|---|---|
-| **Trilha de auditoria** (`/dashboard/audit`, em Configurações › Auditoria) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. O histórico completo fica disponível em todos os planos. |
+| **Trilha de auditoria** (`/dashboard/audit`, em Configurações › Auditoria) | Owner, admin | Lista paginada (20 por página) das ações na empresa: quem, o quê, quando. Orçamento, cliente, pessoa da equipe e item do catálogo aparecem com o nome ("Orçamento: Nº 0008 · Instalação de câmeras") enquanto o registro existe; excluído, fica só o tipo. Orçamento e cliente abrem com um clique. O histórico completo fica disponível em todos os planos. |
 | **Registro automático** | Sistema | Edição da empresa, mudança de papel, remoção, saída, convites, transferência de propriedade, exclusão de conta, eventos de pagamento. |
 | **Imutável** | — | O client não edita nem apaga registros. |
 | **Dados sensíveis** | — | Chaves como senha, token, secret e card são removidas antes de gravar. |
@@ -452,6 +452,7 @@ Telas em `/dashboard/quotes`. O técnico não acessa.
 Outras regras:
 
 - **Número** sequencial por empresa, gerado no banco, sem colisão.
+- **Local do serviço:** cliente com um local só já vem com ele escolhido, ao trocar de cliente e ao abrir o orçamento pela tela do cliente.
 - **Só rascunho é editável.** Os demais são somente leitura; "Duplicar" cria um rascunho novo com número e link próprios.
 - **Salvar** exige cliente, inclusive no primeiro rascunho ("Escolha o cliente."), e desconto até o subtotal ("O desconto não pode passar do subtotal (R$ X)."); campo de desconto apagado vale zero. A regra é a mesma no navegador e no servidor.
 - **Alterações não salvas:** o editor mostra "Alterações não salvas" ao lado de "Salvar rascunho" e pede confirmação antes de sair da tela por um link ou de fechar ou recarregar a aba. Enviar, PDF e WhatsApp usam sempre o último salvo.

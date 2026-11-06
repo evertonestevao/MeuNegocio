@@ -104,7 +104,7 @@ export default async function SchedulePage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Agenda</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Agenda</h1>
           <p className="text-sm text-muted-foreground">Visitas técnicas e execuções, com a equipe escalada.</p>
         </div>
         <NewVisitButton prefill={prefill} options={options} defaultOpen={params.new === "1"} />

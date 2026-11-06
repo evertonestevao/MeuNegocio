@@ -58,7 +58,7 @@ export default async function MyVisitsPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Minhas visitas</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Minhas visitas</h1>
         <p className="text-sm text-muted-foreground">Toque em uma visita para abrir a ordem de serviço.</p>
       </div>
 

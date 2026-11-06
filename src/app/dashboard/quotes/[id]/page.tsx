@@ -108,7 +108,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           <ChevronLeft className="size-4" /> Orçamentos
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Orçamento Nº {formatQuoteNumber(quote.number)}</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Orçamento Nº {formatQuoteNumber(quote.number)}</h1>
           <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{dates.join(" · ")}</p>

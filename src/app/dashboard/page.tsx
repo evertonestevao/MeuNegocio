@@ -103,7 +103,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div className="min-w-0">
-          <h2 className="font-heading text-3xl font-extrabold tracking-tight">{greetingFor(profile.timezone)}</h2>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight">{greetingFor(profile.timezone)}</h1>
           <p className="text-sm text-muted-foreground first-letter:uppercase">
             {formatLongDay(today)} · <span className="break-words">{active.name}</span> · {ROLE_LABEL[active.role]}
           </p>
@@ -181,7 +181,6 @@ export default async function DashboardPage() {
             { key: "tecnica", label: "Visita técnica" },
           ]}
           integerValues
-          yAxisWidth={28}
           height={200}
         />
         {finance ? (
@@ -197,7 +196,6 @@ export default async function DashboardPage() {
               { key: "recebido", label: "Recebido" },
             ]}
             valueFormat={{ style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 }}
-            yAxisWidth={64}
             height={200}
           />
         ) : null}

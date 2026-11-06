@@ -474,7 +474,7 @@ export function WorkOrderSheet({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight break-words">{sheet.client_name}</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight break-words">{sheet.client_name}</h1>
         <p className="text-sm text-muted-foreground first-letter:uppercase">
           {formatLongDay(sheet.visit_date)} · {sheet.starts_at.slice(0, 5)}–{sheet.ends_at.slice(0, 5)}
         </p>

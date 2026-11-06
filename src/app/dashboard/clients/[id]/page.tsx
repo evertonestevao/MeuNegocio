@@ -66,7 +66,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
           <div className="min-w-0">
-            <h2 className="font-heading text-2xl font-extrabold tracking-tight break-words">{client.name}</h2>
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight break-words">{client.name}</h1>
             {client.document ? <p className="text-sm text-muted-foreground">{formatDocument(client.document)}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">

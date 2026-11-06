@@ -39,7 +39,7 @@ export default async function TeamPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight">Equipe</h2>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Equipe</h1>
           <p className="text-sm text-muted-foreground">
             Funcionários CLT, prestadores PJ e autônomos que podem ser escalados nas visitas.
           </p>

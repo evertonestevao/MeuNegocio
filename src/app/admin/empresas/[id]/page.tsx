@@ -48,7 +48,7 @@ export default async function CompanyEvidencePage({ params }: { params: Promise<
         <Link href="/admin/empresas" className="w-fit text-sm text-muted-foreground hover:text-foreground print:hidden">
           ← Empresas
         </Link>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight break-words">{company.name}</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight break-words">{company.name}</h1>
         <div className="flex flex-wrap gap-2">
           {company.suspended_at ? <Badge variant="destructive">Suspensa desde {formatDateTimeSeconds(company.suspended_at)}</Badge> : <Badge variant="secondary">Ativa</Badge>}
           {company.deleted_at ? <Badge variant="outline">Encerrada em {formatDate(company.deleted_at)}</Badge> : null}

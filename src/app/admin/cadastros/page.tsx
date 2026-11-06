@@ -27,7 +27,7 @@ export default async function SignupLeadsAdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Cadastros</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Cadastros</h1>
         <p className="text-sm text-muted-foreground">
           Quem deixou nome e e-mail no site. Os dados são apagados sozinhos 90 dias depois da última atualização.
         </p>

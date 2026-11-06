@@ -17,7 +17,7 @@ import {
 import { createSupabaseAuditRepository } from "@/repositories/supabase/auditRepository";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
-import { createAuditService } from "@/services/auditService";
+import { createAuditService, type AuditEntry } from "@/services/auditService";
 import { permissionService } from "@/services/permissionService";
 import { auditActionLabel, auditEntityLabel } from "@/features/audit/labels";
 
@@ -50,7 +50,7 @@ export default async function AuditPage({
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h2 className="font-heading text-2xl font-extrabold tracking-tight">Auditoria</h2>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Auditoria</h1>
         <p className="text-sm text-muted-foreground">
           Últimas ações registradas em {active.name}
         </p>
@@ -81,7 +81,7 @@ export default async function AuditPage({
                       <Badge variant="secondary">{auditActionLabel(entry.action)}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {auditEntityLabel(entry.entity_type)}
+                      <EntityName entry={entry} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(entry.created_at)}
@@ -100,7 +100,7 @@ export default async function AuditPage({
                   <div className="min-w-0">
                     <Badge variant="secondary">{auditActionLabel(entry.action)}</Badge>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {auditEntityLabel(entry.entity_type)}
+                      <EntityName entry={entry} />
                     </p>
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">
@@ -120,5 +120,21 @@ export default async function AuditPage({
         </>
       )}
     </div>
+  );
+}
+
+/** Tipo e nome do registro; orçamento e cliente que ainda existem abrem com um clique. */
+function EntityName({ entry }: { entry: AuditEntry }) {
+  const type = auditEntityLabel(entry.entity_type);
+  if (!entry.entity_name) return <>{type}</>;
+  const href =
+    entry.entity_type === "quote" ? `/dashboard/quotes/${entry.entity_id}` : entry.entity_type === "client" ? `/dashboard/clients/${entry.entity_id}` : null;
+  const text = `${type}: ${entry.entity_name}`;
+  return href ? (
+    <Link href={href} className="underline-offset-4 hover:text-foreground hover:underline">
+      {text}
+    </Link>
+  ) : (
+    <>{text}</>
   );
 }
