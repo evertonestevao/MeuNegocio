@@ -79,7 +79,10 @@ describe("condições de pagamento do orçamento", () => {
     // O formato de moeda usa espaço que não quebra depois do "R$".
     const text = (...args: Parameters<typeof paymentPlanText>) => paymentPlanText(...args)?.replace(/\u00a0/g, " ") ?? null;
     expect(text({ kind: "cash", method: "pix", entry_cents: 0, entry_method: null, count: 1 }, 150_000)).toBe("À vista no PIX");
-    expect(text({ kind: "card", method: "credit", entry_cents: 0, entry_method: null, count: 3 }, 100_000)).toBe("Cartão de crédito em 3x de R$ 333,33");
+    expect(text({ kind: "card", method: "credit", entry_cents: 0, entry_method: null, count: 3 }, 100_000)).toBe(
+      "Cartão de crédito em 3x (1x de R$ 333,34 e 2x de R$ 333,33)",
+    );
+    expect(text({ kind: "card", method: "credit", entry_cents: 0, entry_method: null, count: 10 }, 350_000)).toBe("Cartão de crédito em 10x de R$ 350,00");
     expect(text({ kind: "entry", method: "boleto", entry_cents: 50_000, entry_method: "cash", count: 2 }, 150_000)).toBe(
       "Entrada de R$ 500,00 em dinheiro e o restante em 2x de R$ 500,00 no boleto",
     );

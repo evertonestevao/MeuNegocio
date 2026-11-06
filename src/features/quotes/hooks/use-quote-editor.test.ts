@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientUnitPriceCents } from "./use-quote-editor";
+import { clientUnitPriceCents, discountInputToCents } from "./use-quote-editor";
 
 describe("preço que o cliente vê", () => {
   it("soma o valor a mais em % ou em R$ ao valor digitado", () => {
@@ -10,5 +10,17 @@ describe("preço que o cliente vê", () => {
   it("sem valor a mais, é o próprio valor digitado", () => {
     expect(clientUnitPriceCents({ unitPrice: "180,00", markup: "", markupMode: "percent" })).toBe(18_000);
     expect(clientUnitPriceCents({ unitPrice: "180,00", markup: "abc", markupMode: "percent" })).toBe(18_000);
+  });
+});
+
+describe("desconto digitado", () => {
+  it("campo apagado é sem desconto", () => {
+    expect(discountInputToCents("")).toBe(0);
+    expect(discountInputToCents("  ")).toBe(0);
+    expect(discountInputToCents("150,00")).toBe(15_000);
+  });
+
+  it("texto que não é valor fica inválido, para o salvar recusar", () => {
+    expect(discountInputToCents("abc")).toBe(-1);
   });
 });

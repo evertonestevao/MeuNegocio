@@ -27,6 +27,7 @@ describe("resultado do serviço", () => {
     expect(cost.laborCents).toBe(21_000);
     expect(cost.resultCents).toBe(39_000);
     expect(cost.marginPercent).toBe(39);
+    expect(cost.plannedMarginPercent).toBe(50);
     expect(cost.status).toBe("good");
     expect(cost.categories.map((category) => category.name)).toEqual(["MAT", "Mão de obra (horas)", "COMB"]);
     expect(cost.laborWithoutRate).toBe(false);

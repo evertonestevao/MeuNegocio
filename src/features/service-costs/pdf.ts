@@ -74,7 +74,11 @@ export async function downloadServiceCostPdf(input: ServiceCostPdfInput): Promis
   });
   y += 27;
   font("normal", 9.5, INK);
-  const marginText = cost.marginPercent === null ? "Sem valor cobrado para calcular a margem." : `Margem de ${cost.marginPercent}% (meta da empresa: ${input.targetMarginPercent}%).`;
+  const plannedText = cost.plannedMarginPercent === null ? "" : `, prevista ${cost.plannedMarginPercent}%`;
+  const marginText =
+    cost.marginPercent === null
+      ? "Sem valor cobrado para calcular a margem."
+      : `Margem realizada de ${cost.marginPercent}%${plannedText} (meta da empresa: ${input.targetMarginPercent}%).`;
   pdf.text(marginText, margin, y);
   y += 5;
   if (cost.plannedCostCents !== null) {

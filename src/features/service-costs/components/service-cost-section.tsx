@@ -14,16 +14,9 @@ import type { MarginStatus, ServiceCost } from "@/services/serviceCostService";
 import { formatHours, type ServiceCostPdfInput } from "../pdf";
 import { ServiceCostPdfButton } from "./service-cost-pdf-button";
 import { ServiceTaxForm } from "./service-tax-form";
-import { allCostsCents, costsLabel } from "../labels";
+import { allCostsCents, costsLabel, marginHint } from "../labels";
 
 const RESULT_TONE: Record<MarginStatus, MetricTone> = { good: "success", low: "warning", loss: "danger", none: "info" };
-
-function marginHint(cost: ServiceCost, target: number): string {
-  if (cost.marginPercent === null) return "Sem valor cobrado";
-  if (cost.status === "loss") return `Prejuízo · margem ${cost.marginPercent}%`;
-  if (cost.status === "low") return `Margem ${cost.marginPercent}%, abaixo da meta de ${target}%`;
-  return `Margem ${cost.marginPercent}% · meta ${target}%`;
-}
 
 /** Custos e resultado do serviço, na página do orçamento aprovado ou fechado. Só owner e admin. */
 export function ServiceCostSection({

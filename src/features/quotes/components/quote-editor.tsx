@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,6 +18,7 @@ import type { PaymentMethod } from "@/types/finance";
 import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useQuoteEditor, type EditorLine } from "../hooks/use-quote-editor";
 import { quoteSchema } from "../schemas";
 
@@ -52,12 +53,22 @@ export function QuoteEditor({
   const client = clients.find((candidate) => candidate.id === editor.clientId);
   const activeCatalog = catalog.filter((item) => item.active);
 
+  // Alterado desde o último salvamento: o que está na tela não é o que o cliente recebe.
+  const current = JSON.stringify(editor.toInput());
+  const [saved, setSaved] = useState(current);
+  const saving = useRef(current);
+  const dirty = !readOnly && current !== saved;
+  useUnsavedChangesWarning(dirty);
+
   const [state, dispatch, pending] = useActionState(
     async (prev: ActionState | undefined, data: FormData): Promise<ActionState> => {
       const parsed = quoteSchema.safeParse(JSON.parse(String(data.get("payload"))));
       if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
       const result = await saveQuoteAction(prev, data);
-      if (result?.success) toast.success(result.success);
+      if (result?.success) {
+        setSaved(saving.current);
+        toast.success(result.success);
+      }
       return result;
     },
     undefined,
@@ -66,7 +77,8 @@ export function QuoteEditor({
   function save() {
     const data = new FormData();
     if (quote) data.set("quoteId", quote.id);
-    data.set("payload", JSON.stringify(editor.toInput()));
+    saving.current = current;
+    data.set("payload", current);
     startTransition(() => dispatch(data));
   }
 
@@ -319,7 +331,7 @@ export function QuoteEditor({
               <div className="flex flex-col gap-1 border-t pt-3 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">Só você vê (não vai no PDF)</span>
                 <div className="flex justify-between gap-2">
-                  <span>Custo estimado</span>
+                  <span>Custo previsto</span>
                   <span className="tabular-nums">{formatCents(editor.totals.estimate.cost)}</span>
                 </div>
                 {editor.totals.estimate.tax !== null && taxRateBps !== null ? (
@@ -329,11 +341,11 @@ export function QuoteEditor({
                   </div>
                 ) : null}
                 <div className="flex justify-between gap-2">
-                  <span>Lucro estimado</span>
+                  <span>Lucro previsto</span>
                   <span className="tabular-nums">{formatCents(editor.totals.estimate.profit)}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span>Margem</span>
+                  <span>Margem prevista</span>
                   <span className="tabular-nums">
                     {editor.totals.estimate.margin === null ? "—" : `${editor.totals.estimate.margin}%`}
                   </span>
@@ -345,9 +357,16 @@ export function QuoteEditor({
               </div>
             ) : null}
             {readOnly ? null : (
-              <Button disabled={pending} onClick={save}>
-                {pending ? "Salvando..." : "Salvar rascunho"}
-              </Button>
+              <>
+                {dirty ? (
+                  <p className="text-xs font-medium text-warning" role="status">
+                    Alterações não salvas. Salve antes de enviar ou baixar o PDF.
+                  </p>
+                ) : null}
+                <Button disabled={pending} onClick={save}>
+                  {pending ? "Salvando..." : "Salvar rascunho"}
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>

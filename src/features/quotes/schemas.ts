@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { formatCents } from "@/lib/money";
+import { subtotalCents } from "@/lib/quoteCalc";
 
 /** Validação do orçamento: roda no navegador e de novo no servidor. */
 
@@ -29,16 +31,25 @@ export const quoteItemSchema = z.object({
   costCents: z.number().int().min(0, "O custo não pode ser negativo.").max(1_000_000_000).nullable().optional(),
 });
 
-export const quoteSchema = z.object({
-  clientId: uuidOrNull,
-  locationId: uuidOrNull,
-  title: z.string().trim().max(200, "Use até 200 caracteres no título."),
-  validUntil: dateOrNull,
-  discountCents: z.number().int().min(0, "O desconto não pode ser negativo."),
-  notes: z.string().trim().max(4000, "Use até 4000 caracteres nas observações."),
-  items: z.array(quoteItemSchema).max(200, "Use até 200 itens."),
-  paymentPlan: quotePaymentPlanSchema.default(null),
-});
+export const quoteSchema = z
+  .object({
+    // Orçamento sem cliente não tem para quem ir: nem o primeiro rascunho é salvo sem ele.
+    clientId: uuidOrNull.refine((value) => Boolean(value), "Escolha o cliente."),
+    locationId: uuidOrNull,
+    title: z.string().trim().max(200, "Use até 200 caracteres no título."),
+    validUntil: dateOrNull,
+    discountCents: z.number().int().min(0, "O desconto não pode ser negativo."),
+    notes: z.string().trim().max(4000, "Use até 4000 caracteres nas observações."),
+    items: z.array(quoteItemSchema).max(200, "Use até 200 itens."),
+    paymentPlan: quotePaymentPlanSchema.default(null),
+  })
+  .superRefine((quote, ctx) => {
+    // Mesma conta do banco: desconto acima do subtotal zerava o total sem ninguém perceber.
+    const subtotal = subtotalCents(quote.items);
+    if (quote.discountCents > subtotal) {
+      ctx.addIssue({ code: "custom", path: ["discountCents"], message: `O desconto não pode passar do subtotal (${formatCents(subtotal)}).` });
+    }
+  });
 
 export type QuoteInput = z.output<typeof quoteSchema>;
 export type QuoteItemInput = z.output<typeof quoteItemSchema>;

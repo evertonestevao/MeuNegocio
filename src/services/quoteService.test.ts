@@ -10,7 +10,7 @@ const MEMBER: ActorContext = { companyId: "co-1", role: "member" };
 const TECHNICIAN: ActorContext = { companyId: "co-1", role: "technician" };
 
 const INPUT: QuoteInput = {
-  clientId: null,
+  clientId: "3f1c2a8e-5b6d-4c7e-9f00-1a2b3c4d5e6f",
   locationId: null,
   title: "",
   validUntil: null,
@@ -133,6 +133,18 @@ describe("validação", () => {
     expect(quoteSchema.safeParse({ ...INPUT, items: [item] }).success).toBe(true);
     expect(quoteSchema.safeParse({ ...INPUT, items: [{ ...item, description: " " }] }).success).toBe(false);
     expect(quoteSchema.safeParse({ ...INPUT, items: [{ ...item, quantity: 0 }] }).success).toBe(false);
+  });
+
+  it("exige cliente, até no primeiro rascunho", () => {
+    expect(quoteSchema.safeParse({ ...INPUT, clientId: null }).error?.issues[0]?.message).toBe("Escolha o cliente.");
+  });
+
+  it("desconto até o subtotal", () => {
+    const item = { catalogItemId: null, description: "x", unit: "un", pricingMode: "fixed", quantity: 2, people: 1, unitPriceCents: 5_000 };
+    expect(quoteSchema.safeParse({ ...INPUT, items: [item], discountCents: 10_000 }).success).toBe(true);
+    const tooMuch = quoteSchema.safeParse({ ...INPUT, items: [item], discountCents: 15_000 });
+    expect(tooMuch.error?.issues[0]?.message.replace(/\u00a0/g, " ")).toBe("O desconto não pode passar do subtotal (R$ 100,00).");
+    expect(quoteSchema.safeParse({ ...INPUT, items: [], discountCents: 1 }).success).toBe(false);
   });
 
   it("fechar exige valor positivo e data", () => {

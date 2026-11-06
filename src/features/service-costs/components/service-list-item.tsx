@@ -100,7 +100,7 @@ export function ServiceListItemCard({
               ) : (
                 <dd className={`font-semibold tabular-nums ${resultTone}`}>
                   {formatCents(cost.resultCents)}
-                  {cost.marginPercent !== null ? <span className="block font-normal text-muted-foreground">margem {cost.marginPercent}%</span> : null}
+                  {cost.marginPercent !== null ? <span className="block font-normal text-muted-foreground">margem realizada {cost.marginPercent}%</span> : null}
                 </dd>
               )}
             </div>

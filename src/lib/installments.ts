@@ -101,9 +101,15 @@ const withMethod = (text: string, method: PaymentMethod | null) => (method && ME
 /** As condições em texto, para o cliente: no link, no PDF e na mensagem. */
 export function paymentPlanText(plan: QuotePaymentPlan | null | undefined, totalCents: number): string | null {
   if (!plan || totalCents <= 0) return null;
+  // Os centavos que não dividem vão na primeira parcela, como no fechamento: o texto mostra isso,
+  // para as parcelas somarem o total.
   const parts = (cents: number, count: number) => {
     const values = splitCents(cents, count);
-    return values.length === 1 ? formatCents(values[0]) : `${values.length}x de ${formatCents(values[values.length - 1])}`;
+    if (values.length === 1) return formatCents(values[0]);
+    const [first, ...others] = values;
+    const regular = others[0];
+    if (first === regular) return `${values.length}x de ${formatCents(regular)}`;
+    return `${values.length}x (1x de ${formatCents(first)} e ${others.length}x de ${formatCents(regular)})`;
   };
   if (plan.kind === "cash") return withMethod("À vista", plan.method);
   if (plan.kind === "card") return `Cartão de crédito em ${parts(totalCents, plan.count)}`;

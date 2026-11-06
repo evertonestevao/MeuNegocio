@@ -131,6 +131,10 @@ export function QuoteActions({
   const [copied, setCopied] = useState<string | null>(null);
   const shareUrl = quote.status === "draft" || quote.status === "sent" ? publicUrl : null;
   const text = quoteShareText(document, contact?.name ?? null, shareUrl);
+  // O link só abre depois de enviado. O WhatsApp marca como enviado, mas copiar não: no rascunho,
+  // o texto copiado vai sem o link, para o cliente não receber um endereço que dá erro.
+  const copyText = quote.status === "draft" ? quoteShareText(document, contact?.name ?? null, null) : text;
+  const copyMessage = quote.status === "draft" && publicUrl ? "Texto copiado, sem o link: ele só abre depois de marcar como enviado" : "Texto copiado";
   const canSend = quote.status === "draft" && quote.client_id !== null;
 
   async function copy(value: string, message: string) {
@@ -247,8 +251,8 @@ export function QuoteActions({
             <MessageCircle className="size-4" /> Enviar pelo WhatsApp
           </Button>
         ) : null}
-        <Button variant="outline" onClick={() => copy(text, "Texto copiado")}>
-          <Copy className="size-4" /> {copied === "Texto copiado" ? "Texto copiado" : "Copiar texto"}
+        <Button variant="outline" onClick={() => copy(copyText, copyMessage)}>
+          <Copy className="size-4" /> {copied === copyMessage ? "Texto copiado" : "Copiar texto"}
         </Button>
         <ActionButton action={duplicateQuoteAction} quoteId={quote.id} label="Duplicar" />
         {canDelete && ["draft", "refused", "expired"].includes(quote.status) ? (

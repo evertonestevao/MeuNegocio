@@ -111,6 +111,11 @@ export interface ServiceCost {
   marginPercent: number | null;
   status: MarginStatus;
   plannedCostCents: number | null;
+  /**
+   * Margem prevista no orçamento: custo previsto mais o imposto, a mesma conta da lateral do
+   * editor. Null sem custo previsto.
+   */
+  plannedMarginPercent: number | null;
   categories: CategoryTotal[];
   labor: LaborLine[];
   /** Horas sem custo por hora cadastrado: o resultado fica otimista. */
@@ -189,6 +194,7 @@ export function buildServiceCost(input: {
     marginPercent: margin,
     status: marginStatus(resultCents, margin, input.targetMarginPercent),
     plannedCostCents: input.plannedCostCents,
+    plannedMarginPercent: input.plannedCostCents === null ? null : marginPercent(input.revenueCents, input.plannedCostCents + tax),
     categories,
     labor,
     laborWithoutRate: labor.some((line) => line.minutes > 0 && line.rateCents === 0),

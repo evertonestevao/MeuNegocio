@@ -51,6 +51,11 @@ function toCalcLine(line: EditorLine) {
   };
 }
 
+/** Campo do desconto apagado é sem desconto; só texto que não é valor vira erro (-1, recusado ao salvar). */
+export function discountInputToCents(value: string): number {
+  return value.trim() === "" ? 0 : (parseMoneyToCents(value) ?? -1);
+}
+
 let nextKey = 0;
 const newKey = () => `line-${(nextKey += 1)}`;
 
@@ -182,7 +187,7 @@ export function useQuoteEditor(params: {
       locationId,
       title,
       validUntil: validUntil || null,
-      discountCents: parseMoneyToCents(discount) ?? -1,
+      discountCents: discountInputToCents(discount),
       notes,
       paymentPlan: planKind
         ? {
