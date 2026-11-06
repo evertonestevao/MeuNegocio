@@ -94,8 +94,12 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   const receipts = page.locator("[data-slot=card]").filter({ has: page.getByText("Recebimentos", { exact: true }) });
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
   await expect(receipts.getByRole("button", { name: "Recebido" })).toHaveCount(2);
+  // Recebido com um toque, e o "Desfazer" do aviso volta a parcela.
   await receipts.getByRole("button", { name: "Recebido" }).first().click();
-  await page.getByRole("dialog").getByRole("button", { name: "Registrar" }).click();
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
+  await page.getByRole("button", { name: "Desfazer", exact: true }).click();
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
+  await receipts.getByRole("button", { name: "Recebido" }).first().click();
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
 
   // Custos do serviço: o gasto lançado aqui entra no resultado e também no caixa do mês.

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Check, MessageCircle, Undo2 } from "lucide-react";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { CalendarClock, Check, HandCoins, MessageCircle, Undo2 } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { DialogForm } from "@/components/dialog-form";
 import { MaskedInput } from "@/components/masked-input";
@@ -51,16 +53,57 @@ function MethodSelect({ id, value }: { id: string; value: PaymentMethod | null }
   );
 }
 
-function ReceiveButton({ item, today }: { item: Receivable; today: string }) {
+/**
+ * Recebido com um toque: o valor esperado (já sem a taxa), hoje, na forma combinada. É o caso de quase
+ * toda baixa; o aviso traz "Desfazer" para o toque errado.
+ */
+function QuickReceiveButton({ item, today }: { item: Receivable; today: string }) {
+  const [pending, startTransition] = useTransition();
+  const fields = (extra: Record<string, string>) => {
+    const data = new FormData();
+    for (const [key, value] of Object.entries({ receivableId: item.id, quoteId: item.quote_id, ...extra })) data.set(key, value);
+    return data;
+  };
+
+  function receive() {
+    startTransition(async () => {
+      const result = await receiveInstallmentAction(
+        undefined,
+        fields({ receivedOn: today, receivedAmount: centsToMoneyInput(expectedCents(item)), method: item.method ?? "", restDueDate: "" }),
+      );
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Recebido ${formatCents(expectedCents(item))} de ${item.client_name ?? `Nº ${formatQuoteNumber(item.quote_number)}`}`, {
+        action: {
+          label: "Desfazer",
+          onClick: () => {
+            void undoReceiveInstallmentAction(undefined, fields({})).then((undo) => (undo.error ? toast.error(undo.error) : toast.success("Recebimento desfeito")));
+          },
+        },
+      });
+    });
+  }
+
+  return (
+    <Button size="sm" onClick={receive} disabled={pending}>
+      <Check className="size-4" /> {pending ? "Salvando..." : "Recebido"}
+    </Button>
+  );
+}
+
+/** Recebeu outro valor, em outra data ou de outra forma: o formulário completo, com baixa parcial. */
+function ReceiveDifferentButton({ item, today }: { item: Receivable; today: string }) {
   return (
     <DialogForm
-      title="Registrar recebimento"
+      title="Recebeu diferente?"
       description={`Parcela de ${formatCents(item.amount_cents)} do orçamento Nº ${formatQuoteNumber(item.quote_number)}${item.fee_cents ? `; entra ${formatCents(expectedCents(item))} depois da taxa do cartão` : ""}.`}
       action={receiveInstallmentAction}
       submitLabel="Registrar"
       trigger={(open) => (
-        <Button size="sm" onClick={open}>
-          <Check className="size-4" /> Recebido
+        <Button size="icon-sm" variant="outline" aria-label={`Recebeu outro valor ou em outra data: parcela de ${formatCents(item.amount_cents)}`} onClick={open}>
+          <HandCoins className="size-4" />
         </Button>
       )}
     >
@@ -184,7 +227,8 @@ export function ReceivableList({
               ) : (
                 <>
                   <RescheduleButton item={item} />
-                  <ReceiveButton item={item} today={today} />
+                  <ReceiveDifferentButton item={item} today={today} />
+                  <QuickReceiveButton item={item} today={today} />
                 </>
               )}
             </span>
