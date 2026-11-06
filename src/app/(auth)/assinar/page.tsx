@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getPaymentGateway } from "@/adapters/payment";
 import { CompanySwitcher } from "@/components/app-shell/company-switcher";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
@@ -62,15 +61,6 @@ export default async function SubscribePage() {
   return (
     <TenantProvider value={{ companies, active }}>
       <div data-wide className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {companies.length > 1 ? <CompanySwitcher canCreate={false} /> : null}
-          <form action={signOutAction}>
-            <Button type="submit" variant="ghost" size="sm" className="h-9">
-              Sair
-            </Button>
-          </form>
-        </div>
-
         {inSignup ? <SignupSteps current={3} /> : null}
         <div className="flex flex-col gap-1.5">
           <h1 className="font-heading text-3xl font-semibold tracking-tight">Assine o {brand.name}</h1>
@@ -116,6 +106,17 @@ export default async function SubscribePage() {
             Voltar ao sistema
           </Link>
         ) : null}
+
+        {/* Fica no fim: no topo, disputaria espaço com as etapas do cadastro. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t pt-5 text-sm text-muted-foreground">
+          {companies.length > 1 ? <CompanySwitcher canCreate={false} /> : null}
+          <form action={signOutAction}>
+            Entrou com a conta errada?{" "}
+            <button type="submit" className="font-medium text-foreground underline underline-offset-4">
+              Sair
+            </button>
+          </form>
+        </div>
       </div>
     </TenantProvider>
   );
