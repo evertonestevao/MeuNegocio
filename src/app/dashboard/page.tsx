@@ -13,7 +13,8 @@ import { VisitRow } from "@/features/visits/components/visit-row";
 import { formatLongDay, formatMonth } from "@/lib/calendar";
 import { addDays, formatDate, greetingFor, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
-import { getFinanceService } from "@/server/home";
+import { getFinanceService, getFirstStepsService } from "@/server/home";
+import { FirstStepsCard } from "@/features/onboarding/components/first-steps-card";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getActiveTenant } from "@/server/tenant";
 import type { QuoteListItem } from "@/types/database";
@@ -80,7 +81,10 @@ export default async function DashboardPage() {
 
   const profile = await (await getCompanyProfileService()).get(active.id);
   const today = todayInTimezone(profile.timezone);
-  const home = await (await getFinanceService()).getHome({ companyId: active.id, role: active.role }, today);
+  const [home, firstSteps] = await Promise.all([
+    (await getFinanceService()).getHome({ companyId: active.id, role: active.role }, today),
+    (await getFirstStepsService()).get({ companyId: active.id, role: active.role }, Boolean(profile.logo_path)),
+  ]);
   const { finance, forecast } = home;
   const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
   const nextVisit = home.today.find((visit) => visit.status === "scheduled" || visit.status === "in_progress");
@@ -117,6 +121,8 @@ export default async function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {firstSteps ? <FirstStepsCard companyId={active.id} steps={firstSteps} /> : null}
 
       <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${finance ? "lg:grid-cols-4" : ""}`}>
         <MetricCard

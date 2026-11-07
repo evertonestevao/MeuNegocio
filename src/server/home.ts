@@ -5,6 +5,8 @@ import { createSupabaseReceivableRepository } from "@/repositories/supabase/rece
 import { createSupabaseRevenueRepository } from "@/repositories/supabase/revenueRepository";
 import { createSupabaseVisitRepository } from "@/repositories/supabase/visitRepository";
 import { createFinanceService, type FinanceService } from "@/services/financeService";
+import { createFirstStepsService, type FirstStepsService } from "@/services/firstStepsService";
+import { createSupabaseFirstStepsRepository } from "@/repositories/supabase/firstStepsRepository";
 import { getSupabaseServerClient } from "./supabase-server";
 
 export async function getFinanceService(): Promise<FinanceService> {
@@ -23,4 +25,8 @@ export async function getFinanceService(): Promise<FinanceService> {
     listOpenReceivables: receivables.listOpen,
     listReceivedReceivables: receivables.listReceived,
   });
+}
+
+export async function getFirstStepsService(): Promise<FirstStepsService> {
+  return createFirstStepsService(createSupabaseFirstStepsRepository(await getSupabaseServerClient()));
 }

@@ -13,6 +13,9 @@ test("valor a mais sobre o que o parceiro cobra forma o preço e não aparece pa
   await page.getByLabel("Descrição").first().fill("Mão de obra do parceiro");
   // O valor digitado é o que o parceiro cobra; o "a mais" fica só com a empresa.
   await page.getByLabel("Valor unitário").fill("8.500,00");
+  // O quadro do "a mais" começa recolhido.
+  await expect(page.getByLabel("A mais nesta linha")).toHaveCount(0);
+  await page.getByRole("button", { name: /Valor a mais nesta linha/ }).click();
   await page.getByLabel("A mais nesta linha").fill("20");
 
   await expect(page.getByText("O cliente vê R$ 10.200,00", { exact: false })).toBeVisible();

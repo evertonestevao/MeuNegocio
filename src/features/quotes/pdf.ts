@@ -55,11 +55,7 @@ async function buildQuotePdf(quote: QuoteDocument) {
   pdf.setTextColor(20).setFont("helvetica", "bold").setFontSize(10).text("Para", margin, y);
   y += 5;
   pdf.setFont("helvetica", "normal");
-  const clientLines = [
-    quote.client ? [quote.client.name, quote.client.document ? formatDocument(quote.client.document) : null].filter(Boolean).join(" · ") : null,
-    quote.location ? `${quote.location.name} — ${quote.location.address}` : null,
-  ].filter((line): line is string => Boolean(line));
-  for (const line of clientLines) {
+  for (const line of clientLines(quote)) {
     const wrapped = pdf.splitTextToSize(line, width - margin * 2);
     pdf.text(wrapped, margin, y);
     y += wrapped.length * 4.6;
@@ -187,6 +183,15 @@ export async function printQuotePdf(quote: QuoteDocument): Promise<void> {
 }
 
 /** Texto de envio: a mesma mensagem no WhatsApp e no "Copiar texto". */
+/** Bloco "Para" do PDF: nome e documento, contato (telefone e e-mail) e local do serviço. */
+export function clientLines(quote: Pick<QuoteDocument, "client" | "location">): string[] {
+  return [
+    quote.client ? [quote.client.name, quote.client.document ? formatDocument(quote.client.document) : null].filter(Boolean).join(" · ") : null,
+    quote.client ? [quote.client.phone ? formatPhone(quote.client.phone) : null, quote.client.email].filter(Boolean).join(" · ") || null : null,
+    quote.location ? `${quote.location.name} — ${quote.location.address}` : null,
+  ].filter((line): line is string => Boolean(line));
+}
+
 /** Primeiro nome, mantendo o tratamento: "Dr. Paulo Reis" vira "Dr. Paulo". */
 export function greetingName(fullName: string): string {
   const [first, second] = fullName.trim().split(/\s+/);

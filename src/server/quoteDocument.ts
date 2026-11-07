@@ -10,10 +10,12 @@ export function buildQuoteDocument(params: {
   companyName: string;
   profile: CompanyProfile;
   client: Client | null;
+  /** Contato principal do cliente: telefone e e-mail no "Para" do PDF. */
+  contact?: { phone: string | null; email: string | null } | null;
   location: ClientLocation | null;
   approval?: QuoteDocument["approval"];
 }): QuoteDocument {
-  const { quote, items, companyName, profile, client, location, approval = null } = params;
+  const { quote, items, companyName, profile, client, contact = null, location, approval = null } = params;
   return {
     number: quote.number,
     title: quote.title,
@@ -28,7 +30,7 @@ export function buildQuoteDocument(params: {
       address: profile.address,
       logoUrl: companyLogoUrl(profile.logo_path),
     },
-    client: client ? { name: client.name, document: client.document } : null,
+    client: client ? { name: client.name, document: client.document, phone: contact?.phone ?? null, email: contact?.email ?? null } : null,
     location: location ? { name: location.name, address: location.address } : null,
     items: items.map((item) => ({
       description: item.description,

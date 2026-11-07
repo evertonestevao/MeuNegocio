@@ -69,6 +69,18 @@ export function percentDiscountCents(subtotal: number, value: string): number {
   return Math.round((subtotal * percent) / 100);
 }
 
+/** Limite da descrição do item no orçamento (o mesmo do banco). */
+const MAX_ITEM_DESCRIPTION = 300;
+
+/**
+ * Texto do item vindo do catálogo: o nome e, se cadastrada, a descrição, que é o que explica o
+ * serviço ao cliente ("Instalação de tomada — 2P+T 10A com caixa e fiação"). Dá para editar depois.
+ */
+export function catalogLineDescription(item: Pick<CatalogItem, "name" | "description">): string {
+  const detail = item.description?.trim();
+  return (detail ? `${item.name} — ${detail}` : item.name).slice(0, MAX_ITEM_DESCRIPTION);
+}
+
 let nextKey = 0;
 const newKey = () => `line-${(nextKey += 1)}`;
 
@@ -136,7 +148,7 @@ export function useQuoteEditor(params: {
       {
         key: newKey(),
         catalogItemId: item.id,
-        description: item.name,
+        description: catalogLineDescription(item),
         unit: item.unit,
         pricingMode: item.pricing_mode,
         quantity: "1",

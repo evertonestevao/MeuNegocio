@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuoteDocument } from "@/types/quotes";
-import { greetingName, quoteItemDetail, quoteShareText, whatsappUrl } from "./pdf";
+import { clientLines, greetingName, quoteItemDetail, quoteShareText, whatsappUrl } from "./pdf";
 
 const QUOTE = {
   number: 13,
@@ -42,5 +42,20 @@ describe("greetingName", () => {
     expect(greetingName("Dr. Paulo Reis")).toBe("Dr. Paulo");
     expect(greetingName("Dra Helena Prado")).toBe("Dra Helena");
     expect(greetingName("Dr.")).toBe("Dr.");
+  });
+});
+
+describe("bloco Para do PDF", () => {
+  it("leva nome, documento, telefone, e-mail e local", () => {
+    expect(
+      clientLines({
+        client: { name: "Ana Beatriz Gonçalves", document: "29600384363", phone: "14988112031", email: "ana@example.com" },
+        location: { name: "Principal", address: "Rua Olavo Bilac, 120 - Centro, Lins/SP" },
+      }),
+    ).toEqual(["Ana Beatriz Gonçalves · 296.003.843-63", "(14) 98811-2031 · ana@example.com", "Principal — Rua Olavo Bilac, 120 - Centro, Lins/SP"]);
+  });
+
+  it("sem contato, não deixa linha vazia", () => {
+    expect(clientLines({ client: { name: "Sebastião", document: null, phone: null, email: null }, location: null })).toEqual(["Sebastião"]);
   });
 });

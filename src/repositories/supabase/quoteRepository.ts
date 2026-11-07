@@ -251,7 +251,7 @@ interface PublicQuoteRow {
   notes: string | null;
   payment_plan?: QuotePaymentPlan | null;
   company: Omit<PublicQuote["document"]["company"], "logoUrl"> & { logo_path?: string | null };
-  client: { name: string; document: string | null };
+  client: { name: string; document: string | null; phone?: string | null; email?: string | null };
   location: { name: string; address: string } | null;
   items: {
     description: string;

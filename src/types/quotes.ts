@@ -8,7 +8,8 @@ export interface QuoteDocument {
   createdAt: string;
   validUntil: string | null;
   company: DocumentCompany;
-  client: { name: string; document: string | null } | null;
+  /** Telefone e e-mail do contato principal, quando houver. */
+  client: { name: string; document: string | null; phone?: string | null; email?: string | null } | null;
   location: { name: string; address: string } | null;
   items: {
     description: string;

@@ -454,12 +454,33 @@ function LineCost({
   editor: ReturnType<typeof useQuoteEditor>;
 }) {
   const gain = editor.totals.lineGain(line);
+  // Recolhido por padrão: a maioria dos itens não tem "a mais", e o quadro aberto em todos pesava.
+  const [open, setOpen] = useState(line.markup.trim() !== "");
+  if (!open) {
+    if (readOnly) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 flex w-fit items-center gap-1 rounded-md text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <Plus className="size-3.5" aria-hidden /> Valor a mais nesta linha (só você vê)
+      </button>
+    );
+  }
   return (
     <div className="mt-3 flex flex-col gap-2 rounded-xl border border-dashed bg-muted/40 p-3">
-      <p className="text-xs text-muted-foreground">
-        <span className="font-semibold">Só você vê.</span> Se o valor acima é o que você paga (ao parceiro, por exemplo), coloque quanto
-        quer a mais. O cliente vê só o valor final.
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold">Só você vê.</span> Se o valor acima é o que você paga (ao parceiro, por exemplo), coloque quanto
+          quer a mais. O cliente vê só o valor final.
+        </p>
+        {readOnly || line.markup.trim() ? null : (
+          <button type="button" onClick={() => setOpen(false)} className="shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Recolher
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-1 items-end gap-3 @2xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor={`${id}-markup`}>A mais nesta linha</Label>

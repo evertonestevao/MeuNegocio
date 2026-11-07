@@ -257,7 +257,10 @@ function demoPublicQuoteRow(token: string): Row | null {
     notes: quote.notes,
     payment_plan: quote.payment_plan ?? null,
     company: { name: company?.name, cnpj: profile?.cnpj, phone: profile?.phone, email: profile?.email, address: profile?.address, logo_path: profile?.logo_path },
-    client: { name: client?.name, document: client?.document },
+    client: (() => {
+      const contact = tables.client_contacts.find((row) => row.client_id === quote.client_id && row.is_primary && !row.deleted_at);
+      return { name: client?.name, document: client?.document, phone: contact?.phone ?? null, email: contact?.email ?? null };
+    })(),
     location: location ? { name: location.name, address: location.address } : null,
     items: tables.quote_items.filter((item) => item.quote_id === quote.id && !item.deleted_at),
     // Aprovado: resposta fictícia com assinatura servida pelo próprio site, sem bucket.

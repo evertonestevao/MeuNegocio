@@ -216,6 +216,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               companyName: active.name,
               profile,
               client: clientDetail?.client ?? null,
+              contact: primaryContact ? { phone: primaryContact.phone, email: primaryContact.email } : null,
               location,
               approval: approvalResponse
                 ? {

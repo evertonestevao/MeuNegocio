@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientUnitPriceCents, discountInputToCents, percentDiscountCents } from "./use-quote-editor";
+import { catalogLineDescription, clientUnitPriceCents, discountInputToCents, percentDiscountCents } from "./use-quote-editor";
 
 describe("preço que o cliente vê", () => {
   it("soma o valor a mais em % ou em R$ ao valor digitado", () => {
@@ -36,5 +36,19 @@ describe("desconto em %", () => {
     expect(percentDiscountCents(10_000, "150")).toBe(15_000);
     expect(percentDiscountCents(10_000, "abc")).toBe(-1);
     expect(percentDiscountCents(10_000, "-5")).toBe(-1);
+  });
+});
+
+describe("item vindo do catálogo", () => {
+  it("leva o nome e a descrição cadastrada", () => {
+    expect(catalogLineDescription({ name: "Instalação de tomada", description: "2P+T 10A com caixa e fiação" })).toBe(
+      "Instalação de tomada — 2P+T 10A com caixa e fiação",
+    );
+    expect(catalogLineDescription({ name: "Visita técnica", description: null })).toBe("Visita técnica");
+    expect(catalogLineDescription({ name: "Visita técnica", description: "  " })).toBe("Visita técnica");
+  });
+
+  it("não passa do limite da descrição do item", () => {
+    expect(catalogLineDescription({ name: "A", description: "x".repeat(400) })).toHaveLength(300);
   });
 });
