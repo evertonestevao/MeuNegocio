@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AutoGrowTextarea } from "@/components/auto-grow-textarea";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -194,9 +195,10 @@ export function QuoteEditor({
                       <div className="flex items-start gap-2">
                         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                           <Label htmlFor={`${id}-description`}>Descrição</Label>
-                          <Input
+                          <AutoGrowTextarea
                             id={`${id}-description`}
                             disabled={readOnly}
+                            maxLength={300}
                             value={line.description}
                             onChange={(event) => editor.updateLine(line.key, { description: event.target.value })}
                           />
