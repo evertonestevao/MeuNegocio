@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { NewClientButton } from "@/features/clients/components/client-forms";
 import { getClientService } from "@/server/clients";
 import { CLIENT_KIND_LABEL, parseClientKind } from "@/services/clientService";
+import { contactSummary } from "@/features/clients/picker";
+import { CollapsibleFilters } from "@/components/collapsible-filters";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import { formatDocument } from "@/lib/masks";
@@ -62,12 +64,12 @@ export default async function ClientsPage({
 
       <form action="/dashboard/clients" className="flex flex-col gap-2" role="search">
         <div className="flex max-w-xl gap-2">
-          <Input name="q" defaultValue={search} placeholder="Buscar por nome, CPF/CNPJ, telefone ou endereço" aria-label="Buscar clientes" />
+          <Input name="q" defaultValue={search} placeholder="Nome, CPF, telefone, cidade" aria-label="Buscar clientes" />
           <Button type="submit" variant="outline">
             <Search className="size-4" /> Buscar
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <CollapsibleFilters active={Boolean(kind || city)}>
           <select
             name="tipo"
             defaultValue={kind ?? ""}
@@ -90,7 +92,7 @@ export default async function ClientsPage({
               Limpar filtros
             </Link>
           ) : null}
-        </div>
+        </CollapsibleFilters>
       </form>
 
       {clients.items.length === 0 ? (
@@ -128,7 +130,7 @@ export default async function ClientsPage({
                     </TableCell>
                     <TableCell className="text-muted-foreground">{client.document ? formatDocument(client.document) : "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {[client.primary_contact_name, client.primary_contact_phone].filter(Boolean).join(" · ") || "—"}
+                      {contactSummary(client) ?? "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{client.location_count}</TableCell>
                   </TableRow>
@@ -146,11 +148,7 @@ export default async function ClientsPage({
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="break-words text-base font-medium">{client.name}</span>
                       <span className="text-sm text-muted-foreground">{summary(client)}</span>
-                      {client.primary_contact_name ? (
-                        <span className="text-sm text-muted-foreground">
-                          {[client.primary_contact_name, client.primary_contact_phone].filter(Boolean).join(" · ")}
-                        </span>
-                      ) : null}
+                      {contactSummary(client) ? <span className="text-sm text-muted-foreground">{contactSummary(client)}</span> : null}
                     </span>
                     <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
                   </CardContent>

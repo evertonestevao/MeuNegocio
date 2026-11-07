@@ -71,6 +71,15 @@ export function isValidPhone(value: string): boolean {
   return digits.length === 10 || digits.length === 11;
 }
 
+/**
+ * Telefone fixo brasileiro: DDD + 8 dígitos começando de 2 a 5. Celular tem 9 dígitos começando
+ * com 9. Serve para avisar que o WhatsApp pode não achar o número.
+ */
+export function isLandline(value: string): boolean {
+  const digits = digitsOnly(value).replace(/^55(?=\d{10}$)/, "");
+  return digits.length === 10 && /^[2-5]$/.test(digits[2]);
+}
+
 /** CNPJ com 14 dígitos e dígitos verificadores certos. Sequência repetida (000…, 111…) não vale. */
 export function isValidCnpj(value: string): boolean {
   const digits = digitsOnly(value);

@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/dates";
+import { isLandline } from "@/lib/masks";
 import { formatCents } from "@/lib/money";
 import {
   deleteQuoteAction,
@@ -322,6 +323,11 @@ export function QuoteActions({
           >
             <MessageCircle className="size-4" /> Enviar pelo WhatsApp
           </Button>
+        ) : null}
+        {(canSend || quote.status === "sent") && contact?.phone && isLandline(contact.phone) ? (
+          <p className="text-xs text-muted-foreground">
+            O telefone do contato principal é fixo e pode não ter WhatsApp. Se não abrir a conversa, use Copiar texto ou cadastre um celular no cliente.
+          </p>
         ) : null}
         <Button variant="outline" onClick={() => copy(copyText, copyMessage)}>
           <Copy className="size-4" /> {copied === copyMessage ? "Texto copiado" : "Copiar texto"}

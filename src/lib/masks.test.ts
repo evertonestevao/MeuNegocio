@@ -6,6 +6,7 @@ import {
   formatPhone,
   isValidCnpj,
   isValidCpf,
+  isLandline,
   maskCnpj,
   maskCpfCnpj,
   maskMoney,
@@ -102,5 +103,17 @@ describe("documentProblem", () => {
     ["123.456", "CPF ou CNPJ incompleto."],
   ])("%j → %j", (input, expected) => {
     expect(documentProblem(input)).toBe(expected);
+  });
+});
+
+describe("isLandline", () => {
+  it.each([
+    ["(14) 3522-3030", true],
+    ["551435223030", true],
+    ["(14) 98811-2031", false],
+    ["(14) 8811-2031", false],
+    ["123", false],
+  ])("%s → %s", (phone, expected) => {
+    expect(isLandline(phone)).toBe(expected);
   });
 });

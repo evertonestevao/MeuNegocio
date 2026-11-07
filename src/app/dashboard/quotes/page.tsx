@@ -54,13 +54,14 @@ export default async function QuotesPage({
 
       <form action="/dashboard/quotes" className="flex max-w-md gap-2" role="search">
         {status ? <input type="hidden" name="status" value={status} /> : null}
-        <Input name="q" defaultValue={search} placeholder="Buscar por cliente, número ou título" aria-label="Buscar orçamentos" />
+        <Input name="q" defaultValue={search} placeholder="Cliente, número ou título" aria-label="Buscar orçamentos" />
         <Button type="submit" variant="outline">
           <Search className="size-4" /> Buscar
         </Button>
       </form>
 
-      <nav className="flex flex-wrap gap-2" aria-label="Filtrar por situação">
+      {/* No celular, uma faixa que desliza para o lado: oito situações em três linhas empurravam a lista. */}
+      <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0" aria-label="Filtrar por situação">
         <Link scroll={false} href={withSearch("/dashboard/quotes")} className={filterClass(status === null)}>
           Todos <span className="ml-1 text-xs opacity-70">{totalCount}</span>
         </Link>

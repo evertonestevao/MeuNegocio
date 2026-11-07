@@ -22,6 +22,7 @@ import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } f
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { CLIENT_FILTER_FROM, filterClientOptions } from "@/features/clients/picker";
 import { useQuoteEditor, type EditorLine } from "../hooks/use-quote-editor";
+import { QuoteSummary } from "./quote-summary";
 import { quoteSchema } from "../schemas";
 
 const SELECT_CLASS =
@@ -95,289 +96,295 @@ export function QuoteEditor({
           </Alert>
         ) : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Label htmlFor="quote-client">Cliente</Label>
-              {!readOnly && clients.length > CLIENT_FILTER_FROM ? (
-                <Input
-                  id="quote-client-filter"
-                  type="search"
-                  value={clientFilter}
-                  onChange={(event) => {
-                    const query = event.target.value;
-                    setClientFilter(query);
-                    // Um só resultado e ninguém escolhido ainda: já escolhe.
-                    const matches = filterClientOptions(clients, query, null);
-                    if (!editor.clientId && query.trim() && matches.length === 1) {
-                      editor.chooseClient(matches[0].id, matches[0].locations.map((location) => location.id));
-                    }
-                  }}
-                  placeholder="Filtrar por nome ou CPF/CNPJ"
-                  aria-label="Filtrar clientes"
-                />
-              ) : null}
-              <select
-                id="quote-client"
-                className={SELECT_CLASS}
-                disabled={readOnly}
-                value={editor.clientId ?? ""}
-                onChange={(event) => {
-                  const id = event.target.value || null;
-                  const locations = clients.find((option) => option.id === id)?.locations ?? [];
-                  editor.chooseClient(id, locations.map((location) => location.id));
-                }}
-              >
-                <option value="">{visibleClients.length === 0 ? "Nenhum cliente com esse filtro" : "Escolha o cliente"}</option>
-                {visibleClients.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Label htmlFor="quote-location">Local do serviço</Label>
-              <select
-                id="quote-location"
-                className={SELECT_CLASS}
-                disabled={readOnly || !client}
-                value={editor.locationId ?? ""}
-                onChange={(event) => editor.setLocationId(event.target.value || null)}
-              >
-                <option value="">Sem local definido</option>
-                {client?.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Label htmlFor="quote-title">Título do serviço</Label>
-              <Input
-                id="quote-title"
-                disabled={readOnly}
-                value={editor.title}
-                onChange={(event) => editor.setTitle(event.target.value)}
-              />
-            </div>
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Label htmlFor="quote-valid">Válido até</Label>
-              <Input
-                id="quote-valid"
-                type="date"
-                disabled={readOnly}
-                value={editor.validUntil}
-                onChange={(event) => editor.setValidUntil(event.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Itens</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {editor.lines.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum item ainda.</p>
-            ) : (
-              <ul className="flex flex-col divide-y">
-                {editor.lines.map((line, index) => {
-                  const hourly = line.pricingMode === "hourly";
-                  const id = `line-${index}`;
-                  return (
-                    <li key={line.key} className="@container flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
-                      <div className="flex items-start gap-2">
-                        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                          <Label htmlFor={`${id}-description`}>Descrição</Label>
-                          <AutoGrowTextarea
-                            id={`${id}-description`}
-                            disabled={readOnly}
-                            maxLength={300}
-                            value={line.description}
-                            onChange={(event) => editor.updateLine(line.key, { description: event.target.value })}
-                          />
-                        </div>
-                        {readOnly ? null : (
-                          <Button
-                            variant="destructive"
-                            size="icon-sm"
-                            className="mt-6"
-                            aria-label={`Remover ${line.description || "item"}`}
-                            onClick={() => editor.removeLine(line.key)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 items-end gap-3 @2xl:grid-cols-[9.5rem_repeat(3,minmax(0,1fr))_6rem]">
-                        <div className="flex min-w-0 flex-col gap-1.5">
-                          <Label htmlFor={`${id}-mode`}>Cobrança</Label>
-                          <select
-                            id={`${id}-mode`}
-                            className={SELECT_CLASS}
-                            disabled={readOnly}
-                            value={line.pricingMode}
-                            onChange={(event) => editor.updateLine(line.key, { pricingMode: event.target.value as PricingMode })}
-                          >
-                            <option value="fixed">Preço fechado</option>
-                            <option value="hourly">Por hora</option>
-                          </select>
-                        </div>
-                        <div className="flex min-w-0 flex-col gap-1.5">
-                          <Label htmlFor={`${id}-quantity`}>{hourly ? "Horas" : `Quantidade (${line.unit})`}</Label>
-                          <Input
-                            id={`${id}-quantity`}
-                            inputMode="decimal"
-                            disabled={readOnly}
-                            value={line.quantity}
-                            onChange={(event) => editor.updateLine(line.key, { quantity: event.target.value })}
-                          />
-                        </div>
-                        {hourly ? (
-                          <div className="flex min-w-0 flex-col gap-1.5">
-                            <Label htmlFor={`${id}-people`}>Pessoas</Label>
-                            <Input
-                              id={`${id}-people`}
-                              inputMode="numeric"
-                              disabled={readOnly}
-                              value={line.people}
-                              onChange={(event) => editor.updateLine(line.key, { people: event.target.value })}
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex min-w-0 flex-col gap-1.5">
-                            <Label htmlFor={`${id}-unit`}>Unidade</Label>
-                            <select
-                              id={`${id}-unit`}
-                              className={SELECT_CLASS}
-                              disabled={readOnly}
-                              value={line.unit}
-                              onChange={(event) => editor.updateLine(line.key, { unit: event.target.value })}
-                            >
-                              {[...new Set<string>([line.unit, ...CATALOG_UNITS])].map((unit) => (
-                                <option key={unit} value={unit}>
-                                  {unit}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                        <div className="flex min-w-0 flex-col gap-1.5">
-                          <Label htmlFor={`${id}-price`}>{hourly ? "Valor por hora" : "Valor unitário"}</Label>
-                          <MaskedInput mask="money"
-                            id={`${id}-price`}
-                            disabled={readOnly}
-                            value={line.unitPrice}
-                            onChange={(event) => editor.updateLine(line.key, { unitPrice: event.target.value })}
-                          />
-                        </div>
-                        <div className="flex min-w-0 flex-col gap-1.5 @2xl:text-right">
-                          <span className="text-sm font-medium">Total da linha</span>
-                          <span className="flex h-8 items-center text-sm font-medium tabular-nums @2xl:justify-end">
-                            {formatCents(editor.totals.lineTotal(line))}
-                          </span>
-                        </div>
-                      </div>
-                      {canSeeCost ? <LineCost id={id} line={line} readOnly={readOnly} editor={editor} /> : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {readOnly ? null : (
-              <div className="flex flex-wrap gap-2">
-                <select
-                  aria-label="Adicionar do catálogo"
-                  className={`${SELECT_CLASS} max-w-sm`}
-                  value=""
-                  onChange={(event) => editor.addFromCatalog(event.target.value)}
-                >
-                  <option value="">Adicionar do catálogo…</option>
-                  {activeCatalog.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} — {formatCents(item.price_cents)}
-                      {item.pricing_mode === "hourly" ? "/h" : ""}
-                    </option>
-                  ))}
-                </select>
-                <Button variant="outline" size="sm" onClick={editor.addCustom}>
-                  <Plus className="size-4" /> Item avulso
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Desconto e condições</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="quote-discount">Desconto</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                {editor.discountMode === "amount" ? (
-                  <MaskedInput
-                    mask="money"
-                    id="quote-discount"
+        {quote && readOnly ? (
+          <QuoteSummary quote={quote} items={items} client={client} />
+        ) : (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <Label htmlFor="quote-client">Cliente</Label>
+                  {!readOnly && clients.length > CLIENT_FILTER_FROM ? (
+                    <Input
+                      id="quote-client-filter"
+                      type="search"
+                      value={clientFilter}
+                      onChange={(event) => {
+                        const query = event.target.value;
+                        setClientFilter(query);
+                        // Um só resultado e ninguém escolhido ainda: já escolhe.
+                        const matches = filterClientOptions(clients, query, null);
+                        if (!editor.clientId && query.trim() && matches.length === 1) {
+                          editor.chooseClient(matches[0].id, matches[0].locations.map((location) => location.id));
+                        }
+                      }}
+                      placeholder="Filtrar por nome ou CPF/CNPJ"
+                      aria-label="Filtrar clientes"
+                    />
+                  ) : null}
+                  <select
+                    id="quote-client"
+                    className={SELECT_CLASS}
                     disabled={readOnly}
-                    value={editor.discount}
-                    onChange={(event) => editor.setDiscount(event.target.value)}
-                    className="max-w-40"
-                  />
-                ) : (
+                    value={editor.clientId ?? ""}
+                    onChange={(event) => {
+                      const id = event.target.value || null;
+                      const locations = clients.find((option) => option.id === id)?.locations ?? [];
+                      editor.chooseClient(id, locations.map((location) => location.id));
+                    }}
+                  >
+                    <option value="">{visibleClients.length === 0 ? "Nenhum cliente com esse filtro" : "Escolha o cliente"}</option>
+                    {visibleClients.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <Label htmlFor="quote-location">Local do serviço</Label>
+                  <select
+                    id="quote-location"
+                    className={SELECT_CLASS}
+                    disabled={readOnly || !client}
+                    value={editor.locationId ?? ""}
+                    onChange={(event) => editor.setLocationId(event.target.value || null)}
+                  >
+                    <option value="">Sem local definido</option>
+                    {client?.locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <Label htmlFor="quote-title">Título do serviço</Label>
                   <Input
-                    id="quote-discount"
-                    inputMode="decimal"
-                    placeholder="Ex.: 10"
+                    id="quote-title"
                     disabled={readOnly}
-                    value={editor.discount}
-                    onChange={(event) => editor.setDiscount(event.target.value.replace(/[^\d,]/g, ""))}
-                    className="max-w-28"
+                    value={editor.title}
+                    onChange={(event) => editor.setTitle(event.target.value)}
                   />
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <Label htmlFor="quote-valid">Válido até</Label>
+                  <Input
+                    id="quote-valid"
+                    type="date"
+                    disabled={readOnly}
+                    value={editor.validUntil}
+                    onChange={(event) => editor.setValidUntil(event.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Itens</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {editor.lines.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum item ainda.</p>
+                ) : (
+                  <ul className="flex flex-col divide-y">
+                    {editor.lines.map((line, index) => {
+                      const hourly = line.pricingMode === "hourly";
+                      const id = `line-${index}`;
+                      return (
+                        <li key={line.key} className="@container flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+                          <div className="flex items-start gap-2">
+                            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                              <Label htmlFor={`${id}-description`}>Descrição</Label>
+                              <AutoGrowTextarea
+                                id={`${id}-description`}
+                                disabled={readOnly}
+                                maxLength={300}
+                                value={line.description}
+                                onChange={(event) => editor.updateLine(line.key, { description: event.target.value })}
+                              />
+                            </div>
+                            {readOnly ? null : (
+                              <Button
+                                variant="destructive"
+                                size="icon-sm"
+                                className="mt-6"
+                                aria-label={`Remover ${line.description || "item"}`}
+                                onClick={() => editor.removeLine(line.key)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 items-end gap-3 @2xl:grid-cols-[9.5rem_repeat(3,minmax(0,1fr))_6rem]">
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                              <Label htmlFor={`${id}-mode`}>Cobrança</Label>
+                              <select
+                                id={`${id}-mode`}
+                                className={SELECT_CLASS}
+                                disabled={readOnly}
+                                value={line.pricingMode}
+                                onChange={(event) => editor.updateLine(line.key, { pricingMode: event.target.value as PricingMode })}
+                              >
+                                <option value="fixed">Preço fechado</option>
+                                <option value="hourly">Por hora</option>
+                              </select>
+                            </div>
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                              <Label htmlFor={`${id}-quantity`}>{hourly ? "Horas" : `Quantidade (${line.unit})`}</Label>
+                              <Input
+                                id={`${id}-quantity`}
+                                inputMode="decimal"
+                                disabled={readOnly}
+                                value={line.quantity}
+                                onChange={(event) => editor.updateLine(line.key, { quantity: event.target.value })}
+                              />
+                            </div>
+                            {hourly ? (
+                              <div className="flex min-w-0 flex-col gap-1.5">
+                                <Label htmlFor={`${id}-people`}>Pessoas</Label>
+                                <Input
+                                  id={`${id}-people`}
+                                  inputMode="numeric"
+                                  disabled={readOnly}
+                                  value={line.people}
+                                  onChange={(event) => editor.updateLine(line.key, { people: event.target.value })}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex min-w-0 flex-col gap-1.5">
+                                <Label htmlFor={`${id}-unit`}>Unidade</Label>
+                                <select
+                                  id={`${id}-unit`}
+                                  className={SELECT_CLASS}
+                                  disabled={readOnly}
+                                  value={line.unit}
+                                  onChange={(event) => editor.updateLine(line.key, { unit: event.target.value })}
+                                >
+                                  {[...new Set<string>([line.unit, ...CATALOG_UNITS])].map((unit) => (
+                                    <option key={unit} value={unit}>
+                                      {unit}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                              <Label htmlFor={`${id}-price`}>{hourly ? "Valor por hora" : "Valor unitário"}</Label>
+                              <MaskedInput mask="money"
+                                id={`${id}-price`}
+                                disabled={readOnly}
+                                value={line.unitPrice}
+                                onChange={(event) => editor.updateLine(line.key, { unitPrice: event.target.value })}
+                              />
+                            </div>
+                            <div className="flex min-w-0 flex-col gap-1.5 @2xl:text-right">
+                              <span className="text-sm font-medium">Total da linha</span>
+                              <span className="flex h-8 items-center text-sm font-medium tabular-nums @2xl:justify-end">
+                                {formatCents(editor.totals.lineTotal(line))}
+                              </span>
+                            </div>
+                          </div>
+                          {canSeeCost ? <LineCost id={id} line={line} readOnly={readOnly} editor={editor} /> : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
                 {readOnly ? null : (
-                  <div className="flex shrink-0 overflow-hidden rounded-lg border" role="group" aria-label="Valor em reais ou porcentagem">
-                    {(["amount", "percent"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        aria-pressed={editor.discountMode === mode}
-                        onClick={() => editor.setDiscountMode(mode)}
-                        className={`min-w-11 px-3 py-1.5 text-sm ${editor.discountMode === mode ? "bg-primary font-medium text-primary-foreground" : "bg-card"}`}
-                      >
-                        {mode === "percent" ? "%" : "R$"}
-                      </button>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    <select
+                      aria-label="Adicionar do catálogo"
+                      className={`${SELECT_CLASS} max-w-sm`}
+                      value=""
+                      onChange={(event) => editor.addFromCatalog(event.target.value)}
+                    >
+                      <option value="">Adicionar do catálogo…</option>
+                      {activeCatalog.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} — {formatCents(item.price_cents)}
+                          {item.pricing_mode === "hourly" ? "/h" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <Button variant="outline" size="sm" onClick={editor.addCustom}>
+                      <Plus className="size-4" /> Item avulso
+                    </Button>
                   </div>
                 )}
-                {editor.discountMode === "percent" && editor.totals.discountCents > 0 ? (
-                  <span className="text-sm text-muted-foreground">= {formatCents(editor.totals.discountCents)}</span>
-                ) : null}
-              </div>
-              {editor.discountMode === "percent" ? (
-                <p className="text-xs text-muted-foreground">O cliente vê o desconto em R$, no PDF e no link.</p>
-              ) : null}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="quote-notes">Observações e condições (aparecem no PDF)</Label>
-              <textarea
-                id="quote-notes"
-                className={TEXTAREA_CLASS}
-                disabled={readOnly}
-                value={editor.notes}
-                onChange={(event) => editor.setNotes(event.target.value)}
-              />
-            </div>
-            <PaymentPlanEditor editor={editor} readOnly={readOnly} totalCents={editor.totals.total} />
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Desconto e condições</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="quote-discount">Desconto</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {editor.discountMode === "amount" ? (
+                      <MaskedInput
+                        mask="money"
+                        id="quote-discount"
+                        disabled={readOnly}
+                        value={editor.discount}
+                        onChange={(event) => editor.setDiscount(event.target.value)}
+                        className="max-w-40"
+                      />
+                    ) : (
+                      <Input
+                        id="quote-discount"
+                        inputMode="decimal"
+                        placeholder="Ex.: 10"
+                        disabled={readOnly}
+                        value={editor.discount}
+                        onChange={(event) => editor.setDiscount(event.target.value.replace(/[^\d,]/g, ""))}
+                        className="max-w-28"
+                      />
+                    )}
+                    {readOnly ? null : (
+                      <div className="flex shrink-0 overflow-hidden rounded-lg border" role="group" aria-label="Valor em reais ou porcentagem">
+                        {(["amount", "percent"] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            aria-pressed={editor.discountMode === mode}
+                            onClick={() => editor.setDiscountMode(mode)}
+                            className={`min-w-11 px-3 py-1.5 text-sm ${editor.discountMode === mode ? "bg-primary font-medium text-primary-foreground" : "bg-card"}`}
+                          >
+                            {mode === "percent" ? "%" : "R$"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {editor.discountMode === "percent" && editor.totals.discountCents > 0 ? (
+                      <span className="text-sm text-muted-foreground">= {formatCents(editor.totals.discountCents)}</span>
+                    ) : null}
+                  </div>
+                  {editor.discountMode === "percent" ? (
+                    <p className="text-xs text-muted-foreground">O cliente vê o desconto em R$, no PDF e no link.</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="quote-notes">Observações e condições (aparecem no PDF)</Label>
+                  <textarea
+                    id="quote-notes"
+                    className={TEXTAREA_CLASS}
+                    disabled={readOnly}
+                    value={editor.notes}
+                    onChange={(event) => editor.setNotes(event.target.value)}
+                  />
+                </div>
+                <PaymentPlanEditor editor={editor} readOnly={readOnly} totalCents={editor.totals.total} />
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-18">
@@ -508,7 +515,7 @@ function LineCost({
               />
             )}
             <div className="flex shrink-0 overflow-hidden rounded-lg border" role="group" aria-label="Tipo do valor a mais">
-              {(["percent", "amount"] as const).map((mode) => (
+              {(["amount", "percent"] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"

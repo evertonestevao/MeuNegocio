@@ -20,3 +20,13 @@ export function filterClientOptions(options: ClientPickerOption[], query: string
       (digits !== null && option.document ? digitsOnly(option.document).includes(digits) : false),
   );
 }
+
+/**
+ * Contato principal na lista: o nome só quando é outra pessoa. Na importação, o contato nasce com o
+ * nome do cliente, e repetir o nome logo abaixo dele só ocupa espaço.
+ */
+export function contactSummary(client: { name: string; primary_contact_name: string | null; primary_contact_phone: string | null }): string | null {
+  const plain = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const name = client.primary_contact_name && plain(client.primary_contact_name) !== plain(client.name) ? client.primary_contact_name : null;
+  return [name, client.primary_contact_phone].filter(Boolean).join(" · ") || null;
+}
