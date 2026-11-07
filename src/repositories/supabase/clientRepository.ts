@@ -25,20 +25,42 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
   }
 
   return {
-    async list(companyId, { offset, limit, search }) {
+    async list(companyId, { offset, limit, search, kind = null, city = null }) {
+      // Com cidade, só entram clientes com algum local nela (junção no banco, sem lista de ids na URL).
+      const cityEmbed = city ? ", city_match:client_locations!inner(id)" : "";
       let query = client
         .from("clients")
         .select(
-          "*, contacts:client_contacts(name, phone, is_primary, deleted_at), locations:client_locations(id, deleted_at)",
+          `*, contacts:client_contacts(name, phone, is_primary, deleted_at), locations:client_locations(id, deleted_at)${cityEmbed}`,
           { count: "exact" },
         )
         .eq("company_id", companyId)
         .is("deleted_at", null);
+      // Padrão ilike; os curingas digitados valem como texto.
+      const pattern = (value: string) => JSON.stringify(`%${value.replace(/[%_\\]/g, "\\$&")}%`);
+      /** Clientes com algum local cujo endereço bate com o texto (cidade, bairro, rua). */
+      async function clientIdsByAddress(text: string): Promise<string[]> {
+        const { data: locations, error: locationsError } = await client
+          .from("client_locations")
+          .select("client_id")
+          .eq("company_id", companyId)
+          .is("deleted_at", null)
+          .or(`search_text.ilike.${pattern(text)}`)
+          .limit(200);
+        if (locationsError) fail(locationsError);
+        return [...new Set((locations ?? []).map((location: { client_id: string }) => location.client_id))];
+      }
+      if (kind === "none") query = query.is("person_kind", null);
+      else if (kind) query = query.eq("person_kind", kind);
+      if (city) {
+        query = query.ilike("city_match.search_text", JSON.parse(pattern(searchTerms(city).text))).is("city_match.deleted_at", null);
+      }
       if (search) {
-        // Padrão ilike; os curingas digitados valem como texto.
-        const pattern = (value: string) => JSON.stringify(`%${value.replace(/[%_\\]/g, "\\$&")}%`);
         const { text, digits } = searchTerms(search);
         const conditions = [`search_text.ilike.${pattern(text)}`];
+        // A busca também acha pelo endereço dos locais, inclusive a cidade.
+        const byAddress = await clientIdsByAddress(text);
+        if (byAddress.length > 0) conditions.push(`id.in.(${byAddress.join(",")})`);
         if (digits) {
           conditions.push(`search_text.ilike.${pattern(digits)}`);
           // Telefone fica nos contatos: acha os clientes deles primeiro.
@@ -61,8 +83,10 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
       type Row = Client & {
         contacts: { name: string; phone: string | null; is_primary: boolean; deleted_at: string | null }[];
         locations: { id: string; deleted_at: string | null }[];
+        city_match?: unknown;
       };
-      const items: ClientListItem[] = ((data ?? []) as Row[]).map(({ contacts, locations, ...row }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- city_match só filtra; não vai para a tela.
+      const items: ClientListItem[] = ((data ?? []) as unknown as Row[]).map(({ contacts, locations, city_match, ...row }) => {
         const primary = contacts.find((contact) => contact.is_primary && !contact.deleted_at) ?? null;
         return {
           ...row,

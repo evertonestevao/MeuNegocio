@@ -10,6 +10,7 @@ import { getDemoProfile } from "@/server/demo/mode";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber, quoteViewText } from "@/features/quotes/status";
+import { QuoteHistory } from "@/features/quotes/components/quote-history";
 import { ReceivableList } from "@/features/receivables/components/receivable-list";
 import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
@@ -41,7 +42,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const service = await getQuoteService();
   const detail = await service.getDetail(actor, id);
   if (!detail) notFound();
-  const { quote, items, responses, revenue, view } = detail;
+  const { quote, items, responses, revenue, view, history } = detail;
 
   const visits = await (await getVisitService()).list(actor, { quoteId: quote.id });
   const [{ clients, catalog, profile }, clientDetail, allowsPublicLink, companyTaxRateBps] = await Promise.all([
@@ -99,6 +100,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     quote.approved_at ? `aprovado em ${formatTimestamp(quote.approved_at, profile.timezone)}` : null,
     quote.refused_at ? `recusado em ${formatTimestamp(quote.refused_at, profile.timezone)}` : null,
     quote.closed_at ? `fechado em ${formatTimestamp(quote.closed_at, profile.timezone)}` : null,
+    quote.canceled_at ? `cancelado em ${formatTimestamp(quote.canceled_at, profile.timezone)}` : null,
   ].filter(Boolean);
   const viewText = quoteViewText(quote.status, view, profile.timezone);
 
@@ -237,6 +239,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           />
         }
       />
+      <QuoteHistory entries={history} timezone={profile.timezone} />
     </div>
   );
 }

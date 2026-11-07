@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NewClientButton } from "@/features/clients/components/client-forms";
 import { getClientService } from "@/server/clients";
+import { CLIENT_KIND_LABEL, parseClientKind } from "@/services/clientService";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import { formatDocument } from "@/lib/masks";
@@ -20,9 +21,9 @@ export const metadata: Metadata = { title: "Clientes" };
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; tipo?: string; cidade?: string }>;
 }) {
-  const { page: rawPage, q } = await searchParams;
+  const { page: rawPage, q, tipo, cidade } = await searchParams;
   const { active } = await getActiveTenant();
   if (!active) return null;
   if (!permissionService.canManageClients(active.role)) redirect("/dashboard");
@@ -30,9 +31,12 @@ export default async function ClientsPage({
   const service = await getClientService();
   const clients = await service.list(
     { companyId: active.id, role: active.role },
-    { page: Number(rawPage) || 1, search: q },
+    { page: Number(rawPage) || 1, search: q, kind: tipo, city: cidade },
   );
   const search = q?.trim() ?? "";
+  const kind = parseClientKind(tipo);
+  const city = cidade?.trim() ?? "";
+  const filtered = Boolean(search || kind || city);
   const summary = (client: (typeof clients.items)[number]) =>
     [
       client.document ? formatDocument(client.document) : null,
@@ -56,20 +60,46 @@ export default async function ClientsPage({
         </div>
       </div>
 
-      <form action="/dashboard/clients" className="flex max-w-md gap-2" role="search">
-        <Input name="q" defaultValue={search} placeholder="Buscar por nome, CPF/CNPJ ou telefone" aria-label="Buscar clientes" />
-        <Button type="submit" variant="outline">
-          <Search className="size-4" /> Buscar
-        </Button>
+      <form action="/dashboard/clients" className="flex flex-col gap-2" role="search">
+        <div className="flex max-w-xl gap-2">
+          <Input name="q" defaultValue={search} placeholder="Buscar por nome, CPF/CNPJ, telefone ou endereço" aria-label="Buscar clientes" />
+          <Button type="submit" variant="outline">
+            <Search className="size-4" /> Buscar
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            name="tipo"
+            defaultValue={kind ?? ""}
+            aria-label="Tipo de cliente"
+            className="border-input h-11 rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:h-9 dark:bg-input/30"
+          >
+            <option value="">Todos os tipos</option>
+            {(Object.keys(CLIENT_KIND_LABEL) as (keyof typeof CLIENT_KIND_LABEL)[]).map((value) => (
+              <option key={value} value={value}>
+                {CLIENT_KIND_LABEL[value]}
+              </option>
+            ))}
+          </select>
+          <Input name="cidade" defaultValue={city} placeholder="Cidade" aria-label="Cidade" className="max-w-48" />
+          <Button type="submit" variant="outline">
+            Filtrar
+          </Button>
+          {filtered ? (
+            <Link href="/dashboard/clients" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+              Limpar filtros
+            </Link>
+          ) : null}
+        </div>
       </form>
 
       {clients.items.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title={search ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
-          description={search ? "Tente outro nome ou documento." : "Cadastre o primeiro cliente ou traga sua lista de uma planilha, com contato e endereço."}
+          title={filtered ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
+          description={filtered ? "Tente outro nome, documento ou cidade, ou limpe os filtros." : "Cadastre o primeiro cliente ou traga sua lista de uma planilha, com contato e endereço."}
           action={
-            search ? undefined : (
+            filtered ? undefined : (
               <Button variant="outline" render={<Link href="/dashboard/clients/importar" />} nativeButton={false}>
                 <FileUp className="size-4" /> Importar planilha
               </Button>
@@ -134,7 +164,7 @@ export default async function ClientsPage({
             pageSize={clients.pageSize}
             total={clients.total}
             basePath="/dashboard/clients"
-            params={{ q: search }}
+            params={{ q: search, tipo: kind, cidade: city }}
           />
         </>
       )}

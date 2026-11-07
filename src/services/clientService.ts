@@ -14,8 +14,24 @@ import { importRowSchema, MAX_IMPORT_ROWS, previewImport, type ImportRow } from 
 
 const CLIENTS_PAGE_SIZE = 20;
 
+/** Filtro por tipo: pessoa física (CPF), jurídica (CNPJ) ou sem documento. */
+export type ClientKindFilter = "pf" | "pj" | "none";
+
+export const CLIENT_KIND_LABEL: Record<ClientKindFilter, string> = {
+  pf: "Pessoa física",
+  pj: "Pessoa jurídica",
+  none: "Sem CPF/CNPJ",
+};
+
+export function parseClientKind(value: string | null | undefined): ClientKindFilter | null {
+  return value === "pf" || value === "pj" || value === "none" ? value : null;
+}
+
 export interface ClientRepository {
-  list(companyId: string, params: { offset: number; limit: number; search: string | null }): Promise<Paginated<ClientListItem>>;
+  list(
+    companyId: string,
+    params: { offset: number; limit: number; search: string | null; kind?: ClientKindFilter | null; city?: string | null },
+  ): Promise<Paginated<ClientListItem>>;
   count(companyId: string): Promise<number>;
   /** Clientes e locais para o seletor do orçamento e da agenda. */
   listForPicker(companyId: string): Promise<ClientPickerOption[]>;
@@ -95,13 +111,15 @@ export function createClientService({ repo, getClientLimit }: ClientServiceDeps)
   }
 
   return {
-    async list(actor: ActorContext, params: PageParams & { search?: string }) {
+    async list(actor: ActorContext, params: PageParams & { search?: string; kind?: string; city?: string }) {
       requireManage(actor);
       const { page, pageSize, offset } = normalizePageParams(params, CLIENTS_PAGE_SIZE);
       const result = await repo.list(actor.companyId, {
         offset,
         limit: pageSize,
         search: params.search?.trim() || null,
+        kind: parseClientKind(params.kind),
+        city: params.city?.trim() || null,
       });
       return { ...result, page, pageSize };
     },

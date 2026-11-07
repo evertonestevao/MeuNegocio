@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeAddress, describeColumns, mapHeaders, previewImport } from "./import";
+import { assignColumn, composeAddress, describeColumns, mapHeaders, previewImport } from "./import";
 
 const HEADER = ["Razão Social", "CNPJ", "Celular", "E-mail", "Responsável", "Endereço", "Cidade", "Obs"];
 
@@ -105,5 +105,21 @@ describe("importação de clientes", () => {
 
   it("sem coluna de nome, não há o que importar", () => {
     expect(previewImport([["Telefone"], ["14999990000"]], [])).toEqual([]);
+  });
+});
+
+describe("colunas escolhidas à mão", () => {
+  it("um campo vale para uma coluna só e a coluna troca de campo", () => {
+    const mapping = { name: 0, phone: 2 };
+    expect(assignColumn(mapping, 1, "name")).toEqual({ name: 1, phone: 2 });
+    expect(assignColumn(mapping, 2, "email")).toEqual({ name: 0, email: 2 });
+    expect(assignColumn(mapping, 2, null)).toEqual({ name: 0 });
+  });
+
+  it("a prévia usa a escolha, mesmo com títulos que o sistema não reconhece", () => {
+    const rows = [["Razão", "Fone do cliente"], ["Padaria Pão", "14 3333-1000"]];
+    expect(previewImport(rows, [])).toEqual([]);
+    const [line] = previewImport(rows, [], { name: 0, phone: 1 });
+    expect(line).toMatchObject({ status: "ready", row: { name: "Padaria Pão", contact: { phone: "(14) 3333-1000" } } });
   });
 });

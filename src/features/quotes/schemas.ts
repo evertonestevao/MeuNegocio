@@ -83,3 +83,26 @@ export const publicResponseSchema = z
   .refine((value) => value.decision === "approved" || value.comment.length > 0, {
     message: "Conte o motivo da recusa.",
   });
+
+/** Mudanças que o escritório registra em nome do cliente: dizem quem pediu. */
+export const DECISIONS_WITH_REQUESTER = ["approve", "refuse", "cancel"] as const;
+
+/**
+ * Mudança de situação pelo escritório. Aprovar, recusar e cancelar pedem o nome de quem pediu
+ * (o cliente muitas vezes autoriza por telefone, sem abrir o sistema); cancelar pede o motivo.
+ */
+export const quoteTransitionSchema = z
+  .object({
+    action: z.enum(["send", "approve", "refuse", "expire", "reopen", "cancel"]),
+    validUntil: z.iso.date("Informe a nova validade.").nullable(),
+    requestedBy: z.string().trim().max(160, "Use até 160 caracteres no nome."),
+    note: z.string().trim().max(1000, "Use até 1000 caracteres na observação."),
+  })
+  .superRefine((value, ctx) => {
+    if ((DECISIONS_WITH_REQUESTER as readonly string[]).includes(value.action) && value.requestedBy.length < 2) {
+      ctx.addIssue({ code: "custom", path: ["requestedBy"], message: "Informe quem pediu a mudança." });
+    }
+    if (value.action === "cancel" && value.note.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["note"], message: "Conte o motivo do cancelamento." });
+    }
+  });

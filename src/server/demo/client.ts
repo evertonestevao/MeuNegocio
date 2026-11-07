@@ -173,6 +173,16 @@ class DemoQuery implements PromiseLike<Result> {
   lte(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) <= 0); }
   gt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) > 0); }
   lt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) < 0); }
+  /** Padrão "%x%"; em "embutido.coluna", vale se algum item embutido bate (como o !inner do banco). */
+  ilike(column: string, pattern: string) {
+    const needle = pattern.replace(/^%|%$/g, "").replace(/\\(.)/g, "$1").toLowerCase();
+    const [first, rest] = column.split(".", 2);
+    return this.where((row) => {
+      const value = row[first];
+      if (rest && Array.isArray(value)) return value.some((item) => String((item as Row)[rest] ?? "").toLowerCase().includes(needle));
+      return String(valueAt(row, column) ?? "").toLowerCase().includes(needle);
+    });
+  }
   not(column: string, _operator: string, value: unknown) { return this.where((row) => (valueAt(row, column) ?? null) !== value); }
   /** Só a busca: search_text.ilike."%x%",id.in.(a,b),number.eq.12. */
   or(expression: string) {
@@ -334,6 +344,19 @@ function callRpc(name: string, args: Row): Result {
       return ok(null);
     case "get_public_quote":
       return ok(demoPublicQuoteRow(String(args.p_token)));
+    case "quote_history": {
+      const tables = (fixtures() as unknown as { tables: Record<string, Row[]> }).tables;
+      const rows = tables.audit_logs
+        .filter((row) => row.entity_type === "quote" && row.entity_id === args.p_quote_id && !row.deleted_at)
+        .toSorted((a, b) => compare(b.created_at, a.created_at))
+        .map((row) => ({
+          action: row.action,
+          created_at: row.created_at,
+          user_name: tables.profiles.find((profile) => profile.id === row.user_id)?.full_name ?? null,
+          metadata: row.metadata,
+        }));
+      return ok(rows);
+    }
     case "get_company_tax":
       return ok(demoCompanyTax((fixtures() as unknown as { tables: Record<string, Row[]> }).tables));
     case "my_pending_invites":

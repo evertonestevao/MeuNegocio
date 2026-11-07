@@ -62,9 +62,24 @@ const normalize = (value: string) =>
     .toLowerCase()
     .replace(/\s+/g, " ");
 
+export type ColumnMapping = Partial<Record<ImportField, number>>;
+
+/**
+ * Escolha manual: a coluna passa a ser o campo escolhido (ou nenhum, com null). Cada campo vale
+ * para uma coluna só: se já estava em outra, sai de lá.
+ */
+export function assignColumn(mapping: ColumnMapping, column: number, field: ImportField | null): ColumnMapping {
+  const next: ColumnMapping = {};
+  for (const [key, index] of Object.entries(mapping) as [ImportField, number][]) {
+    if (index !== column && key !== field) next[key] = index;
+  }
+  if (field) next[field] = column;
+  return next;
+}
+
 /** Qual coluna é qual campo. Coluna desconhecida é ignorada; repetida, vale a primeira. */
-export function mapHeaders(headers: string[]): Partial<Record<ImportField, number>> {
-  const map: Partial<Record<ImportField, number>> = {};
+export function mapHeaders(headers: string[]): ColumnMapping {
+  const map: ColumnMapping = {};
   headers.forEach((header, index) => {
     const key = normalize(header);
     const field = (Object.keys(HEADER_ALIASES) as ImportField[]).find((candidate) => HEADER_ALIASES[candidate].includes(key));
@@ -177,9 +192,14 @@ const documentKey = (value: string | null) => (value ? digitsOnly(value) : "");
  * ou repetido na planilha. A ordem das mensagens segue o que mais importa: nome, documento,
  * duplicado e só então contato e endereço, para um erro menor não esconder um duplicado.
  */
-export function previewImport(rows: string[][], existing: { name: string; document: string | null }[]): ImportPreviewLine[] {
+export function previewImport(
+  rows: string[][],
+  existing: { name: string; document: string | null }[],
+  /** Qual coluna é qual campo, quando a pessoa escolheu à mão; sem ela, pelos títulos. */
+  mapping?: ColumnMapping,
+): ImportPreviewLine[] {
   const [headers = [], ...lines] = rows;
-  const map = mapHeaders(headers);
+  const map = mapping ?? mapHeaders(headers);
   if (map.name === undefined) return [];
   const cell = (cells: string[], field: ImportField) => (map[field] === undefined ? "" : (cells[map[field]!] ?? "").trim());
   const seenDocuments = new Set(existing.map((client) => documentKey(client.document)).filter(Boolean));

@@ -213,7 +213,7 @@ export interface CatalogItem {
   cost_cents: number | null;
 }
 
-export type QuoteStatus = "draft" | "sent" | "approved" | "refused" | "expired" | "closed";
+export type QuoteStatus = "draft" | "sent" | "approved" | "refused" | "expired" | "closed" | "canceled";
 
 export interface Quote {
   id: string;
@@ -232,6 +232,7 @@ export interface Quote {
   sent_at: string | null;
   approved_at: string | null;
   refused_at: string | null;
+  canceled_at?: string | null;
   closed_at: string | null;
   /** Alíquota congelada na aprovação; null segue a da empresa. */
   tax_rate_bps?: number | null;
@@ -239,6 +240,15 @@ export interface Quote {
   payment_plan?: QuotePaymentPlan | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Um registro do histórico do orçamento (vem da auditoria). */
+export interface QuoteHistoryEntry {
+  action: string;
+  created_at: string;
+  /** Quem fez no sistema; null quando foi o cliente pelo link ou o próprio sistema. */
+  user_name: string | null;
+  metadata: { requested_by?: string; note?: string; automatic?: boolean; source_quote_id?: string } & Record<string, unknown>;
 }
 
 /** Aberturas do link pelo cliente (sem a própria empresa nem robôs de prévia). */

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { closeQuoteSchema, publicResponseSchema, quoteSchema } from "@/features/quotes/schemas";
+import { closeQuoteSchema, publicResponseSchema, quoteSchema, quoteTransitionSchema } from "@/features/quotes/schemas";
 import { AppError } from "@/lib/errors";
 import { parseMoneyToCents } from "@/lib/money";
 import { taxRatePercentSchema } from "@/lib/tax";
@@ -70,6 +70,7 @@ const TRANSITIONS: Record<QuoteTransition, string> = {
   refuse: "Orçamento marcado como recusado",
   expire: "Orçamento marcado como expirado",
   reopen: "Orçamento reaberto como rascunho",
+  cancel: "Orçamento cancelado",
 };
 
 export async function transitionQuoteAction(
@@ -79,11 +80,19 @@ export async function transitionQuoteAction(
   try {
     const actor = await getActor();
     const quoteId = quoteIdFrom(formData);
-    const action = z.enum(["send", "approve", "refuse", "expire", "reopen"]).parse(formData.get("action"));
-    const validUntil = formData.get("validUntil") ? z.iso.date("Informe a nova validade.").parse(formData.get("validUntil")) : null;
+    const { action, validUntil, requestedBy, note } = quoteTransitionSchema.parse({
+      action: formData.get("action"),
+      validUntil: formData.get("validUntil") || null,
+      requestedBy: formData.get("requestedBy") ?? "",
+      note: formData.get("note") ?? "",
+    });
     const service = await getQuoteService();
     await service.transition(actor, quoteId, action, validUntil);
-    await recordAudit({ companyId: actor.companyId, action: `quote.${action}`, entityType: "quote", entityId: quoteId });
+    // Quem pediu e a observação ficam no histórico do orçamento.
+    const metadata: Record<string, string> = {};
+    if (requestedBy) metadata.requested_by = requestedBy;
+    if (note) metadata.note = note;
+    await recordAudit({ companyId: actor.companyId, action: `quote.${action}`, entityType: "quote", entityId: quoteId, metadata });
     refresh(quoteId);
     return { success: TRANSITIONS[action] };
   } catch (err) {
@@ -213,7 +222,7 @@ export async function respondPublicQuoteAction(
       action: decision === "approved" ? "quote.approved_by_client" : "quote.refused_by_client",
       entityType: "quote",
       entityId: quoteId,
-      metadata: {},
+      metadata: { requested_by: name, ...(comment ? { note: comment } : {}) },
     });
     // Melhor-esforço: o cliente já respondeu; falha de e-mail fica só no monitoramento.
     await getQuoteNotificationService()

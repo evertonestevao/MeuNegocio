@@ -10,7 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { decodeSpreadsheet, parseCsv } from "@/lib/csv";
 import { importClientsAction } from "@/server/actions/clients";
 import type { ActionState } from "@/server/actions/action-state";
-import { describeColumns, IMPORT_TEMPLATE, MAX_IMPORT_ROWS, previewImport, type ImportPreviewLine } from "../import";
+import {
+  assignColumn,
+  IMPORT_FIELD_LABELS,
+  IMPORT_TEMPLATE,
+  mapHeaders,
+  MAX_IMPORT_ROWS,
+  previewImport,
+  type ColumnMapping,
+  type ImportField,
+  type ImportPreviewLine,
+} from "../import";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
@@ -35,8 +45,8 @@ function downloadTemplate() {
 export function ClientImport({ existing }: { existing: { name: string; document: string | null }[] }) {
   const router = useRouter();
   const [fileName, setFileName] = useState<string | null>(null);
-  const [lines, setLines] = useState<ImportPreviewLine[] | null>(null);
-  const [columns, setColumns] = useState<ReturnType<typeof describeColumns> | null>(null);
+  const [rows, setRows] = useState<string[][] | null>(null);
+  const [mapping, setMapping] = useState<ColumnMapping>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await importClientsAction(prev, data);
@@ -47,12 +57,14 @@ export function ClientImport({ existing }: { existing: { name: string; document:
     return result;
   }, undefined);
 
+  // A prévia segue a escolha das colunas: trocar uma refaz a conferência na hora.
+  const lines = useMemo<ImportPreviewLine[] | null>(() => (rows ? previewImport(rows, existing, mapping) : null), [rows, existing, mapping]);
   const ready = useMemo(() => (lines ?? []).filter((line) => line.status === "ready"), [lines]);
   const attention = useMemo(() => (lines ?? []).filter((line) => line.status !== "ready"), [lines]);
 
   async function choose(file: File | undefined) {
-    setLines(null);
-    setColumns(null);
+    setRows(null);
+    setMapping({});
     setProblem(null);
     if (!file) return;
     setFileName(file.name);
@@ -64,15 +76,14 @@ export function ClientImport({ existing }: { existing: { name: string; document:
       setProblem("O arquivo passa de 2 MB. Divida a planilha em partes menores.");
       return;
     }
-    const rows = parseCsv(decodeSpreadsheet(await file.arrayBuffer()));
-    const preview = previewImport(rows, existing);
-    if (preview.length === 0) {
-      setProblem('Não achamos a coluna com o nome do cliente. A primeira linha precisa ter os títulos das colunas, com uma chamada "Nome" (ou "Cliente", "Razão social"). Use o modelo, se preferir.');
+    const parsed = parseCsv(decodeSpreadsheet(await file.arrayBuffer()));
+    if (parsed.length < 2) {
+      setProblem("A planilha está vazia. A primeira linha tem os títulos das colunas e, abaixo dela, um cliente por linha.");
       return;
     }
-    if (rows.length - 1 > MAX_IMPORT_ROWS) setProblem(`A planilha tem mais de ${MAX_IMPORT_ROWS} clientes: só os ${MAX_IMPORT_ROWS} primeiros entram nesta importação.`);
-    setColumns(describeColumns(rows[0] ?? []));
-    setLines(preview);
+    if (parsed.length - 1 > MAX_IMPORT_ROWS) setProblem(`A planilha tem mais de ${MAX_IMPORT_ROWS} clientes: só os ${MAX_IMPORT_ROWS} primeiros entram nesta importação.`);
+    setMapping(mapHeaders(parsed[0] ?? []));
+    setRows(parsed);
   }
 
   return (
@@ -82,7 +93,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
           <CardTitle>1. Prepare a planilha</CardTitle>
           <CardDescription>
             Uma linha por cliente, com os títulos das colunas na primeira linha. Só o nome é obrigatório; CPF/CNPJ, telefone, e-mail, contato, endereço, número,
-            complemento, bairro, cidade, estado, CEP e observações entram se existirem. Antes de importar, você vê quais colunas entraram e quais ficaram de fora.
+            complemento, bairro, cidade, estado, CEP e observações entram se existirem. Antes de importar, você confere o que cada coluna é e pode trocar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,7 +123,7 @@ export function ClientImport({ existing }: { existing: { name: string; document:
         </CardContent>
       </Card>
 
-      {lines ? (
+      {rows ? (
         <Card>
           <CardHeader>
             <CardTitle>3. Confira e importe</CardTitle>
@@ -127,19 +138,18 @@ export function ClientImport({ existing }: { existing: { name: string; document:
                 <AlertDescription>{state.error}</AlertDescription>
               </Alert>
             ) : null}
-            {columns ? (
-              <div className="flex flex-col gap-1 rounded-lg bg-muted/50 px-3 py-2 text-xs">
-                <p>
-                  <span className="font-medium">Colunas usadas: </span>
-                  {columns.used.map((column) => (column.header === column.label ? column.label : `${column.header} (${column.label})`)).join(", ")}
-                </p>
-                {columns.ignored.length > 0 ? (
-                  <p className="text-warning">
-                    <span className="font-medium">Ficam de fora: </span>
-                    {columns.ignored.join(", ")}. Para entrarem, renomeie como no modelo.
-                  </p>
-                ) : null}
-              </div>
+            {rows ? (
+              <ColumnMappingEditor
+                headers={rows[0] ?? []}
+                sample={rows[1] ?? []}
+                mapping={mapping}
+                onChange={(column, field) => setMapping((current) => assignColumn(current, column, field))}
+              />
+            ) : null}
+            {rows && mapping.name === undefined ? (
+              <Alert variant="destructive">
+                <AlertDescription>Escolha acima qual coluna tem o nome do cliente. Só o nome é obrigatório.</AlertDescription>
+              </Alert>
             ) : null}
             <ul className="flex max-h-[28rem] flex-col divide-y overflow-y-auto text-sm">
               {/* O que precisa de atenção primeiro: é o que a pessoa vai corrigir na planilha. */}
@@ -172,6 +182,52 @@ export function ClientImport({ existing }: { existing: { name: string; document:
           </CardContent>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+const FIELDS = Object.keys(IMPORT_FIELD_LABELS) as ImportField[];
+
+/** O que cada coluna da planilha é. Vem do título; a pessoa troca quando o sistema não reconheceu. */
+function ColumnMappingEditor({
+  headers,
+  sample,
+  mapping,
+  onChange,
+}: {
+  headers: string[];
+  sample: string[];
+  mapping: ColumnMapping;
+  onChange: (column: number, field: ImportField | null) => void;
+}) {
+  const fieldOf = (column: number) => (Object.entries(mapping) as [ImportField, number][]).find(([, index]) => index === column)?.[0] ?? "";
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3">
+      <p className="text-sm font-medium">Colunas da planilha</p>
+      <p className="text-xs text-muted-foreground">Confira o que cada coluna é. Se o sistema não reconheceu, escolha aqui; o que ficar em “Não importar” fica de fora.</p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {headers.map((header, column) => (
+          <li key={column} className="flex min-w-0 flex-col gap-1">
+            <label htmlFor={`column-${column}`} className="text-xs">
+              <span className="font-medium">{header.trim() || `Coluna ${column + 1}`}</span>
+              {sample[column]?.trim() ? <span className="text-muted-foreground"> · ex.: {sample[column].trim().slice(0, 40)}</span> : null}
+            </label>
+            <select
+              id={`column-${column}`}
+              value={fieldOf(column)}
+              onChange={(event) => onChange(column, (event.target.value || null) as ImportField | null)}
+              className="border-input h-11 rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:h-9"
+            >
+              <option value="">Não importar</option>
+              {FIELDS.map((field) => (
+                <option key={field} value={field}>
+                  {IMPORT_FIELD_LABELS[field]}
+                </option>
+              ))}
+            </select>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

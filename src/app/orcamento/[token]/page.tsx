@@ -196,6 +196,9 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
                   {response?.decision === "refused" ? ` por ${response.name} em ${formatTimestamp(response.createdAt)}` : ""}.
                 </p>
               ) : null}
+              {document.status === "canceled" ? (
+                <p className="font-medium">Este orçamento foi cancelado. Fale com a {document.company.name} se precisar de uma nova versão.</p>
+              ) : null}
               {!respondsOnline && document.status === "sent" && quote.isWithinValidity ? (
                 <p className="font-medium">Para aprovar este orçamento, fale direto com a {document.company.name}.</p>
               ) : null}

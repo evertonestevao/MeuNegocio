@@ -2,14 +2,14 @@ import type { CloseQuoteInput, QuoteInput } from "@/features/quotes/schemas";
 import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
 import type { ActorContext } from "@/server/actor";
-import type { CatalogItem, Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, QuoteView, Revenue } from "@/types/database";
+import type { CatalogItem, Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteHistoryEntry, QuoteStatus, QuoteView, Revenue } from "@/types/database";
 import type { PublicQuote } from "@/types/quotes";
 import { permissionService } from "./permissionService";
 import { normalizePageParams, type PageParams, type Paginated } from "./tenantService";
 
 const QUOTES_PAGE_SIZE = 20;
 
-export type QuoteTransition = "send" | "approve" | "refuse" | "expire" | "reopen";
+export type QuoteTransition = "send" | "approve" | "refuse" | "expire" | "reopen" | "cancel";
 
 export interface QuoteRepository {
   list(
@@ -24,6 +24,8 @@ export interface QuoteRepository {
   get(companyId: string, quoteId: string): Promise<Quote | null>;
   /** Quando o cliente abriu o link; null se ainda não abriu. */
   getView(companyId: string, quoteId: string): Promise<QuoteView | null>;
+  /** O que aconteceu com o orçamento, do mais novo ao mais antigo. */
+  history(companyId: string, quoteId: string): Promise<QuoteHistoryEntry[]>;
   listItems(companyId: string, quoteId: string): Promise<QuoteItem[]>;
   listResponses(companyId: string, quoteId: string): Promise<QuoteResponse[]>;
   getRevenue(companyId: string, quoteId: string): Promise<Revenue | null>;
@@ -122,13 +124,14 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
       const quote = await repo.get(actor.companyId, quoteId);
       if (!quote) return null;
       const canClose = permissionService.canCloseQuotes(actor.role);
-      const [items, responses, revenue, view] = await Promise.all([
+      const [items, responses, revenue, view, history] = await Promise.all([
         repo.listItems(actor.companyId, quoteId),
         repo.listResponses(actor.companyId, quoteId),
         canClose ? repo.getRevenue(actor.companyId, quoteId) : Promise.resolve(null),
         repo.getView(actor.companyId, quoteId),
+        repo.history(actor.companyId, quoteId),
       ]);
-      return { quote, items, responses, revenue, view };
+      return { quote, items, responses, revenue, view, history };
     },
 
     async save(actor: ActorContext, quoteId: string | null, input: QuoteInput): Promise<string> {

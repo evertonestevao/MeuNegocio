@@ -106,6 +106,71 @@ function ConfirmButton({
   );
 }
 
+const DECISION = {
+  approve: {
+    title: "Cliente aprovou",
+    description: "Registre quem autorizou, por exemplo quando o cliente aprova por telefone ou WhatsApp, sem usar o link.",
+    requester: "Quem autorizou",
+    note: "Observação (opcional)",
+    notePlaceholder: "Ex.: aprovou por telefone, pode começar na segunda",
+    submit: "Registrar aprovação",
+  },
+  refuse: {
+    title: "Cliente recusou",
+    description: "Recusado é final. Para mandar outra proposta, use Duplicar depois.",
+    requester: "Quem recusou",
+    note: "Motivo (opcional)",
+    notePlaceholder: "Ex.: achou o preço alto",
+    submit: "Registrar recusa",
+  },
+  cancel: {
+    title: "Cancelar orçamento",
+    description: "Use quando o serviço não vai mais acontecer, mesmo depois de enviado ou aprovado. Cancelado é final; o orçamento sai do que está em andamento.",
+    requester: "Quem pediu o cancelamento",
+    note: "Motivo",
+    notePlaceholder: "Ex.: o cliente vai fazer o serviço no ano que vem",
+    submit: "Cancelar orçamento",
+  },
+} as const;
+
+/** Mudança que o escritório registra em nome do cliente: guarda quem pediu e entra no histórico. */
+function DecisionButton({ quoteId, decision, label, variant }: { quoteId: string; decision: keyof typeof DECISION; label: string; variant?: "destructive" }) {
+  const copy = DECISION[decision];
+  return (
+    <DialogForm
+      title={copy.title}
+      description={copy.description}
+      action={transitionQuoteAction}
+      submitLabel={copy.submit}
+      variant={variant}
+      trigger={(open) => (
+        <Button variant="outline" className={variant ? "text-destructive" : undefined} onClick={open}>
+          {label}
+        </Button>
+      )}
+    >
+      <input type="hidden" name="quoteId" value={quoteId} />
+      <input type="hidden" name="action" value={decision} />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${decision}-requested-by`}>{copy.requester}</Label>
+        <Input id={`${decision}-requested-by`} name="requestedBy" required minLength={2} maxLength={160} placeholder="Nome de quem pediu" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${decision}-note`}>{copy.note}</Label>
+        <textarea
+          id={`${decision}-note`}
+          name="note"
+          required={decision === "cancel"}
+          maxLength={1000}
+          rows={3}
+          placeholder={copy.notePlaceholder}
+          className="border-input w-full rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        />
+      </div>
+    </DialogForm>
+  );
+}
+
 export function QuoteActions({
   quote,
   document,
@@ -165,7 +230,7 @@ export function QuoteActions({
           <>
             <p className="text-xs text-muted-foreground">Salve o rascunho antes de enviar: o que vale é o último salvo.</p>
             <ActionButton action={transitionQuoteAction} quoteId={quote.id} fields={{ action: "send" }} label="Marcar como enviado" variant="default" />
-            <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "refuse" }} title="Cliente recusou" description="Marcar este orçamento como recusado? Recusado é final." label="Marcar como recusado" />
+            <DecisionButton quoteId={quote.id} decision="refuse" label="Marcar como recusado" />
           </>
         ) : null}
 
@@ -185,8 +250,8 @@ export function QuoteActions({
             ) : (
               <p className="text-xs text-muted-foreground">O link de aprovação não está incluído no seu plano.</p>
             )}
-            <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "approve" }} title="Cliente aprovou" description="Registrar que o cliente aprovou este orçamento?" label="Cliente aprovou" />
-            <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "refuse" }} title="Cliente recusou" description="Marcar este orçamento como recusado pelo cliente? Recusado é final." label="Cliente recusou" />
+            <DecisionButton quoteId={quote.id} decision="approve" label="Cliente aprovou" />
+            <DecisionButton quoteId={quote.id} decision="refuse" label="Cliente recusou" />
             <ConfirmButton quoteId={quote.id} action={transitionQuoteAction} fields={{ action: "expire" }} title="Marcar como expirado" description="Marcar como expirado? Depois você pode reabrir com nova validade." label="Marcar como expirado" />
           </>
         ) : null}
@@ -235,6 +300,13 @@ export function QuoteActions({
           </DialogForm>
         ) : null}
 
+        {quote.status === "sent" || quote.status === "approved" || quote.status === "expired" ? (
+          <DecisionButton quoteId={quote.id} decision="cancel" label="Cancelar orçamento" variant="destructive" />
+        ) : null}
+        {quote.status === "canceled" ? (
+          <p className="text-sm text-muted-foreground">Cancelado. Para retomar, use Duplicar: ele cria um rascunho novo com os mesmos itens.</p>
+        ) : null}
+
         <hr className="my-1" />
         <Button variant="outline" onClick={() => void downloadQuotePdf(document)}>
           <Download className="size-4" /> Baixar PDF
@@ -255,7 +327,7 @@ export function QuoteActions({
           <Copy className="size-4" /> {copied === copyMessage ? "Texto copiado" : "Copiar texto"}
         </Button>
         <ActionButton action={duplicateQuoteAction} quoteId={quote.id} label="Duplicar" />
-        {canDelete && ["draft", "refused", "expired"].includes(quote.status) ? (
+        {canDelete && ["draft", "refused", "expired", "canceled"].includes(quote.status) ? (
           <ConfirmButton quoteId={quote.id} action={deleteQuoteAction} title="Excluir orçamento" description="Excluir este orçamento? Essa ação não pode ser desfeita pelo sistema." label="Excluir orçamento" variant="destructive" />
         ) : null}
       </CardContent>

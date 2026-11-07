@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v12";
+export const LANDING_SCREENS = "/landing/v13";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -165,7 +165,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: FileText,
     title: "Orçamentos",
     description:
-      "Com o logo da sua empresa, número automático, validade, desconto em R$ ou % e margem estimada só para quem pode ver. Você vê quando o cliente abriu o link, o vencido expira sozinho e você sabe o que está parado esperando resposta.",
+      "Com o logo da sua empresa, número automático, validade, desconto em R$ ou % e margem estimada só para quem pode ver. Você vê quando o cliente abriu o link, o vencido expira sozinho e cada orçamento tem histórico, com quem aprovou ou cancelou, mesmo quando o cliente responde por telefone.",
   },
   {
     icon: CalendarDays,

@@ -4,7 +4,7 @@ import { searchTerms } from "@/lib/search";
 import { paymentPlanText } from "@/lib/installments";
 import type { QuotePaymentPlan } from "@/types/finance";
 import type { PublicQuoteRepository, QuoteRepository } from "@/services/quoteService";
-import type { Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, QuoteView, Revenue } from "@/types/database";
+import type { Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteHistoryEntry, QuoteStatus, QuoteView, Revenue } from "@/types/database";
 import type { PublicQuote } from "@/types/quotes";
 
 function fail(error: { code?: string; message?: string } | null): never {
@@ -120,6 +120,12 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
         .maybeSingle<QuoteView>();
       if (error) fail(error);
       return data;
+    },
+
+    async history(companyId, quoteId) {
+      const { data, error } = await client.rpc("quote_history", { p_company_id: companyId, p_quote_id: quoteId });
+      if (error) fail(error);
+      return (data ?? []) as QuoteHistoryEntry[];
     },
 
     async listItems(companyId, quoteId) {

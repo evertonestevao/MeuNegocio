@@ -872,6 +872,53 @@ begin
 end $$;
 
 reset role;
+-- Histórico do orçamento: só o escritório da própria empresa lê. Cancelar: de enviado, aprovado ou
+-- expirado, uma vez só.
+reset role;
+with created as (
+  insert into public.quotes (company_id, number, client_id, status, sent_at, valid_until)
+  values ('c1c1c1c1-0000-4000-8000-000000000001', 900, 'f3f3f3f3-0000-4000-8000-000000000003', 'sent', now(), current_date + 10)
+  returning id
+)
+select set_config('test.hist_quote', id::text, true) from created;
+insert into public.audit_logs (company_id, user_id, action, entity_type, entity_id, metadata)
+values ('c1c1c1c1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000001', 'quote.approve', 'quote',
+  current_setting('test.hist_quote')::uuid, '{"requested_by":"Cliente por telefone"}');
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+begin
+  begin
+    perform * from public.quote_history('c1c1c1c1-0000-4000-8000-000000000001', gen_random_uuid());
+    raise exception 'FALHA histórico: outra empresa leu';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare v_quote uuid; v_status text; n int;
+begin
+  v_quote := current_setting('test.hist_quote')::uuid;
+  select count(*) into n from public.quote_history('c1c1c1c1-0000-4000-8000-000000000001', v_quote)
+  where metadata ->> 'requested_by' = 'Cliente por telefone';
+  if n <> 1 then raise exception 'FALHA histórico: dona da empresa não leu o próprio histórico'; end if;
+
+  perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_quote, 'cancel');
+  select status into v_status from public.quotes where id = v_quote;
+  if v_status <> 'canceled' then raise exception 'FALHA cancelar: status %', v_status; end if;
+  begin
+    perform public.transition_quote('c1c1c1c1-0000-4000-8000-000000000001', v_quote, 'cancel');
+    raise exception 'FALHA cancelar: cancelou duas vezes';
+  exception when sqlstate 'P0001' then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+end $$;
+
+reset role;
 -- Link público (service_role): token é a credencial, rascunho não abre, a resposta só vale uma
 -- vez e dentro da validade; o job expira os vencidos.
 reset role;

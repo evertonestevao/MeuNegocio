@@ -7,6 +7,7 @@ export const QUOTE_STATUS_LABEL: Record<QuoteStatus, string> = {
   refused: "Recusado",
   expired: "Expirado",
   closed: "Fechado",
+  canceled: "Cancelado",
 };
 
 export const QUOTE_STATUSES = Object.keys(QUOTE_STATUS_LABEL) as QuoteStatus[];
@@ -23,6 +24,7 @@ export const QUOTE_STATUS_VARIANT: Record<QuoteStatus, "secondary" | "info" | "s
   refused: "destructive",
   expired: "warning",
   closed: "success",
+  canceled: "secondary",
 };
 
 function dayAndTime(timestamp: string, timezone: string): { day: string; shortDay: string; time: string } {

@@ -70,7 +70,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"search_text": "padaria pao dourado 12345678000195"
+"search_text": "padaria pao dourado 12345678000195",
+"person_kind": "pj"
 },
 {
 "id": "84b8ec6d-22f8-4daf-a630-88b35d1fb9d8",
@@ -81,7 +82,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"search_text": "clinica vida plena 98765432000110"
+"search_text": "clinica vida plena 98765432000110",
+"person_kind": "pj"
 },
 {
 "id": "2d7c6a2c-347e-45c4-8b98-64f6f7767f96",
@@ -92,7 +94,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"search_text": "condominio jardim das flores 45678912000133"
+"search_text": "condominio jardim das flores 45678912000133",
+"person_kind": "pj"
 },
 {
 "id": "0aa9d3df-7a3c-4548-8d4f-1489057d0ebf",
@@ -103,7 +106,8 @@
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"search_text": "mercado bom preco 32165498000177"
+"search_text": "mercado bom preco 32165498000177",
+"person_kind": "pj"
 }
 ],
 "client_contacts": [
@@ -174,7 +178,8 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"search_text": "av. rodrigues alves, 2100, bauru/sp"
 },
 {
 "id": "ad5ec57d-b68e-47b7-b2cc-67e146684739",
@@ -185,7 +190,8 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"search_text": "rua das hortensias, 300, bauru/sp"
 },
 {
 "id": "1148dfc8-73d5-405d-af68-035fabe5a481",
@@ -196,7 +202,8 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"search_text": "rua araujo leite, 88, bauru/sp"
 },
 {
 "id": "aa70ab38-4df2-4a88-86c0-468387603a43",
@@ -207,7 +214,8 @@
 "notes": null,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
-"updated_at": "2026-10-31T20:46:51.25499+00:00"
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"search_text": "rua batista de carvalho, 450, bauru/sp"
 }
 ],
 "catalog_items": [
@@ -2475,6 +2483,99 @@
 "metadata": {},
 "deleted_at": null,
 "created_at": "2026-10-01T10:00:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000100",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.created",
+"entity_type": "quote",
+"entity_id": "4b416710-538f-4e33-8b7f-883903d30776",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-31T19:40:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000101",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.send",
+"entity_type": "quote",
+"entity_id": "4b416710-538f-4e33-8b7f-883903d30776",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000102",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.created",
+"entity_type": "quote",
+"entity_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-30T14:10:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000103",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.send",
+"entity_type": "quote",
+"entity_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-30T14:30:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000104",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.approve",
+"entity_type": "quote",
+"entity_id": "852a9b43-de08-4f2d-9efc-e4739c411b7b",
+"metadata": {
+"requested_by": "Sr. Osvaldo, síndico (por telefone)",
+"note": "Pode começar na segunda."
+},
+"deleted_at": null,
+"created_at": "2026-10-31T21:20:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000105",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.created",
+"entity_type": "quote",
+"entity_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-29T13:00:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000106",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": "12288cf9-f7d5-47e2-a351-9960c80d0c89",
+"action": "quote.send",
+"entity_type": "quote",
+"entity_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"metadata": {},
+"deleted_at": null,
+"created_at": "2026-10-29T13:15:00+00:00"
+},
+{
+"id": "00000000-0000-4000-8000-000000000107",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"user_id": null,
+"action": "quote.approved_by_client",
+"entity_type": "quote",
+"entity_id": "bb59cd92-e495-4507-9952-e5d23daa0262",
+"metadata": {
+"requested_by": "Dra. Helena Prado"
+},
+"deleted_at": null,
+"created_at": "2026-10-31T21:05:00+00:00"
 }
 ],
 "suppliers": [
