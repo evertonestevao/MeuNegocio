@@ -87,15 +87,16 @@ export function createSupabaseClientRepository(client: SupabaseClient): ClientRe
     async listForPicker(companyId) {
       const { data, error } = await client
         .from("clients")
-        .select("id, name, locations:client_locations(id, name, deleted_at)")
+        .select("id, name, document, locations:client_locations(id, name, deleted_at)")
         .eq("company_id", companyId)
         .is("deleted_at", null)
         .order("name");
       if (error) fail(error);
-      type Row = { id: string; name: string; locations: { id: string; name: string; deleted_at: string | null }[] };
+      type Row = { id: string; name: string; document: string | null; locations: { id: string; name: string; deleted_at: string | null }[] };
       return ((data ?? []) as Row[]).map((row) => ({
         id: row.id,
         name: row.name,
+        document: row.document,
         locations: row.locations.filter((location) => !location.deleted_at).map(({ id, name }) => ({ id, name })),
       }));
     },

@@ -146,6 +146,8 @@ export interface ClientLocation {
 export interface ClientPickerOption {
   id: string;
   name: string;
+  /** CPF ou CNPJ, para achar o cliente pelo número também. */
+  document?: string | null;
   locations: { id: string; name: string }[];
 }
 
@@ -239,8 +241,16 @@ export interface Quote {
   updated_at: string;
 }
 
+/** Aberturas do link pelo cliente (sem a própria empresa nem robôs de prévia). */
+export interface QuoteView {
+  first_viewed_at: string;
+  last_viewed_at: string;
+  view_count: number;
+}
+
 export interface QuoteListItem extends Quote {
   client_name: string | null;
+  view: QuoteView | null;
 }
 
 export interface QuoteItem {

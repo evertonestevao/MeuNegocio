@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { getDemoProfile } from "@/server/demo/mode";
 import { QuoteActions } from "@/features/quotes/components/quote-actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
-import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { QUOTE_STATUS_VARIANT, QUOTE_STATUS_LABEL, formatQuoteNumber, quoteViewText } from "@/features/quotes/status";
 import { ReceivableList } from "@/features/receivables/components/receivable-list";
 import { ServiceCostSection } from "@/features/service-costs/components/service-cost-section";
 import { VisitRow } from "@/features/visits/components/visit-row";
@@ -41,7 +41,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const service = await getQuoteService();
   const detail = await service.getDetail(actor, id);
   if (!detail) notFound();
-  const { quote, items, responses, revenue } = detail;
+  const { quote, items, responses, revenue, view } = detail;
 
   const visits = await (await getVisitService()).list(actor, { quoteId: quote.id });
   const [{ clients, catalog, profile }, clientDetail, allowsPublicLink, companyTaxRateBps] = await Promise.all([
@@ -100,6 +100,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     quote.refused_at ? `recusado em ${formatTimestamp(quote.refused_at, profile.timezone)}` : null,
     quote.closed_at ? `fechado em ${formatTimestamp(quote.closed_at, profile.timezone)}` : null,
   ].filter(Boolean);
+  const viewText = quoteViewText(quote.status, view, profile.timezone);
 
   return (
     <div className="flex flex-col gap-6">
@@ -112,6 +113,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{dates.join(" · ")}</p>
+        {viewText ? (
+          <p className={`flex items-center gap-1.5 text-sm ${view ? "text-foreground" : "text-muted-foreground"}`}>
+            {view ? <Eye className="size-4 shrink-0 text-info" aria-hidden /> : <EyeOff className="size-4 shrink-0" aria-hidden />}
+            {viewText}
+          </p>
+        ) : null}
         {quote.status === "draft" ? null : (
           <p className="rounded-lg bg-muted px-3 py-2 text-sm">
             Este orçamento está {QUOTE_STATUS_LABEL[quote.status].toLowerCase()} e não pode mais ser editado. Use “Duplicar”

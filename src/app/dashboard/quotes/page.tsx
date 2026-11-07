@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, Plus } from "lucide-react";
+import { Eye, EyeOff, FileText, Plus, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { QUOTE_STATUS_VARIANT, QUOTE_STATUSES, QUOTE_STATUS_LABEL, formatQuoteNumber } from "@/features/quotes/status";
+import { Input } from "@/components/ui/input";
+import { QUOTE_STATUS_VARIANT, QUOTE_STATUSES, QUOTE_STATUS_LABEL, formatQuoteNumber, quoteViewTag } from "@/features/quotes/status";
 import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { getQuoteService } from "@/server/quotes";
@@ -20,16 +21,19 @@ export const metadata: Metadata = { title: "Orçamentos" };
 export default async function QuotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
 }) {
-  const { page, status: rawStatus } = await searchParams;
+  const { page, status: rawStatus, q } = await searchParams;
+  const search = q?.trim() ?? "";
   const { active } = await getActiveTenant();
   if (!active) return null;
   if (!permissionService.canManageQuotes(active.role)) redirect("/dashboard");
 
   const status = QUOTE_STATUSES.includes(rawStatus as QuoteStatus) ? (rawStatus as QuoteStatus) : null;
   const service = await getQuoteService();
-  const quotes = await service.list({ companyId: active.id, role: active.role }, { page: Number(page) || 1, status });
+  const quotes = await service.list({ companyId: active.id, role: active.role }, { page: Number(page) || 1, status, search });
+  // Trocar de situação mantém a busca.
+  const withSearch = (path: string) => (search ? `${path}${path.includes("?") ? "&" : "?"}q=${encodeURIComponent(search)}` : path);
   const totalCount = Object.values(quotes.counts).reduce((sum, count) => sum + (count ?? 0), 0);
   const filterClass = (selected: boolean) =>
     selected
@@ -48,12 +52,20 @@ export default async function QuotesPage({
         </Button>
       </div>
 
+      <form action="/dashboard/quotes" className="flex max-w-md gap-2" role="search">
+        {status ? <input type="hidden" name="status" value={status} /> : null}
+        <Input name="q" defaultValue={search} placeholder="Buscar por cliente, número ou título" aria-label="Buscar orçamentos" />
+        <Button type="submit" variant="outline">
+          <Search className="size-4" /> Buscar
+        </Button>
+      </form>
+
       <nav className="flex flex-wrap gap-2" aria-label="Filtrar por situação">
-        <Link scroll={false} href="/dashboard/quotes" className={filterClass(status === null)}>
+        <Link scroll={false} href={withSearch("/dashboard/quotes")} className={filterClass(status === null)}>
           Todos <span className="ml-1 text-xs opacity-70">{totalCount}</span>
         </Link>
         {QUOTE_STATUSES.map((value) => (
-          <Link key={value} scroll={false} href={`/dashboard/quotes?status=${value}`} className={filterClass(status === value)}>
+          <Link key={value} scroll={false} href={withSearch(`/dashboard/quotes?status=${value}`)} className={filterClass(status === value)}>
             {QUOTE_STATUS_LABEL[value]} <span className="ml-1 text-xs opacity-70">{quotes.counts[value] ?? 0}</span>
           </Link>
         ))}
@@ -62,8 +74,8 @@ export default async function QuotesPage({
       {quotes.items.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={status ? "Nenhum orçamento nesse filtro" : "Nenhum orçamento ainda"}
-          description="Monte o primeiro orçamento com produtos e horas de serviço."
+          title={search ? "Nenhum orçamento encontrado" : status ? "Nenhum orçamento nesse filtro" : "Nenhum orçamento ainda"}
+          description={search ? "Tente o nome do cliente, o número ou uma palavra do título." : "Monte o primeiro orçamento com produtos e horas de serviço."}
         />
       ) : (
         <>
@@ -90,6 +102,7 @@ export default async function QuotesPage({
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
+                      <ViewTag tag={quoteViewTag(quote.status, quote.view, "America/Sao_Paulo")} />
                       <Badge variant={QUOTE_STATUS_VARIANT[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
                       <span className="text-base font-semibold tabular-nums">{formatCents(quote.total_cents)}</span>
                     </div>
@@ -103,9 +116,22 @@ export default async function QuotesPage({
             pageSize={quotes.pageSize}
             total={quotes.total}
             basePath="/dashboard/quotes"
+            params={{ status, q: search }}
           />
         </>
       )}
     </div>
+  );
+}
+
+/** Se o cliente já abriu o link: ajuda a decidir de quem cobrar resposta. */
+function ViewTag({ tag }: { tag: { label: string; seen: boolean } | null }) {
+  if (!tag) return null;
+  const Icon = tag.seen ? Eye : EyeOff;
+  return (
+    <span className={`flex items-center gap-1 text-xs ${tag.seen ? "text-info" : "text-muted-foreground"}`}>
+      <Icon className="size-3.5" aria-hidden />
+      {tag.label}
+    </span>
   );
 }

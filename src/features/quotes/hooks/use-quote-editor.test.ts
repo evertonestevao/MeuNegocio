@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientUnitPriceCents, discountInputToCents } from "./use-quote-editor";
+import { clientUnitPriceCents, discountInputToCents, percentDiscountCents } from "./use-quote-editor";
 
 describe("preço que o cliente vê", () => {
   it("soma o valor a mais em % ou em R$ ao valor digitado", () => {
@@ -22,5 +22,19 @@ describe("desconto digitado", () => {
 
   it("texto que não é valor fica inválido, para o salvar recusar", () => {
     expect(discountInputToCents("abc")).toBe(-1);
+  });
+});
+
+describe("desconto em %", () => {
+  it("vira R$ sobre o subtotal, arredondado ao centavo", () => {
+    expect(percentDiscountCents(328_000, "10")).toBe(32_800);
+    expect(percentDiscountCents(181_475, "2,5")).toBe(4_537);
+    expect(percentDiscountCents(100_000, "")).toBe(0);
+  });
+
+  it("acima de 100% passa do subtotal, para o salvar recusar; texto inválido fica -1", () => {
+    expect(percentDiscountCents(10_000, "150")).toBe(15_000);
+    expect(percentDiscountCents(10_000, "abc")).toBe(-1);
+    expect(percentDiscountCents(10_000, "-5")).toBe(-1);
   });
 });

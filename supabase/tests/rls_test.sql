@@ -379,7 +379,7 @@ begin
     select 'authenticated', t, 'SELECT' from unnest(array[
       'roles', 'plans', 'terms_versions', 'platform_admins', 'plan_audit_log', 'signup_leads', 'company_declarations', 'company_cnpj_checks', 'abuse_reports', 'company_suspension_events', 'profiles', 'companies',
       'clients', 'client_contacts', 'client_locations', 'company_profiles', 'catalog_items', 'catalog_item_costs',
-      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'revenues', 'company_monthly_revenues', 'receivables', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
+      'quotes', 'quote_items', 'quote_item_costs', 'quote_responses', 'quote_views', 'revenues', 'company_monthly_revenues', 'receivables', 'employees', 'employee_payment_details', 'visits', 'visit_employees', 'work_orders', 'work_order_photos',
       'expense_categories', 'expense_templates', 'expenses', 'suppliers', 'time_entries', 'time_entry_dismissals',
       'audit_logs', 'terms_acceptances', 'user_consents', 'company_members',
       'company_invites', 'subscriptions', 'settings', 'reseller_settings', 'resellers',
@@ -819,6 +819,59 @@ begin
   end;
 end $$;
 
+-- Aberturas do link (quote_views): só o servidor grava, pelo token; rascunho não conta e recarregar
+-- não soma; quem é do escritório da empresa lê, outra empresa não.
+reset role;
+do $$
+declare v_token text; v_quote uuid; n int;
+begin
+  select id, public_token into v_quote, v_token from public.quotes
+  where company_id = 'c1c1c1c1-0000-4000-8000-000000000001' and status <> 'draft' and deleted_at is null limit 1;
+  if v_quote is null then raise exception 'FALHA aberturas: sem orçamento enviado para testar'; end if;
+  perform public.record_quote_view(v_token);
+  perform public.record_quote_view(v_token);
+  select view_count into n from public.quote_views where quote_id = v_quote;
+  if n is distinct from 1 then raise exception 'FALHA aberturas: recarregar contou de novo (%)', n; end if;
+
+  select public_token into v_token from public.quotes
+  where company_id = 'c1c1c1c1-0000-4000-8000-000000000001' and status = 'draft' limit 1;
+  perform public.record_quote_view(v_token);
+  if exists (select 1 from public.quote_views qv join public.quotes q on q.id = qv.quote_id where q.status = 'draft') then
+    raise exception 'FALHA aberturas: rascunho registrou abertura';
+  end if;
+
+  if has_function_privilege('authenticated', 'public.record_quote_view(text)', 'execute')
+    or has_function_privilege('anon', 'public.record_quote_view(text)', 'execute') then
+    raise exception 'FALHA aberturas: client grava abertura';
+  end if;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"b2b2b2b2-0000-4000-8000-000000000002","email":"rls-bob@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.quote_views where company_id = 'c1c1c1c1-0000-4000-8000-000000000001';
+  if n <> 0 then raise exception 'FALHA aberturas: outra empresa leu'; end if;
+  begin
+    insert into public.quote_views (quote_id, company_id)
+    select id, company_id from public.quotes limit 1;
+    raise exception 'FALHA aberturas: client gravou direto';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('request.jwt.claims',
+  '{"sub":"a1a1a1a1-0000-4000-8000-000000000001","email":"rls-alice@test.local","role":"authenticated"}', true);
+do $$
+declare n int;
+begin
+  select count(*) into n from public.quote_views;
+  if n <> 1 then raise exception 'FALHA aberturas: dona da empresa deveria ver 1 abertura, viu %', n; end if;
+end $$;
+
+reset role;
 -- Link público (service_role): token é a credencial, rascunho não abre, a resposta só vale uma
 -- vez e dentro da validade; o job expira os vencidos.
 reset role;

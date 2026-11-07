@@ -134,6 +134,7 @@ export default async function ClientsPage({
             pageSize={clients.pageSize}
             total={clients.total}
             basePath="/dashboard/clients"
+            params={{ q: search }}
           />
         </>
       )}

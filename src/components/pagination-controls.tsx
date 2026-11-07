@@ -11,16 +11,24 @@ export function PaginationControls({
   pageSize,
   total,
   basePath,
+  params = {},
 }: {
   page: number;
   pageSize: number;
   total: number;
   basePath: string;
+  /** Filtros e busca da tela: continuam valendo nas outras páginas. */
+  params?: Record<string, string | null | undefined>;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (totalPages <= 1) return null;
 
-  const href = (target: number) => `${basePath}?page=${target}`;
+  const href = (target: number) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+    query.set("page", String(target));
+    return `${basePath}?${query.toString()}`;
+  };
 
   return (
     <nav className="flex items-center justify-between gap-2" aria-label="Paginação">

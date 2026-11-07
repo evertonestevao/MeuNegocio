@@ -174,14 +174,16 @@ class DemoQuery implements PromiseLike<Result> {
   gt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) > 0); }
   lt(column: string, value: unknown) { return this.where((row) => compare(valueAt(row, column), value) < 0); }
   not(column: string, _operator: string, value: unknown) { return this.where((row) => (valueAt(row, column) ?? null) !== value); }
-  /** Só a busca: search_text.ilike."%x%",id.in.(a,b). */
+  /** Só a busca: search_text.ilike."%x%",id.in.(a,b),number.eq.12. */
   or(expression: string) {
     const terms = [...expression.matchAll(/(\w+)\.ilike\."?%?((?:[^"%]|\\.)*)%?"?/g)].map((match) => ({ column: match[1], text: match[2].toLowerCase() }));
     const lists = [...expression.matchAll(/(\w+)\.in\.\(([^)]*)\)/g)].map((match) => ({ column: match[1], values: match[2].split(",") }));
+    const equals = [...expression.matchAll(/(\w+)\.eq\.([^,]+)/g)].map((match) => ({ column: match[1], value: match[2] }));
     return this.where(
       (row) =>
         terms.some(({ column, text }) => String(row[column] ?? "").toLowerCase().includes(text)) ||
-        lists.some(({ column, values }) => values.includes(String(row[column]))),
+        lists.some(({ column, values }) => values.includes(String(row[column]))) ||
+        equals.some(({ column, value }) => String(row[column]) === value),
     );
   }
   filter(column: string, _operator: string, value: unknown) { return this.eq(column, value); }

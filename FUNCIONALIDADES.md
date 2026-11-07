@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-06
+**Última atualização:** 2026-11-07
 
 ## Sumário
 
@@ -437,6 +437,10 @@ Código: `src/services/catalogService.ts`, `src/server/actions/catalog.ts`, `src
 
 Telas em `/dashboard/quotes`. O técnico não acessa.
 
+**Lista:** filtro por situação e busca por cliente (nome sem diferença de acento), número ("12", "0012" ou "#12") e palavra do título (`quotes.search_text`, coluna gerada). Busca e filtro continuam valendo ao trocar de página. Enviados mostram se o cliente já abriu o link ("Visto em 07/11" ou "Não aberto").
+
+**Cliente abriu o link** (tabela `quote_views`, migration `20261107100000`): ao abrir o link de um orçamento que não é rascunho, o servidor grava a primeira e a última abertura e quantas vezes abriu, contando de novo só depois de 30 minutos (recarregar não soma). Não contam a própria empresa conferindo o link logada ("Ver como o cliente") nem robôs que montam a prévia quando o link é colado no WhatsApp ou em redes sociais. A página do orçamento diz "Visto pelo cliente em 07/11/2026 às 14:32" (e quantas vezes abriu) ou, enviado e nunca aberto, "O cliente ainda não abriu o link." Owner, admin e member veem; só o servidor grava (função `record_quote_view`, só com service_role). Falha ao gravar não impede o cliente de ver o orçamento. Isolamento testado em `supabase/tests/rls_test.sql`.
+
 **Cálculo:** preço fechado = quantidade × preço; por hora = horas × pessoas (mínimo 1) × valor por hora. Arredonda só no fim de cada linha. Total = subtotal − desconto, nunca negativo. O banco recalcula ao salvar. Valores em centavos.
 
 | De | Para | Quem | Regras |
@@ -453,6 +457,8 @@ Outras regras:
 
 - **Número** sequencial por empresa, gerado no banco, sem colisão.
 - **Local do serviço:** cliente com um local só já vem com ele escolhido, ao trocar de cliente e ao abrir o orçamento pela tela do cliente.
+- **Escolher o cliente:** com mais de 8 clientes, um campo "Filtrar por nome ou CPF/CNPJ" acima da lista reduz as opções, sem diferença de acento; com um só resultado e nenhum escolhido, ele já fica escolhido.
+- **Desconto em R$ ou %:** o botão ao lado do campo troca o tipo (e limpa o valor). Em %, a tela mostra quanto dá em R$ sobre o subtotal, arredondado ao centavo, e é esse valor em R$ que vai para o banco, o PDF e o link. Acima de 100% passa do subtotal e o salvar recusa.
 - **Só rascunho é editável.** Os demais são somente leitura; "Duplicar" cria um rascunho novo com número e link próprios.
 - **Salvar** exige cliente, inclusive no primeiro rascunho ("Escolha o cliente."), e desconto até o subtotal ("O desconto não pode passar do subtotal (R$ X)."); campo de desconto apagado vale zero. A regra é a mesma no navegador e no servidor.
 - **Alterações não salvas:** o editor mostra "Alterações não salvas" ao lado de "Salvar rascunho" e pede confirmação antes de sair da tela por um link ou de fechar ou recarregar a aba. Enviar, PDF e WhatsApp usam sempre o último salvo.

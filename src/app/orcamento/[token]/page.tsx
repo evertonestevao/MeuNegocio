@@ -11,7 +11,7 @@ import { formatDate, formatTimestamp } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { brand } from "@/config/brand";
 import { DEMO_QUOTE_TOKEN } from "@/config/demo";
-import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository, getPublicQuoteSignatureUrl } from "@/server/quotes";
+import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository, getPublicQuoteService, getPublicQuoteSignatureUrl, viewerCompanyIds } from "@/server/quotes";
 import { createRateLimiter } from "@/server/rateLimit";
 import { formatPhone } from "@/lib/masks";
 
@@ -38,6 +38,12 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
 
   const quote = isDemo ? await getDemoPublicQuote(token) : await getPublicQuoteRepository().getByToken(token);
   if (!quote) notFound();
+  if (!isDemo) {
+    await getPublicQuoteService().recordView(token, quote, {
+      userAgent: requestHeaders.get("user-agent"),
+      memberOfCompanyIds: await viewerCompanyIds(),
+    });
+  }
   // Empresa sem assinatura (teste acabou): o cliente ainda vê o orçamento que recebeu, mas não responde por aqui.
   const respondsOnline = isDemo || (await canUsePublicApproval(quote.companyId));
   const { response } = quote;

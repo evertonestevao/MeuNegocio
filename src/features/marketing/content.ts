@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v11";
+export const LANDING_SCREENS = "/landing/v12";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -45,7 +45,7 @@ export const showcases: {
     eyebrow: "Orçamentos",
     title: "Saiba o que está parado e o que falta fechar",
     description: "Cada orçamento mostra em que etapa está, do rascunho ao fechamento. Nada fica perdido em uma conversa antiga.",
-    points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar e assinar sem criar conta", "Margem visível só para quem pode ver"],
+    points: ["Envio em PDF ou pelo WhatsApp", "Link para o cliente aprovar e assinar sem criar conta", "Veja quando o cliente abriu o link", "Margem visível só para quem pode ver"],
     image: `${LANDING_SCREENS}/orcamentos.jpg`,
     alt: "Tela de orçamentos com a lista por situação: rascunho, enviado, aprovado e fechado.",
     device: "browser",
@@ -165,7 +165,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: FileText,
     title: "Orçamentos",
     description:
-      "Com o logo da sua empresa, número automático, validade, desconto e margem estimada só para quem pode ver. O vencido expira sozinho, e você sabe o que está parado esperando resposta.",
+      "Com o logo da sua empresa, número automático, validade, desconto em R$ ou % e margem estimada só para quem pode ver. Você vê quando o cliente abriu o link, o vencido expira sozinho e você sabe o que está parado esperando resposta.",
   },
   {
     icon: CalendarDays,

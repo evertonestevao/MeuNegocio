@@ -1,5 +1,6 @@
 import { MAX_IMAGE_BYTES, detectImageType } from "@/features/work-orders/schemas";
 import { AppError } from "@/lib/errors";
+import { isLinkPreviewAgent } from "@/lib/linkPreview";
 import type { PublicQuoteRepository } from "./quoteService";
 
 /**
@@ -28,8 +29,29 @@ export interface PublicResponseInput {
   signature: Uint8Array | null;
 }
 
+export interface PublicQuoteViewer {
+  userAgent: string | null;
+  /** Empresas de quem está logado neste navegador; vazio para o cliente, que não tem conta. */
+  memberOfCompanyIds: string[];
+}
+
 export function createPublicQuoteService({ repo, files, canUsePublicApproval, newId }: PublicQuoteServiceDeps) {
   return {
+    /**
+     * Abertura do link pelo cliente. Não conta a própria empresa conferindo o link ("Ver como o
+     * cliente") nem robôs que montam a prévia quando o link é colado no WhatsApp. Falha ao gravar
+     * não impede o cliente de ver o orçamento.
+     */
+    async recordView(token: string, quote: { companyId: string }, viewer: PublicQuoteViewer): Promise<boolean> {
+      if (isLinkPreviewAgent(viewer.userAgent) || viewer.memberOfCompanyIds.includes(quote.companyId)) return false;
+      try {
+        await repo.recordView(token);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
     async respond(token: string, input: PublicResponseInput) {
       const quote = await repo.getByToken(token);
       if (!quote || !(await canUsePublicApproval(quote.companyId))) {

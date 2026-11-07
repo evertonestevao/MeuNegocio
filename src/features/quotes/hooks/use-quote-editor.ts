@@ -56,6 +56,19 @@ export function discountInputToCents(value: string): number {
   return value.trim() === "" ? 0 : (parseMoneyToCents(value) ?? -1);
 }
 
+export type DiscountMode = "amount" | "percent";
+
+/**
+ * Desconto em % sobre o subtotal, arredondado ao centavo. Guarda-se sempre em R$: PDF, link e
+ * banco não mudam. Acima de 100% passa do subtotal e o salvar recusa; texto inválido vira -1.
+ */
+export function percentDiscountCents(subtotal: number, value: string): number {
+  if (value.trim() === "") return 0;
+  const percent = Number(value.trim().replace(",", "."));
+  if (!Number.isFinite(percent) || percent < 0) return -1;
+  return Math.round((subtotal * percent) / 100);
+}
+
 let nextKey = 0;
 const newKey = () => `line-${(nextKey += 1)}`;
 
@@ -75,6 +88,12 @@ export function useQuoteEditor(params: {
   const [title, setTitle] = useState(quote?.title ?? "");
   const [validUntil, setValidUntil] = useState(quote ? (quote.valid_until ?? "") : (initial.validUntil ?? ""));
   const [discount, setDiscount] = useState(quote ? centsToMoneyInput(quote.discount_cents) : "0");
+  const [discountMode, setDiscountModeState] = useState<DiscountMode>("amount");
+  /** Trocar entre R$ e % limpa o campo: 10 em R$ não é 10%. */
+  function setDiscountMode(mode: DiscountMode) {
+    setDiscountModeState(mode);
+    setDiscount("");
+  }
   const [notes, setNotes] = useState(quote ? (quote.notes ?? "") : initial.notes);
   // Condições de pagamento: "" é a combinar.
   const agreed = quote?.payment_plan ?? null;
@@ -154,13 +173,15 @@ export function useQuoteEditor(params: {
 
   const totals = useMemo(() => {
     const calc = lines.map(toCalcLine);
-    const discountCents = parseMoneyToCents(discount) ?? 0;
+    const subtotal = subtotalCents(calc);
+    const discountCents = Math.max(0, discountMode === "percent" ? percentDiscountCents(subtotal, discount) : discountInputToCents(discount));
     const total = totalCents(calc, discountCents);
     // Com "a mais", o custo é o valor digitado; sem ele, o custo do catálogo, quando houver.
     const lineCost = (line: EditorLine) => (parseMarkup(line) !== null ? (parseMoneyToCents(line.unitPrice) ?? 0) : catalogCost(line.catalogItemId));
     const cost = estimatedCostCents(lines.map((line, index) => ({ ...calc[index], costCents: lineCost(line) })));
     return {
-      subtotal: subtotalCents(calc),
+      subtotal,
+      discountCents,
       total,
       lineTotal: (line: EditorLine) => lineTotalCents(toCalcLine(line)),
       clientUnitPrice: clientUnitPriceCents,
@@ -180,7 +201,7 @@ export function useQuoteEditor(params: {
     };
     // catalogCost depende só do catálogo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, discount, canSeeCost, catalog, taxRateBps]);
+  }, [lines, discount, discountMode, canSeeCost, catalog, taxRateBps]);
 
   function toInput(): QuoteInput {
     return {
@@ -188,7 +209,10 @@ export function useQuoteEditor(params: {
       locationId,
       title,
       validUntil: validUntil || null,
-      discountCents: discountInputToCents(discount),
+      discountCents:
+        discountMode === "percent"
+          ? percentDiscountCents(subtotalCents(lines.map(toCalcLine)), discount)
+          : discountInputToCents(discount),
       notes,
       paymentPlan: planKind
         ? {
@@ -218,7 +242,7 @@ export function useQuoteEditor(params: {
 
   return {
     clientId, chooseClient, locationId, setLocationId, title, setTitle, validUntil, setValidUntil,
-    discount, setDiscount, notes, setNotes, lines, addFromCatalog, addCustom, updateLine, removeLine, totals, toInput,
+    discount, setDiscount, discountMode, setDiscountMode, notes, setNotes, lines, addFromCatalog, addCustom, updateLine, removeLine, totals, toInput,
     plan: { kind: planKind, setKind: setPlanKind, method: planMethod, setMethod: setPlanMethod, entry: planEntry, setEntry: setPlanEntry,
       entryMethod: planEntryMethod, setEntryMethod: setPlanEntryMethod, count: planCount, setCount: setPlanCount },
   };

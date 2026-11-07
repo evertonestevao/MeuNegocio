@@ -19,6 +19,7 @@ import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { CLIENT_FILTER_FROM, filterClientOptions } from "@/features/clients/picker";
 import { useQuoteEditor, type EditorLine } from "../hooks/use-quote-editor";
 import { quoteSchema } from "../schemas";
 
@@ -52,6 +53,8 @@ export function QuoteEditor({
   const readOnly = quote !== null && quote.status !== "draft";
   const client = clients.find((candidate) => candidate.id === editor.clientId);
   const activeCatalog = catalog.filter((item) => item.active);
+  const [clientFilter, setClientFilter] = useState("");
+  const visibleClients = filterClientOptions(clients, clientFilter, editor.clientId);
 
   // Alterado desde o último salvamento: o que está na tela não é o que o cliente recebe.
   const current = JSON.stringify(editor.toInput());
@@ -98,6 +101,24 @@ export function QuoteEditor({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="quote-client">Cliente</Label>
+              {!readOnly && clients.length > CLIENT_FILTER_FROM ? (
+                <Input
+                  id="quote-client-filter"
+                  type="search"
+                  value={clientFilter}
+                  onChange={(event) => {
+                    const query = event.target.value;
+                    setClientFilter(query);
+                    // Um só resultado e ninguém escolhido ainda: já escolhe.
+                    const matches = filterClientOptions(clients, query, null);
+                    if (!editor.clientId && query.trim() && matches.length === 1) {
+                      editor.chooseClient(matches[0].id, matches[0].locations.map((location) => location.id));
+                    }
+                  }}
+                  placeholder="Filtrar por nome ou CPF/CNPJ"
+                  aria-label="Filtrar clientes"
+                />
+              ) : null}
               <select
                 id="quote-client"
                 className={SELECT_CLASS}
@@ -109,8 +130,8 @@ export function QuoteEditor({
                   editor.chooseClient(id, locations.map((location) => location.id));
                 }}
               >
-                <option value="">Escolha o cliente</option>
-                {clients.map((option) => (
+                <option value="">{visibleClients.length === 0 ? "Nenhum cliente com esse filtro" : "Escolha o cliente"}</option>
+                {visibleClients.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
@@ -296,14 +317,51 @@ export function QuoteEditor({
             <CardTitle>Desconto e condições</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex max-w-40 flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="quote-discount">Desconto</Label>
-              <MaskedInput mask="money"
-                id="quote-discount"
-                disabled={readOnly}
-                value={editor.discount}
-                onChange={(event) => editor.setDiscount(event.target.value)}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                {editor.discountMode === "amount" ? (
+                  <MaskedInput
+                    mask="money"
+                    id="quote-discount"
+                    disabled={readOnly}
+                    value={editor.discount}
+                    onChange={(event) => editor.setDiscount(event.target.value)}
+                    className="max-w-40"
+                  />
+                ) : (
+                  <Input
+                    id="quote-discount"
+                    inputMode="decimal"
+                    placeholder="Ex.: 10"
+                    disabled={readOnly}
+                    value={editor.discount}
+                    onChange={(event) => editor.setDiscount(event.target.value.replace(/[^\d,]/g, ""))}
+                    className="max-w-28"
+                  />
+                )}
+                {readOnly ? null : (
+                  <div className="flex shrink-0 overflow-hidden rounded-lg border" role="group" aria-label="Valor em reais ou porcentagem">
+                    {(["amount", "percent"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={editor.discountMode === mode}
+                        onClick={() => editor.setDiscountMode(mode)}
+                        className={`min-w-11 px-3 py-1.5 text-sm ${editor.discountMode === mode ? "bg-primary font-medium text-primary-foreground" : "bg-card"}`}
+                      >
+                        {mode === "percent" ? "%" : "R$"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {editor.discountMode === "percent" && editor.totals.discountCents > 0 ? (
+                  <span className="text-sm text-muted-foreground">= {formatCents(editor.totals.discountCents)}</span>
+                ) : null}
+              </div>
+              {editor.discountMode === "percent" ? (
+                <p className="text-xs text-muted-foreground">O cliente vê o desconto em R$, no PDF e no link.</p>
+              ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="quote-notes">Observações e condições (aparecem no PDF)</Label>

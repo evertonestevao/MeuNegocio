@@ -5,9 +5,12 @@ import { createPublicQuoteService } from "./publicQuoteService";
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]);
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 
-function setup(options: { allowed?: boolean; respondFails?: boolean } = {}) {
+function setup(options: { allowed?: boolean; respondFails?: boolean; recordFails?: boolean } = {}) {
   const repo = {
     getByToken: vi.fn(async () => ({ companyId: "co", quoteId: "q1" }) as PublicQuote),
+    recordView: vi.fn(async () => {
+      if (options.recordFails) throw new Error("banco fora");
+    }),
     respond: vi.fn(async () => {
       if (options.respondFails) throw new Error("recusado pelo banco");
       return { companyId: "co", quoteId: "q1" };
@@ -51,5 +54,27 @@ describe("resposta do cliente pelo link", () => {
     const { files, service } = setup({ allowed: false });
     await expect(service.respond("t", { decision: "approved", name: "Ana", comment: "", signature: PNG })).rejects.toMatchObject({ code: "not_found" });
     expect(files.upload).not.toHaveBeenCalled();
+  });
+});
+
+describe("abertura do link", () => {
+  const PHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1";
+
+  it("o cliente abrindo pelo celular conta", async () => {
+    const { repo, service } = setup();
+    expect(await service.recordView("t", { companyId: "co" }, { userAgent: PHONE, memberOfCompanyIds: [] })).toBe(true);
+    expect(repo.recordView).toHaveBeenCalledWith("t");
+  });
+
+  it("a própria empresa e o robô da prévia do WhatsApp não contam", async () => {
+    const { repo, service } = setup();
+    expect(await service.recordView("t", { companyId: "co" }, { userAgent: PHONE, memberOfCompanyIds: ["co"] })).toBe(false);
+    expect(await service.recordView("t", { companyId: "co" }, { userAgent: "WhatsApp/2.23.20.0 A", memberOfCompanyIds: [] })).toBe(false);
+    expect(repo.recordView).not.toHaveBeenCalled();
+  });
+
+  it("falha ao gravar não derruba a página do cliente", async () => {
+    const { service } = setup({ recordFails: true });
+    expect(await service.recordView("t", { companyId: "co" }, { userAgent: PHONE, memberOfCompanyIds: [] })).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import type { CloseQuoteInput, QuoteInput } from "@/features/quotes/schemas";
 import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
 import type { ActorContext } from "@/server/actor";
-import type { CatalogItem, Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, Revenue } from "@/types/database";
+import type { CatalogItem, Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, QuoteView, Revenue } from "@/types/database";
 import type { PublicQuote } from "@/types/quotes";
 import { permissionService } from "./permissionService";
 import { normalizePageParams, type PageParams, type Paginated } from "./tenantService";
@@ -12,13 +12,18 @@ const QUOTES_PAGE_SIZE = 20;
 export type QuoteTransition = "send" | "approve" | "refuse" | "expire" | "reopen";
 
 export interface QuoteRepository {
-  list(companyId: string, params: { offset: number; limit: number; status: QuoteStatus | null; clientId: string | null }): Promise<Paginated<QuoteListItem>>;
+  list(
+    companyId: string,
+    params: { offset: number; limit: number; status: QuoteStatus | null; clientId: string | null; search?: string | null },
+  ): Promise<Paginated<QuoteListItem>>;
   /** Enviados e aprovados: o que está em negociação ou por fechar. */
   listOpen(companyId: string): Promise<QuoteListItem[]>;
   countByStatus(companyId: string): Promise<Partial<Record<QuoteStatus, number>>>;
   /** Conta também os apagados: criar e excluir não libera o limite do mês. */
   countCreatedSince(companyId: string, sinceIso: string): Promise<number>;
   get(companyId: string, quoteId: string): Promise<Quote | null>;
+  /** Quando o cliente abriu o link; null se ainda não abriu. */
+  getView(companyId: string, quoteId: string): Promise<QuoteView | null>;
   listItems(companyId: string, quoteId: string): Promise<QuoteItem[]>;
   listResponses(companyId: string, quoteId: string): Promise<QuoteResponse[]>;
   getRevenue(companyId: string, quoteId: string): Promise<Revenue | null>;
@@ -36,6 +41,8 @@ export interface PublicQuoteRepository {
   getByToken(token: string): Promise<PublicQuote | null>;
   /** A assinatura é obrigatória ao aprovar; o banco confere que o caminho é da pasta do orçamento. */
   respond(token: string, decision: "approved" | "refused", name: string, comment: string, signaturePath: string | null): Promise<{ companyId: string; quoteId: string }>;
+  /** Registra que o link foi aberto. O banco ignora rascunho e não soma recarregamentos seguidos. */
+  recordView(token: string): Promise<void>;
 }
 
 interface QuoteServiceDeps {
@@ -94,7 +101,7 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
   }
 
   return {
-    async list(actor: ActorContext, params: PageParams & { status?: QuoteStatus | null; clientId?: string | null }) {
+    async list(actor: ActorContext, params: PageParams & { status?: QuoteStatus | null; clientId?: string | null; search?: string | null }) {
       requireManage(actor);
       const { page, pageSize, offset } = normalizePageParams(params, QUOTES_PAGE_SIZE);
       const [result, counts] = await Promise.all([
@@ -103,6 +110,7 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
           limit: pageSize,
           status: params.status ?? null,
           clientId: params.clientId ?? null,
+          search: params.search?.trim() || null,
         }),
         repo.countByStatus(actor.companyId),
       ]);
@@ -114,12 +122,13 @@ export function createQuoteService({ repo, getMonthlyLimit, getMonthStart }: Quo
       const quote = await repo.get(actor.companyId, quoteId);
       if (!quote) return null;
       const canClose = permissionService.canCloseQuotes(actor.role);
-      const [items, responses, revenue] = await Promise.all([
+      const [items, responses, revenue, view] = await Promise.all([
         repo.listItems(actor.companyId, quoteId),
         repo.listResponses(actor.companyId, quoteId),
         canClose ? repo.getRevenue(actor.companyId, quoteId) : Promise.resolve(null),
+        repo.getView(actor.companyId, quoteId),
       ]);
-      return { quote, items, responses, revenue };
+      return { quote, items, responses, revenue, view };
     },
 
     async save(actor: ActorContext, quoteId: string | null, input: QuoteInput): Promise<string> {

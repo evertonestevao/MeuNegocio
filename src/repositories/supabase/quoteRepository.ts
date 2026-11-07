@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
+import { searchTerms } from "@/lib/search";
 import { paymentPlanText } from "@/lib/installments";
 import type { QuotePaymentPlan } from "@/types/finance";
 import type { PublicQuoteRepository, QuoteRepository } from "@/services/quoteService";
-import type { Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, Revenue } from "@/types/database";
+import type { Quote, QuoteItem, QuoteListItem, QuoteResponse, QuoteStatus, QuoteView, Revenue } from "@/types/database";
 import type { PublicQuote } from "@/types/quotes";
 
 function fail(error: { code?: string; message?: string } | null): never {
@@ -13,41 +14,64 @@ function fail(error: { code?: string; message?: string } | null): never {
   throw new AppError("internal_error", "Falha ao acessar os orçamentos", error);
 }
 
+const VIEW_EMBED = "view:quote_views(first_viewed_at, last_viewed_at, view_count)";
+
+type ListRow = Quote & { client: { name: string } | null; view: QuoteView | QuoteView[] | null };
+
+/** A abertura vem como objeto ou lista de um, conforme a relação que o banco enxerga. */
+function oneView(view: QuoteView | QuoteView[] | null | undefined): QuoteView | null {
+  return (Array.isArray(view) ? view[0] : view) ?? null;
+}
+
+function toListItem({ client: related, view, ...row }: ListRow): QuoteListItem {
+  return { ...row, client_name: related?.name ?? null, view: oneView(view) };
+}
+
 /** Leitura com RLS; toda escrita passa pelas funções do banco. */
 export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepository {
   return {
-    async list(companyId, { offset, limit, status, clientId }) {
+    async list(companyId, { offset, limit, status, clientId, search }) {
       let query = client
         .from("quotes")
-        .select("*, client:clients(name)", { count: "exact" })
+        .select(`*, client:clients(name), ${VIEW_EMBED}`, { count: "exact" })
         .eq("company_id", companyId)
         .is("deleted_at", null);
       if (status) query = query.eq("status", status);
       if (clientId) query = query.eq("client_id", clientId);
+      if (search) {
+        // Pelo título e pelo nome do cliente, sem acento; número ("12", "0012", "#12") vai direto.
+        const pattern = (value: string) => JSON.stringify(`%${value.replace(/[%_\\]/g, "\\$&")}%`);
+        const { text } = searchTerms(search);
+        const conditions = [`search_text.ilike.${pattern(text)}`];
+        const number = /^#?\s*0*(\d{1,9})$/.exec(search.trim());
+        if (number) conditions.push(`number.eq.${Number(number[1])}`);
+        const { data: clients, error: clientsError } = await client
+          .from("clients")
+          .select("id")
+          .eq("company_id", companyId)
+          .or(`search_text.ilike.${pattern(text)}`)
+          .limit(200);
+        if (clientsError) fail(clientsError);
+        const ids = (clients ?? []).map((row: { id: string }) => row.id);
+        if (ids.length > 0) conditions.push(`client_id.in.(${ids.join(",")})`);
+        query = query.or(conditions.join(","));
+      }
       const { data, error, count } = await query.order("number", { ascending: false }).range(offset, offset + limit - 1);
       if (error) fail(error);
-      type Row = Quote & { client: { name: string } | null };
-      const items: QuoteListItem[] = ((data ?? []) as unknown as Row[]).map(({ client: related, ...row }) => ({
-        ...row,
-        client_name: related?.name ?? null,
-      }));
+      const items: QuoteListItem[] = ((data ?? []) as unknown as ListRow[]).map(toListItem);
       return { items, total: count ?? 0, page: 1, pageSize: limit };
     },
 
     async listOpen(companyId) {
       const { data, error } = await client
         .from("quotes")
-        .select("*, client:clients(name)")
+        .select(`*, client:clients(name), ${VIEW_EMBED}`)
         .eq("company_id", companyId)
         .in("status", ["sent", "approved"])
         .is("deleted_at", null)
         .order("number", { ascending: false });
       if (error) fail(error);
-      type Row = Quote & { client: { name: string } | null };
-      return ((data ?? []) as unknown as Row[]).map(({ client: related, ...row }) => ({
-        ...row,
-        client_name: related?.name ?? null,
-      }));
+      return ((data ?? []) as unknown as ListRow[]).map(toListItem);
     },
 
     async countByStatus(companyId) {
@@ -82,6 +106,18 @@ export function createSupabaseQuoteRepository(client: SupabaseClient): QuoteRepo
         .eq("id", quoteId)
         .is("deleted_at", null)
         .maybeSingle<Quote>();
+      if (error) fail(error);
+      return data;
+    },
+
+    async getView(companyId, quoteId) {
+      const { data, error } = await client
+        .from("quote_views")
+        .select("first_viewed_at, last_viewed_at, view_count")
+        .eq("company_id", companyId)
+        .eq("quote_id", quoteId)
+        .is("deleted_at", null)
+        .maybeSingle<QuoteView>();
       if (error) fail(error);
       return data;
     },
@@ -301,6 +337,11 @@ export function createSupabasePublicQuoteRepository(
       if (error) fail(error);
       const result = data as { company_id: string; quote_id: string };
       return { companyId: result.company_id, quoteId: result.quote_id };
+    },
+
+    async recordView(token) {
+      const { error } = await client.rpc("record_quote_view", { p_token: token });
+      if (error) fail(error);
     },
   };
 }

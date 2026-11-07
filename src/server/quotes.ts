@@ -22,6 +22,7 @@ import { getEmailProvider } from "@/adapters/email";
 import { createQuoteService, type PublicQuoteRepository, type QuoteService } from "@/services/quoteService";
 import { getSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseServerClient } from "./supabase-server";
+import { getTenantService } from "./tenant";
 
 // service_role só para ler o plano: assinaturas são restritas ao proprietário e ao administrador pela RLS, e o
 // member precisa respeitar os mesmos limites da empresa.
@@ -76,6 +77,16 @@ export function getPublicQuoteRepository(): PublicQuoteRepository {
 
 const QUOTE_SIGNATURES_BUCKET = "quote-signatures";
 const SIGNED_URL_SECONDS = 60 * 60;
+
+/** Empresas de quem abriu o link logado neste navegador: a própria empresa conferindo o link não conta. */
+export async function viewerCompanyIds(): Promise<string[]> {
+  try {
+    const companies = await (await getTenantService()).listMyCompanies();
+    return companies.map((company) => company.id);
+  } catch {
+    return [];
+  }
+}
 
 /** Resposta pelo link: o cliente não tem login, então a assinatura é gravada com service_role. */
 export function getPublicQuoteService(): PublicQuoteService {

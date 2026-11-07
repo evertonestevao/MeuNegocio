@@ -30,6 +30,7 @@ function makeRepo() {
     listItems: vi.fn(async () => []),
     listResponses: vi.fn(async () => []),
     getRevenue: vi.fn(async () => null),
+    getView: vi.fn(async () => null),
     save: vi.fn(async () => "q-1"),
     transition: vi.fn(async () => undefined),
     close: vi.fn(async () => undefined),
