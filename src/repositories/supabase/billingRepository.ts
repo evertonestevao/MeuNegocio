@@ -57,14 +57,13 @@ export function createSupabaseBillingRepository(client: SupabaseClient): Billing
       return unwrap(result);
     },
 
-    async hasEverSubscribed(companyId) {
-      // Inclui o histórico apagado: quem já testou ou assinou não ganha outro teste.
-      const { count, error } = await client
-        .from("subscriptions")
-        .select("id", { count: "exact", head: true })
-        .eq("company_id", companyId);
+    async ownerHasSubscriptionHistory(companyId) {
+      // Por dono: o teste vale uma vez por pessoa, não por empresa (criar empresa
+      // não tem limite). A função no banco acha o dono e checa todas as empresas
+      // dele, incluindo o histórico apagado de assinaturas.
+      const { data, error } = await client.rpc("owner_has_subscription_history", { p_company_id: companyId });
       if (error) throw new AppError("internal_error", "Falha ao ler o histórico de assinaturas", error);
-      return (count ?? 0) > 0;
+      return Boolean(data);
     },
 
     async insertSubscription(data) {

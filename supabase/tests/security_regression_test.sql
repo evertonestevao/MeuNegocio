@@ -1161,6 +1161,26 @@ select sec_test.must_pass('owner aponta o logo para a pasta da própria empresa'
     where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
 
 -- ---------------------------------------------------------------------------
+-- P-05: teste grátis por dono. Uma 2ª empresa do dono da Pro (que já tem
+-- assinatura) também acusa histórico; o dono da Free, sem assinatura, não.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.companies (id, name, slug, created_by)
+values ('5ec0c000-0000-4000-8000-0000000000a5', 'Pro Segunda', 'sec-pro-2', '5ec00000-0000-4000-8000-000000000001');
+insert into public.company_members (company_id, user_id, role)
+values ('5ec0c000-0000-4000-8000-0000000000a5', '5ec00000-0000-4000-8000-000000000001', 'owner');
+do $$
+begin
+  if not public.owner_has_subscription_history('5ec0c000-0000-4000-8000-0000000000a5') then
+    raise exception 'FALHA P-05: 2ª empresa do dono que já assinou deveria acusar histórico';
+  end if;
+  if public.owner_has_subscription_history('5ec0c000-0000-4000-8000-000000000002') then
+    raise exception 'FALHA P-05: dono da Free, sem assinatura, não deveria acusar histórico';
+  end if;
+end $$;
+set local role authenticated;
+
+-- ---------------------------------------------------------------------------
 -- P-07: o proprietário não sai da empresa pela função do banco (ficaria sem dono);
 -- um não-dono sai normalmente.
 -- ---------------------------------------------------------------------------

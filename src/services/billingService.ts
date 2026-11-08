@@ -21,7 +21,8 @@ export interface BillingRepository {
   /** Convites pendentes também reservam seat (o convidado vai entrar). */
   countPendingInvites(companyId: string): Promise<number>;
   /** A empresa já teve alguma assinatura, inclusive teste ou histórico apagado? Teste grátis é um só. */
-  hasEverSubscribed(companyId: string): Promise<boolean>;
+  /** Por dono: o dono da empresa já testou ou assinou em alguma empresa dele? */
+  ownerHasSubscriptionHistory(companyId: string): Promise<boolean>;
 }
 
 /** Fotografia do uso de seats de uma empresa. */
@@ -309,17 +310,18 @@ export function createBillingService(repo: BillingRepository) {
       hasAccess,
       inCardlessTrial: cardless,
       trialEndsAt: cardless ? subscription!.current_period_end : null,
-      trialAvailable: !(await repo.hasEverSubscribed(companyId)),
+      trialAvailable: !(await repo.ownerHasSubscriptionHistory(companyId)),
     };
   }
 
   /**
-   * Teste de 7 dias sem cartão, com o plano completo. Um por empresa. Grava com service_role:
-   * quem chama já conferiu que o ator é o proprietário.
+   * Teste de 7 dias sem cartão, com o plano completo. Um por DONO (não por empresa:
+   * criar empresa não tem limite). Grava com service_role: quem chama já conferiu
+   * que o ator é o proprietário.
    */
   async function startCardlessTrial(companyId: string, now: Date = new Date()): Promise<Subscription> {
-    if (await repo.hasEverSubscribed(companyId)) {
-      throw new AppError("conflict", "Esta empresa já usou o teste grátis. Assine para continuar.");
+    if (await repo.ownerHasSubscriptionHistory(companyId)) {
+      throw new AppError("conflict", "Você já usou o teste grátis. Assine para continuar.");
     }
     const plan = await repo.getPlanByCode(TRIAL_PLAN_CODE);
     if (!plan) throw new AppError("internal_error", "Plano do teste não encontrado", TRIAL_PLAN_CODE);

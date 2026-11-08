@@ -92,7 +92,9 @@ function makeRepo(state: {
       Object.assign(row, data);
       return row;
     },
-    async hasEverSubscribed(companyId) {
+    async ownerHasSubscriptionHistory(companyId) {
+      // No teste há uma empresa só, então por-dono e por-empresa coincidem; a
+      // lógica real por-dono vive na função do banco (coberta no teste de RLS).
       return state.subscriptions.some((s) => s.company_id === companyId);
     },
   };
