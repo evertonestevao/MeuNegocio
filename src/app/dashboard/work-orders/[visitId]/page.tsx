@@ -23,7 +23,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ visi
   if (!sheet) notFound();
 
   const [profile, files, planAllows] = await Promise.all([
-    (await getCompanyProfileService()).get(active.id),
+    (await getCompanyProfileService()).getForDocument(active.id),
     service.signFiles(sheet),
     service.canUse(actor),
   ]);

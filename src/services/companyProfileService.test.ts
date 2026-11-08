@@ -5,13 +5,22 @@ const VALID = { cnpj: "", phone: "", email: "", address: "", quoteValidityDays: 
 
 describe("dados da empresa", () => {
   it("usa padrões quando a empresa não preencheu", async () => {
-    const service = createCompanyProfileService({ get: async () => null, upsert: vi.fn() });
+    const service = createCompanyProfileService({ get: async () => null, getForDocument: async () => null, upsert: vi.fn() });
     expect((await service.get("co")).quote_validity_days).toBe(15);
+  });
+
+  it("subconjunto de contato (técnico) usa padrões e não traz dado financeiro", async () => {
+    const service = createCompanyProfileService({ get: async () => null, getForDocument: async () => null, upsert: vi.fn() });
+    const doc = await service.getForDocument("co");
+    expect(doc.timezone).toBe("America/Sao_Paulo");
+    expect(doc).not.toHaveProperty("tax_rate_bps");
+    expect(doc).not.toHaveProperty("card_fee_credit_bps");
+    expect(doc).not.toHaveProperty("target_margin_percent");
   });
 
   it("só owner e admin editam", async () => {
     const upsert = vi.fn(async () => undefined);
-    const service = createCompanyProfileService({ get: async () => null, upsert });
+    const service = createCompanyProfileService({ get: async () => null, getForDocument: async () => null, upsert });
     const input = companyProfileSchema.parse(VALID);
     await expect(service.save({ companyId: "co", role: "member" }, input)).rejects.toMatchObject({ code: "forbidden" });
     await service.save({ companyId: "co", role: "admin" }, input);

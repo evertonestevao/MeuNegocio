@@ -359,6 +359,14 @@ function callRpc(name: string, args: Row): Result {
     }
     case "get_company_tax":
       return ok(demoCompanyTax((fixtures() as unknown as { tables: Record<string, Row[]> }).tables));
+    case "get_company_doc_profile": {
+      const profile = (fixtures() as unknown as { tables: Record<string, Row[]> }).tables.company_profiles.find(
+        (row) => row.company_id === args.p_company_id,
+      );
+      if (!profile) return ok(null);
+      const { company_id, logo_path, cnpj, phone, email, address, timezone, quote_validity_days, quote_default_notes } = profile;
+      return ok({ company_id, logo_path, cnpj, phone, email, address, timezone, quote_validity_days, quote_default_notes });
+    }
     case "my_pending_invites":
       return ok([]);
     case "get_hours_month": {

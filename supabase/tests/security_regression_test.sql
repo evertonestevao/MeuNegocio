@@ -1161,6 +1161,53 @@ select sec_test.must_pass('owner aponta o logo para a pasta da própria empresa'
     where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
 
 -- ---------------------------------------------------------------------------
+-- P-08: o técnico não lê os dados financeiros da empresa. A tabela company_profiles
+-- é lida via RLS só pelo escritório (owner/admin/member); o técnico recebe o
+-- subconjunto de contato por get_company_doc_profile, sem imposto, taxa de
+-- cartão nem margem. Neste ponto o perfil da Pro já tem imposto, taxa e logo.
+-- ---------------------------------------------------------------------------
+-- Reaproveita o cost-member (rebaixado a técnico; não ocupa vaga nova e não é usado depois).
+reset role;
+update public.company_members set role = 'technician'
+where company_id = '5ec0c000-0000-4000-8000-000000000001' and user_id = '5ec00000-0000-4000-8000-0000000000c1';
+set local role authenticated;
+
+select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
+select sec_test.must_fail('técnico lê o perfil da empresa direto',
+  $$select * from public.company_profiles where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_pass('técnico lê o subconjunto de contato',
+  $$select public.get_company_doc_profile('5ec0c000-0000-4000-8000-000000000001')$$);
+do $$
+declare
+  v jsonb := public.get_company_doc_profile('5ec0c000-0000-4000-8000-000000000001');
+begin
+  if v ?| array['tax_rate_bps', 'tax_regime', 'simples_annex', 'fator_r', 'card_fee_credit_bps', 'card_fee_debit_bps', 'target_margin_percent'] then
+    raise exception 'FALHA P-08: o subconjunto de contato trouxe dado financeiro: %', v;
+  end if;
+  if (v ->> 'timezone') is null then
+    raise exception 'FALHA P-08: o subconjunto de contato veio sem os dados de contato';
+  end if;
+end $$;
+
+-- Escritório (owner, admin, member) segue lendo a tabela inteira. Garante o papel
+-- de 003, que blocos anteriores podem ter alterado.
+reset role;
+update public.company_members set role = 'member'
+where company_id = '5ec0c000-0000-4000-8000-000000000001' and user_id = '5ec00000-0000-4000-8000-000000000003';
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000003', 'sec-member@test.local');
+select sec_test.must_pass('escritório lê o perfil da empresa',
+  $$select * from public.company_profiles where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+
+-- Estranho não lê nem a tabela nem o subconjunto.
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('estranho lê o perfil da empresa direto',
+  $$select * from public.company_profiles where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
+select sec_test.must_fail('estranho lê o subconjunto de contato',
+  $$select public.get_company_doc_profile('5ec0c000-0000-4000-8000-000000000001')$$);
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

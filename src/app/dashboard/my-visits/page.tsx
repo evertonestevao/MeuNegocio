@@ -45,7 +45,7 @@ export default async function MyVisitsPage() {
   const { active } = await getActiveTenant();
   if (!active) return null;
 
-  const profile = await (await getCompanyProfileService()).get(active.id);
+  const profile = await (await getCompanyProfileService()).getForDocument(active.id);
   const today = todayInTimezone(profile.timezone);
   const visits = await (await getWorkOrderService()).listMine(
     { companyId: active.id, role: active.role },

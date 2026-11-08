@@ -193,6 +193,16 @@ export interface CompanyProfile {
   card_fee_debit_bps?: number;
 }
 
+/**
+ * Subconjunto não sensível do perfil, liberado a qualquer membro (inclusive o
+ * técnico) para a ordem de serviço e o cabeçalho dos documentos. Sem imposto,
+ * taxa de cartão ou margem — ver get_company_doc_profile.
+ */
+export type CompanyDocProfile = Pick<
+  CompanyProfile,
+  "company_id" | "logo_path" | "cnpj" | "phone" | "email" | "address" | "timezone" | "quote_validity_days" | "quote_default_notes"
+>;
+
 export type CatalogKind = "product" | "service";
 export type PricingMode = "fixed" | "hourly";
 

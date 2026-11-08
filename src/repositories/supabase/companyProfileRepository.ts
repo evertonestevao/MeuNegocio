@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
 import type { CompanyProfileRepository } from "@/services/companyProfileService";
-import type { CompanyProfile } from "@/types/database";
+import type { CompanyDocProfile, CompanyProfile } from "@/types/database";
 
 export function createSupabaseCompanyProfileRepository(client: SupabaseClient): CompanyProfileRepository {
   return {
@@ -14,6 +14,14 @@ export function createSupabaseCompanyProfileRepository(client: SupabaseClient): 
         .maybeSingle<CompanyProfile>();
       if (error) throw new AppError("internal_error", "Falha ao ler os dados da empresa", error);
       return data;
+    },
+
+    async getForDocument(companyId) {
+      // Função security definer: devolve só o subconjunto de contato, então o
+      // técnico (sem SELECT na tabela) ainda monta a ordem de serviço.
+      const { data, error } = await client.rpc("get_company_doc_profile", { p_company_id: companyId });
+      if (error) throw new AppError("internal_error", "Falha ao ler os dados da empresa", error);
+      return (data as CompanyDocProfile | null) ?? null;
     },
 
     async upsert(companyId, input) {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { formatDocument, formatPhone, isValidCnpj, isValidPhone } from "@/lib/masks";
 import type { ActorContext } from "@/server/actor";
-import type { CompanyProfile } from "@/types/database";
+import type { CompanyDocProfile, CompanyProfile } from "@/types/database";
 import { permissionService } from "./permissionService";
 
 /** Dados da empresa usados no PDF, no link de aprovação e nos padrões do orçamento. */
@@ -44,6 +44,8 @@ export type CompanyProfileInput = z.output<typeof companyProfileSchema>;
 
 export interface CompanyProfileRepository {
   get(companyId: string): Promise<CompanyProfile | null>;
+  /** Só o subconjunto de contato (get_company_doc_profile): serve ao técnico. */
+  getForDocument(companyId: string): Promise<CompanyDocProfile | null>;
   upsert(companyId: string, input: CompanyProfileInput): Promise<void>;
 }
 
@@ -58,11 +60,31 @@ export const DEFAULT_COMPANY_PROFILE = {
   target_margin_percent: 20,
 } as const;
 
+/** Subconjunto de contato com os mesmos padrões, para o técnico na ordem de serviço. */
+export const DEFAULT_COMPANY_DOC_PROFILE = {
+  logo_path: null,
+  cnpj: null,
+  phone: null,
+  email: null,
+  address: null,
+  quote_validity_days: 15,
+  quote_default_notes: null,
+  timezone: "America/Sao_Paulo",
+} as const;
+
 export function createCompanyProfileService(repo: CompanyProfileRepository) {
   return {
-    /** Empresa sem dados preenchidos recebe os padrões. */
+    /** Empresa sem dados preenchidos recebe os padrões. Leitura só do escritório (RLS). */
     async get(companyId: string): Promise<CompanyProfile> {
       return (await repo.get(companyId)) ?? { company_id: companyId, ...DEFAULT_COMPANY_PROFILE };
+    },
+
+    /**
+     * Subconjunto de contato para a ordem de serviço e o cabeçalho dos documentos.
+     * Disponível ao técnico; não traz imposto, taxa de cartão nem margem.
+     */
+    async getForDocument(companyId: string): Promise<CompanyDocProfile> {
+      return (await repo.getForDocument(companyId)) ?? { company_id: companyId, ...DEFAULT_COMPANY_DOC_PROFILE };
     },
 
     async save(actor: ActorContext, input: CompanyProfileInput): Promise<void> {
