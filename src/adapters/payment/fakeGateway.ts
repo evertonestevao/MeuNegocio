@@ -7,12 +7,22 @@ import type {
 } from "@/types/billing";
 import type { PaymentGateway } from "./PaymentGateway";
 
+/** Valor histórico, usado quando FAKE_WEBHOOK_SECRET não está definido (dev/testes). */
+export const DEFAULT_FAKE_WEBHOOK_SECRET = "fake-signature";
+
+interface FakeGatewayConfig {
+  /** Segredo esperado no header x-webhook-signature. */
+  webhookSecret?: string;
+}
+
 /**
  * Gateway fake para desenvolvimento local e testes: não fala com provedor
  * nenhum e aceita webhooks já no formato normalizado (JSON de
- * NormalizedPaymentEvent) com o header x-webhook-signature: fake-signature.
+ * NormalizedPaymentEvent) com o header x-webhook-signature igual ao segredo.
+ * Bloqueado em produção pela trava de APP_ENV em config/env.
  */
-export function createFakeGateway(): PaymentGateway {
+export function createFakeGateway(config: FakeGatewayConfig = {}): PaymentGateway {
+  const webhookSecret = config.webhookSecret || DEFAULT_FAKE_WEBHOOK_SECRET;
   return {
     name: "fake",
     supportsTrial: true,
@@ -33,7 +43,7 @@ export function createFakeGateway(): PaymentGateway {
     },
 
     async handleWebhook({ payload, headers }: WebhookRequest): Promise<NormalizedPaymentEvent> {
-      if (headers.get("x-webhook-signature") !== "fake-signature") {
+      if (headers.get("x-webhook-signature") !== webhookSecret) {
         throw new AppError("payment_error", "Assinatura de webhook inválida");
       }
       return JSON.parse(payload) as NormalizedPaymentEvent;

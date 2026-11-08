@@ -26,6 +26,6 @@ export function getPaymentGateway(): PaymentGateway {
         environment: getServerEnv().ASAAS_ENVIRONMENT,
       });
     case "fake":
-      return createFakeGateway();
+      return createFakeGateway({ webhookSecret: getServerEnv().FAKE_WEBHOOK_SECRET });
   }
 }

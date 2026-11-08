@@ -37,6 +37,11 @@ const serverEnvSchema = z.object({
   ASAAS_API_KEY: z.string().min(1).optional(),
   ASAAS_WEBHOOK_TOKEN: z.string().min(1).optional(),
   ASAAS_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
+  /**
+   * Segredo do webhook do gateway fake (dev/testes). O fake nunca roda em
+   * produção (ver refine de APP_ENV abaixo); sem a var, cai no valor histórico.
+   */
+  FAKE_WEBHOOK_SECRET: z.string().min(1).optional(),
   EMAIL_PROVIDER: z.enum(["resend", "console"]).default("console"),
   /** Consulta de CNPJ: brasilapi (base pública, sem chave) ou fake (sem rede, para testes). */
   COMPANY_REGISTRY: z.enum(["brasilapi", "fake"]).default("brasilapi"),
@@ -59,6 +64,17 @@ const serverEnvSchema = z.object({
   SENTRY_DSN: z.url().optional(),
   /** Nome do ambiente nos relatórios de erro (production, staging...). */
   APP_ENV: z.string().min(1).default("development"),
+}).superRefine((env, ctx) => {
+  // Trava de segurança: o gateway fake aceita webhook com segredo fixo e serve
+  // só a dev/testes. Em produção, exigir um gateway real evita que um webhook
+  // forjado ative ou cancele assinatura. Falha fechado (o boot/parse quebra).
+  if (env.APP_ENV.toLowerCase() === "production" && env.PAYMENT_GATEWAY === "fake") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["PAYMENT_GATEWAY"],
+      message: "PAYMENT_GATEWAY=fake não é permitido em produção (APP_ENV=production). Configure stripe ou asaas.",
+    });
+  }
 });
 
 export function getClientEnv() {
