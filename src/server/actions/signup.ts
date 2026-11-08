@@ -92,7 +92,7 @@ export async function createAccountAction(_prev: ActionState | undefined, formDa
     // Um client só do começo ao fim: a sessão criada no cadastro vale para os passos seguintes.
     const client = await getSupabaseServerClient();
     await createAuthService({
-      repo: createSupabaseAuthRepository(client),
+      repo: createSupabaseAuthRepository(client, getSupabaseAdminClient()),
       rateLimiter: signupAuthLimiter,
       appUrl: getServerEnv().APP_URL,
     })

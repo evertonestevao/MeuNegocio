@@ -5,6 +5,7 @@ import { getServerEnv } from "@/config/env";
 import { resolvePostLoginPath } from "@/modules/resellers/areaAccess";
 import { createSupabaseAuthRepository } from "@/repositories/supabase/authRepository";
 import { createRateLimiter } from "@/server/rateLimit";
+import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { createAuthService } from "@/services/authService";
 import { toActionError, type ActionState } from "./action-state";
@@ -24,7 +25,7 @@ const loginLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 async function getAuthService() {
   const client = await getSupabaseServerClient();
   return createAuthService({
-    repo: createSupabaseAuthRepository(client),
+    repo: createSupabaseAuthRepository(client, getSupabaseAdminClient()),
     rateLimiter: loginLimiter,
     appUrl: getServerEnv().APP_URL,
   });

@@ -12,12 +12,12 @@ Passos que **não** são código e precisam ser feitos (ou conferidos) na hora d
 - [ ] Webhook do gateway apontando para `https://<dominio>/api/webhooks/asaas` (ou `/stripe`), com o token/segredo conferido.
 - [ ] Enquanto o ambiente ainda estiver com `fake` exposto num túnel, **bloquear `/api/webhooks/*`** na borda (Cloudflare) ou tirar o túnel do ar. Um webhook forjado no `fake` ativa ou cancela assinatura.
 
-## Cadastro e limites (P-03 / P-05 — depende de código ainda não feito)
+## Cadastro e limites (P-03 / P-05)
 
-- [ ] **Antes** de desligar o cadastro aberto do Supabase, concluir o ajuste de código P-03 (o aceite de convite em `/signup` ainda usa `auth.signUp` anônimo; precisa passar a criar a conta pelo servidor com `admin.createUser`). Sem isso, desligar quebra o aceite de convite.
-- [ ] No painel do Supabase de produção: `Authentication → Sign-ups` **desligado** (equivalente a `enable_signup=false`). O fluxo `/comecar` já cria conta pelo servidor e não depende disso.
+- [x] Código P-03 feito: as duas telas de cadastro (`/comecar` e o aceite de convite) criam a conta pelo servidor (`admin.createUser`), não pelo `signUp` público. `create_company` exige aceite de termos e limita a 5 empresas por usuário.
+- [x] P-05 feito: teste grátis por dono (função `owner_has_subscription_history`).
+- [ ] No painel do Supabase de produção: `Authentication → Sign-ups` **desligado** (no `config.toml` é `[auth] enable_signup=false`; **não** mexer em `[auth.email]`, que desliga o login por e-mail). Local já está assim.
 - [ ] `SIGNUP_ENABLED` conforme a estratégia (fechado por padrão; aberto só se o cadastro público for intencional).
-- [ ] Decidir a regra de teste grátis (P-05): hoje é por empresa, e criar empresa não tem limite. Avaliar limite por CNPJ/dono e teto de empresas por usuário.
 
 ## Rate limit (P-04)
 

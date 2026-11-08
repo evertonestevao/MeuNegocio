@@ -3,21 +3,31 @@ import { AppError } from "@/lib/errors";
 import type { AuthRepository } from "@/services/authService";
 
 /**
- * Implementação Supabase Auth do AuthRepository. Recebe o client vinculado
- * aos cookies da request (getSupabaseServerClient) — as sessões são gravadas
- * pelos handlers de cookie do @supabase/ssr.
+ * Implementação Supabase Auth do AuthRepository.
+ * - `client`: vinculado aos cookies da request (getSupabaseServerClient) — grava a sessão.
+ * - `admin`: service_role, só para criar a conta pelo servidor.
+ *
+ * O cadastro NÃO usa o signUp público (que exige enable_signup e deixaria criar
+ * conta direto pela API, sem passar pelas checagens do app). Cria pelo admin e
+ * loga em seguida para estabelecer a sessão nos cookies.
  */
-export function createSupabaseAuthRepository(client: SupabaseClient): AuthRepository {
+export function createSupabaseAuthRepository(client: SupabaseClient, admin: SupabaseClient): AuthRepository {
   return {
     async signUp({ email, password, fullName }) {
-      const { error } = await client.auth.signUp({
+      const { error: createError } = await admin.auth.admin.createUser({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
       });
-      if (error) {
+      if (createError) {
         // Mensagem genérica: não revelar se o email já está cadastrado.
-        throw new AppError("validation_error", "Não foi possível criar a conta", error);
+        throw new AppError("validation_error", "Não foi possível criar a conta", createError);
+      }
+      // createUser não cria sessão; o login aqui grava os cookies da request.
+      const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        throw new AppError("internal_error", "Conta criada, mas não foi possível iniciar a sessão", signInError);
       }
     },
 

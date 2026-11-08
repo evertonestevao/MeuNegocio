@@ -1161,6 +1161,19 @@ select sec_test.must_pass('owner aponta o logo para a pasta da própria empresa'
     where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
 
 -- ---------------------------------------------------------------------------
+-- P-03: create_company exige aceite de termos. Uma conta criada direto pela API
+-- (sem passar pelo app) não tem aceite e não cria empresa.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data)
+values ('5ec00000-0000-4000-8000-0000000000e1', 'sec-noterms@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}');
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-0000000000e1', 'sec-noterms@test.local');
+select sec_test.must_fail('cria empresa sem aceitar termos',
+  $$select public.create_company('Sem Termos', 'sec-sem-termos')$$);
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- P-05: teste grátis por dono. Uma 2ª empresa do dono da Pro (que já tem
 -- assinatura) também acusa histórico; o dono da Free, sem assinatura, não.
 -- ---------------------------------------------------------------------------

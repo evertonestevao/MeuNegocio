@@ -23,6 +23,10 @@ insert into public.company_members (company_id, user_id, role) values
   ('c1c1c1c1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000001', 'owner'),
   ('c2c2c2c2-0000-4000-8000-000000000002', 'b2b2b2b2-0000-4000-8000-000000000002', 'owner');
 
+-- Alice aceitou os termos (o app grava no cadastro): create_company exige isso.
+insert into public.terms_acceptances (user_id, terms_version_id)
+select 'a1a1a1a1-0000-4000-8000-000000000001', id from public.terms_versions where is_current;
+
 insert into public.settings (company_id, key, value) values
   ('c1c1c1c1-0000-4000-8000-000000000001', 'rls-test', '"alice"'),
   ('c2c2c2c2-0000-4000-8000-000000000002', 'rls-test', '"bob"');
@@ -235,8 +239,9 @@ begin
   -- termos vigentes são legíveis
   if v_version is null then raise exception 'FALHA terms_versions: versão vigente invisível'; end if;
 
-  -- alice não vê o aceite do bob
-  select count(*) into n from public.terms_acceptances;
+  -- alice não vê o aceite do bob (vê só o próprio, por isso filtra pelo user_id do bob)
+  select count(*) into n from public.terms_acceptances
+    where user_id = 'b2b2b2b2-0000-4000-8000-000000000002';
   if n <> 0 then raise exception 'FALHA terms_acceptances: aceite alheio visível'; end if;
 
   -- aceite em nome próprio, direto na API: bloqueado (só o servidor grava a evidência)
