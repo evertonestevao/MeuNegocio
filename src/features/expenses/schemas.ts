@@ -94,6 +94,20 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   other: "Outro",
 };
 
+/**
+ * Forma de pagamento no texto do recibo, com a preposição certa: "por PIX", "em dinheiro".
+ * Evita o "por pix" minúsculo que saía de um toLowerCase no rótulo.
+ */
+export const PAYMENT_METHOD_RECEIPT_PHRASE: Record<PaymentMethod, string> = {
+  pix: "por PIX",
+  cash: "em dinheiro",
+  debit: "no cartão de débito",
+  credit: "no cartão de crédito",
+  boleto: "por boleto",
+  transfer: "por transferência",
+  other: "por outro meio",
+};
+
 const optionalSupplierText = (max: number) =>
   z.string().trim().max(max, `Use até ${max} caracteres.`).default("").transform((value) => value || null);
 

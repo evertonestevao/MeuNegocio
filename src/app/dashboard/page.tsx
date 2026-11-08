@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QUOTE_STATUS_LABEL, QUOTE_STATUS_VARIANT, formatQuoteNumber } from "@/features/quotes/status";
 import { VisitRow } from "@/features/visits/components/visit-row";
+import { isVisitOverdue } from "@/features/visits/schemas";
 import { formatLongDay, formatMonth } from "@/lib/calendar";
-import { addDays, formatDate, greetingFor, todayInTimezone } from "@/lib/dates";
+import { addDays, formatDate, greetingFor, timeInTimezone, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { getFinanceService, getFirstStepsService } from "@/server/home";
 import { FirstStepsCard } from "@/features/onboarding/components/first-steps-card";
@@ -81,6 +82,7 @@ export default async function DashboardPage() {
 
   const profile = await (await getCompanyProfileService()).get(active.id);
   const today = todayInTimezone(profile.timezone);
+  const now = { today, time: timeInTimezone(profile.timezone) };
   const [home, firstSteps] = await Promise.all([
     (await getFinanceService()).getHome({ companyId: active.id, role: active.role }, today),
     (await getFirstStepsService()).get({ companyId: active.id, role: active.role }, Boolean(profile.logo_path)),
@@ -130,7 +132,13 @@ export default async function DashboardPage() {
           tone="info"
           label="Visitas hoje"
           value={home.today.length}
-          hint={nextVisit ? `Próxima às ${nextVisit.starts_at.slice(0, 5)} — ${nextVisit.client_name}` : "Nenhuma visita pendente hoje"}
+          hint={
+            nextVisit
+              ? isVisitOverdue(nextVisit, now)
+                ? `Atrasada desde ${nextVisit.starts_at.slice(0, 5)} — ${nextVisit.client_name}`
+                : `Próxima às ${nextVisit.starts_at.slice(0, 5)} — ${nextVisit.client_name}`
+              : "Nenhuma visita pendente hoje"
+          }
         />
         <MetricCard
           icon={Send}
@@ -221,7 +229,7 @@ export default async function DashboardPage() {
             ) : (
               <div className="flex flex-col divide-y">
                 {home.today.map((visit) => (
-                  <VisitRow key={visit.id} visit={visit} />
+                  <VisitRow key={visit.id} visit={visit} now={now} />
                 ))}
               </div>
             )}

@@ -51,3 +51,22 @@ export const VISIT_STATUS_LABEL = {
   completed: "Concluída",
   canceled: "Cancelada",
 } as const;
+
+/** "Agora" na timezone da empresa, para saber se uma visita passou da hora. */
+export interface VisitClock {
+  today: string;
+  time: string;
+}
+
+/**
+ * Visita agendada cujo horário já passou e que não começou: está atrasada. Serve para o Início e
+ * a agenda mostrarem "Atrasada" em vez de "Agendada"/"Próxima".
+ */
+export function isVisitOverdue(
+  visit: { status: string; visit_date: string; starts_at: string },
+  now: VisitClock,
+): boolean {
+  if (visit.status !== "scheduled") return false;
+  if (visit.visit_date < now.today) return true;
+  return visit.visit_date === now.today && visit.starts_at.slice(0, 5) < now.time.slice(0, 5);
+}

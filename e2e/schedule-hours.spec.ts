@@ -63,7 +63,7 @@ test("recorrência gera um lançamento por mês, sem duplicar", async ({ page })
 
   await page.goto("/dashboard/expenses?view=list");
   await page.getByRole("button", { name: "Gerar recorrentes do mês" }).click();
-  await expect(page.getByText("1 lançamento(s) gerado(s)")).toBeVisible();
+  await expect(page.getByText("1 lançamento gerado")).toBeVisible();
   await expect(page.getByText("R$ 2.800,00").first()).toBeVisible();
 
   await page.getByRole("button", { name: "Gerar recorrentes do mês" }).click();

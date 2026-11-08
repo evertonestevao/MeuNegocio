@@ -89,7 +89,7 @@ function QuickReceiveButton({ item, today }: { item: Receivable; today: string }
 
   return (
     <Button size="sm" onClick={receive} disabled={pending}>
-      <Check className="size-4" /> {pending ? "Salvando..." : "Recebido"}
+      <Check className="size-4" /> {pending ? "Salvando..." : "Dar baixa"}
     </Button>
   );
 }

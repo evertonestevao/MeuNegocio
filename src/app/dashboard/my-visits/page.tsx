@@ -4,8 +4,8 @@ import { CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL } from "@/features/visits/schemas";
-import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
+import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL, isVisitOverdue, type VisitClock } from "@/features/visits/schemas";
+import { addDays, formatDate, timeInTimezone, todayInTimezone } from "@/lib/dates";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getActiveTenant } from "@/server/tenant";
 import { getWorkOrderService } from "@/server/workOrders";
@@ -14,9 +14,10 @@ import { VISIT_STATUS_VARIANT } from "@/features/visits/components/visit-row";
 
 export const metadata: Metadata = { title: "Minhas visitas" };
 
-function VisitCard({ visit, today }: { visit: VisitSheet; today: string }) {
+function VisitCard({ visit, today, now }: { visit: VisitSheet; today: string; now: VisitClock }) {
   const tomorrow = addDays(today, 1);
   const day = visit.visit_date === today ? "Hoje" : visit.visit_date === tomorrow ? "Amanhã" : formatDate(visit.visit_date);
+  const overdue = isVisitOverdue(visit, now);
   return (
     <li>
       <Link href={`/dashboard/work-orders/${visit.id}`}>
@@ -31,7 +32,9 @@ function VisitCard({ visit, today }: { visit: VisitSheet; today: string }) {
               <span className="text-muted-foreground">{visit.location.name}</span>
               <div className="flex flex-wrap gap-1">
                 <Badge variant="outline">{VISIT_KIND_LABEL[visit.kind]}</Badge>
-                <Badge variant={VISIT_STATUS_VARIANT[visit.status]}>{VISIT_STATUS_LABEL[visit.status]}</Badge>
+                <Badge variant={overdue ? "destructive" : VISIT_STATUS_VARIANT[visit.status]}>
+                  {overdue ? "Atrasada" : VISIT_STATUS_LABEL[visit.status]}
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -47,6 +50,7 @@ export default async function MyVisitsPage() {
 
   const profile = await (await getCompanyProfileService()).getForDocument(active.id);
   const today = todayInTimezone(profile.timezone);
+  const now = { today, time: timeInTimezone(profile.timezone) };
   const visits = await (await getWorkOrderService()).listMine(
     { companyId: active.id, role: active.role },
     addDays(today, -14),
@@ -69,7 +73,7 @@ export default async function MyVisitsPage() {
           <h3 className="text-sm font-medium text-muted-foreground">Próximas visitas</h3>
           <ul className="flex flex-col gap-3">
             {open.map((visit) => (
-              <VisitCard key={visit.id} visit={visit} today={today} />
+              <VisitCard key={visit.id} visit={visit} today={today} now={now} />
             ))}
           </ul>
         </section>

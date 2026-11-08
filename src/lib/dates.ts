@@ -10,6 +10,11 @@ export function todayInTimezone(timezone: string, now: Date = new Date()): strin
   return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
 }
 
+/** Hora atual "HH:MM" na timezone da empresa. Para comparar com o horário de uma visita. */
+export function timeInTimezone(timezone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
+}
+
 export function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00Z`);
   value.setUTCDate(value.getUTCDate() + days);

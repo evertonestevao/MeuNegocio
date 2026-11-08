@@ -119,7 +119,12 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
   const textWidth = usable * 0.6 - (textX - MARGIN);
   font("bold", 16, WHITE);
   const nameLines = wrap(company.name, textWidth).slice(0, 2);
-  const bandHeight = Math.max(32, 13 + nameLines.length * 6.5 + companyLines.length * 3.9, logoBox ? logoBox.height + 14 : 0);
+  // Endereço e demais linhas podem passar de uma linha (ex.: o CEP não cabia e sumia). Área mais
+  // larga que a do nome, deixando folga só para o bloco da direita (data/situação), para o e-mail
+  // não cortar. Teto generoso para nada ser truncado.
+  const infoWidth = pageWidth - MARGIN - textX - 30;
+  const companyTextLines = companyLines.flatMap((line) => wrap(line, infoWidth)).slice(0, 7);
+  const bandHeight = Math.max(32, 13 + nameLines.length * 6.5 + companyTextLines.length * 3.9, logoBox ? logoBox.height + 14 : 0);
   fill(NAVY);
   pdf.rect(0, 0, pageWidth, bandHeight, "F");
   fill(AMBER);
@@ -136,8 +141,8 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
   }
   font("normal", 8.5, [205, 213, 224]);
   headerY -= 1.5;
-  for (const line of companyLines) {
-    pdf.text(wrap(line, textWidth + 2)[0], textX, headerY);
+  for (const line of companyTextLines) {
+    pdf.text(line, textX, headerY);
     headerY += 3.9;
   }
   font("bold", 8.5, AMBER);
@@ -156,8 +161,13 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
   // Quadro de dados
   const worked = workedTime(order.started_time, order.finished_time);
   const schedule = `${order.started_time.slice(0, 5)}${order.finished_time ? ` às ${order.finished_time.slice(0, 5)}` : ""}`;
+  // Quando o contato é o próprio cliente, não repetir o nome: mostra só função e/ou telefone.
+  const contactIsClient = sheet.contact ? sheet.contact.name.trim() === sheet.client_name.trim() : false;
+  const contactHeadline = sheet.contact
+    ? [contactIsClient ? null : sheet.contact.name, sheet.contact.role].filter(Boolean).join("  ·  ")
+    : "";
   const contact = sheet.contact
-    ? [[sheet.contact.name, sheet.contact.role].filter(Boolean).join("  ·  "), sheet.contact.phone ? formatPhone(sheet.contact.phone) : null].filter(Boolean).join("\n")
+    ? [contactHeadline || null, sheet.contact.phone ? formatPhone(sheet.contact.phone) : null].filter(Boolean).join("\n") || null
     : null;
   const cards: Array<{ label: string; title: string; detail: string | null }> = [
     { label: "CLIENTE", title: sheet.client_name, detail: contact },
@@ -289,14 +299,15 @@ export async function downloadWorkOrderPdf({ sheet, company, photoUrls, signatur
     }
   }
 
-  // Assinatura sempre inteira, na mesma página.
+  // Assinatura sempre inteira; bloco compacto para ficar junto do relatório quando couber,
+  // em vez de cair sozinha numa página quase vazia.
   if (signatureUrl) {
     const image = await loadImage(signatureUrl);
     const blockWidth = 86;
-    const fit = fitInFrame(image.width, image.height, blockWidth, 20);
-    section("Aceite do cliente", 32);
+    const fit = fitInFrame(image.width, image.height, blockWidth, 16);
+    section("Aceite do cliente", 24);
     pdf.addImage(image.data, image.format, MARGIN, y + fit.offsetY, fit.width, fit.height);
-    y += 21;
+    y += 17;
     stroke(INK, 0.3);
     pdf.line(MARGIN, y, MARGIN + blockWidth, y);
     y += 4.5;

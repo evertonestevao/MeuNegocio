@@ -1,4 +1,4 @@
-import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
+import { PAYMENT_METHOD_RECEIPT_PHRASE } from "@/features/expenses/schemas";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { formatDate } from "@/lib/dates";
 import { centsToWords } from "@/lib/extenso";
@@ -17,7 +17,7 @@ export function receiptText(receipt: ReceiptData): string {
   const payer = receipt.client ? `${receipt.client.name}${receipt.client.document ? `, ${receipt.client.document.replace(/\D/g, "").length === 14 ? "CNPJ" : "CPF"} ${formatDocument(receipt.client.document)},` : ""}` : "cliente";
   const installment = receipt.installment.total > 1 ? `da parcela ${receipt.installment.index} de ${receipt.installment.total} ` : "";
   const service = `do orçamento Nº ${formatQuoteNumber(receipt.quoteNumber)}${receipt.quoteTitle ? ` (${receipt.quoteTitle})` : ""}`;
-  const method = receipt.method ? `, por ${PAYMENT_METHOD_LABEL[receipt.method].toLowerCase()}` : "";
+  const method = receipt.method ? `, ${PAYMENT_METHOD_RECEIPT_PHRASE[receipt.method]}` : "";
   return `Recebemos de ${payer} a importância de ${formatCents(receipt.receivedCents)} (${centsToWords(receipt.receivedCents)}), referente ao pagamento ${installment}${service}, recebida em ${formatDate(receipt.receivedOn)}${method}.`;
 }
 

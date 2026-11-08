@@ -3,7 +3,7 @@ import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/dates";
 import type { VisitListItem } from "@/types/database";
-import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL } from "../schemas";
+import { VISIT_KIND_LABEL, VISIT_STATUS_LABEL, isVisitOverdue, type VisitClock } from "../schemas";
 
 export const VISIT_STATUS_VARIANT = {
   scheduled: "info",
@@ -21,8 +21,9 @@ export const VISIT_STATUS_BAR = {
 } as const;
 
 /** Linha de visita, usada na agenda, no cliente e no orçamento. */
-export function VisitRow({ visit, showDate, showClient = true, actions }: { visit: VisitListItem; showDate?: boolean; showClient?: boolean; actions?: React.ReactNode }) {
+export function VisitRow({ visit, showDate, showClient = true, actions, now }: { visit: VisitListItem; showDate?: boolean; showClient?: boolean; actions?: React.ReactNode; now?: VisitClock }) {
   const canceled = visit.status === "canceled";
+  const overdue = now ? isVisitOverdue(visit, now) : false;
   const start = visit.starts_at.slice(0, 5);
   const end = visit.ends_at.slice(0, 5);
   return (
@@ -44,7 +45,9 @@ export function VisitRow({ visit, showDate, showClient = true, actions }: { visi
           {visit.notes ? <span className="text-xs text-muted-foreground no-underline">{visit.notes}</span> : null}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={VISIT_STATUS_VARIANT[visit.status]}>{VISIT_STATUS_LABEL[visit.status]}</Badge>
+          <Badge variant={overdue ? "destructive" : VISIT_STATUS_VARIANT[visit.status]}>
+            {overdue ? "Atrasada" : VISIT_STATUS_LABEL[visit.status]}
+          </Badge>
           <Badge variant="outline">{VISIT_KIND_LABEL[visit.kind]}</Badge>
           {visit.status === "in_progress" || visit.status === "completed" ? (
             <Link href={`/dashboard/work-orders/${visit.id}`} className="px-1 text-sm font-medium text-primary hover:underline">

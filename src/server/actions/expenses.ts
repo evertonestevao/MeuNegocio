@@ -73,7 +73,14 @@ export async function generateMonthExpensesAction(_prev: ActionState | undefined
       await recordAudit({ companyId: actor.companyId, action: "expense.generated", entityType: "expense", metadata: { month, count } });
     }
     refresh();
-    return { success: count > 0 ? `${count} lançamento(s) gerado(s)` : "Nenhum lançamento novo: tudo deste mês já foi gerado." };
+    return {
+      success:
+        count === 0
+          ? "Nenhum lançamento novo: tudo deste mês já foi gerado."
+          : count === 1
+            ? "1 lançamento gerado"
+            : `${count} lançamentos gerados`,
+    };
   } catch (err) {
     return handleError(err);
   }

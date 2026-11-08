@@ -93,13 +93,13 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   // O faturado entra inteiro; o dinheiro, parcela a parcela.
   const receipts = page.locator("[data-slot=card]").filter({ has: page.getByText("Recebimentos", { exact: true }) });
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
-  await expect(receipts.getByRole("button", { name: "Recebido" })).toHaveCount(2);
+  await expect(receipts.getByRole("button", { name: "Dar baixa" })).toHaveCount(2);
   // Recebido com um toque, e o "Desfazer" do aviso volta a parcela.
-  await receipts.getByRole("button", { name: "Recebido" }).first().click();
+  await receipts.getByRole("button", { name: "Dar baixa" }).first().click();
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
   await page.getByRole("button", { name: "Desfazer", exact: true }).click();
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(1);
-  await receipts.getByRole("button", { name: "Recebido" }).first().click();
+  await receipts.getByRole("button", { name: "Dar baixa" }).first().click();
   await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
   // Recibo da parcela recebida: no computador, baixa o PDF.
   const receiptDownload = page.waitForEvent("download");

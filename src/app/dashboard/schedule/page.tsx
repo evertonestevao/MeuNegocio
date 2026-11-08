@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteVisitButton, EditVisitButton, NewVisitButton } from "@/features/visits/components/visit-form";
 import { VisitRow } from "@/features/visits/components/visit-row";
 import { addMonths, formatLongDay, formatMonth, isValidDate, monthGrid, weekDays } from "@/lib/calendar";
-import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
+import { addDays, formatDate, timeInTimezone, todayInTimezone } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { getClientService } from "@/server/clients";
 import { getCompanyProfileService, getQuoteService } from "@/server/quotes";
@@ -46,6 +46,7 @@ export default async function SchedulePage({
   const actor = { companyId: active.id, role: active.role };
   const profile = await (await getCompanyProfileService()).get(active.id);
   const today = todayInTimezone(profile.timezone);
+  const now = { today, time: timeInTimezone(profile.timezone) };
   const view = params.view === "week" ? "week" : "month";
   const selected = isValidDate(params.d) ? params.d : today;
   const kind: VisitKind | undefined = params.kind === "assessment" || params.kind === "execution" ? params.kind : undefined;
@@ -247,7 +248,7 @@ export default async function SchedulePage({
           ) : (
             <div className="flex flex-col divide-y">
               {dayVisits.map((visit) => (
-                <VisitRow key={visit.id} visit={visit} actions={rowActions(visit)} />
+                <VisitRow key={visit.id} visit={visit} actions={rowActions(visit)} now={now} />
               ))}
             </div>
           )}

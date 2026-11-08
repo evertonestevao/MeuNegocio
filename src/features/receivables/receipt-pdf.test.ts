@@ -24,6 +24,12 @@ describe("recibo", () => {
     );
   });
 
+  it("a forma de pagamento sai com o nome certo, não em minúsculas", () => {
+    expect(receiptText({ ...RECEIPT, method: "pix" })).toContain("por PIX.");
+    expect(receiptText({ ...RECEIPT, method: "cash" })).toContain("em dinheiro.");
+    expect(receiptText({ ...RECEIPT, method: "debit" })).toContain("no cartão de débito.");
+  });
+
   it("pagamento único não fala em parcela", () => {
     expect(receiptText({ ...RECEIPT, installment: { index: 1, total: 1 }, client: { name: "Ana", document: null }, method: null })).toContain(
       "Recebemos de Ana a importância de",
