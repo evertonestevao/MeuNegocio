@@ -1161,6 +1161,43 @@ select sec_test.must_pass('owner aponta o logo para a pasta da própria empresa'
     where company_id = '5ec0c000-0000-4000-8000-000000000001'$$);
 
 -- ---------------------------------------------------------------------------
+-- P-07: o proprietário não sai da empresa pela função do banco (ficaria sem dono);
+-- um não-dono sai normalmente.
+-- ---------------------------------------------------------------------------
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+do $$
+begin
+  perform public.leave_company('5ec0c000-0000-4000-8000-000000000001');
+  raise exception 'FALHA P-07: o proprietário conseguiu sair da empresa';
+exception when insufficient_privilege then null;
+end $$;
+do $$
+begin
+  if exists (select 1 from public.company_members
+    where company_id = '5ec0c000-0000-4000-8000-000000000001' and role = 'owner' and deleted_at is null) then
+    null;
+  else
+    raise exception 'FALHA P-07: a empresa ficou sem dono ativo';
+  end if;
+end $$;
+-- Admin (não-dono) sai de fato; conferido e desfeito como superusuário para não
+-- afetar blocos adiante.
+select sec_test.login('5ec00000-0000-4000-8000-000000000002', 'sec-admin@test.local');
+do $$ begin perform public.leave_company('5ec0c000-0000-4000-8000-000000000001'); end $$;
+reset role;
+do $$
+begin
+  if exists (select 1 from public.company_members
+    where company_id = '5ec0c000-0000-4000-8000-000000000001'
+      and user_id = '5ec00000-0000-4000-8000-000000000002' and deleted_at is null) then
+    raise exception 'FALHA P-07: o não-dono não conseguiu sair';
+  end if;
+end $$;
+update public.company_members set deleted_at = null
+where company_id = '5ec0c000-0000-4000-8000-000000000001' and user_id = '5ec00000-0000-4000-8000-000000000002';
+set local role authenticated;
+
+-- ---------------------------------------------------------------------------
 -- P-08: o técnico não lê os dados financeiros da empresa. A tabela company_profiles
 -- é lida via RLS só pelo escritório (owner/admin/member); o técnico recebe o
 -- subconjunto de contato por get_company_doc_profile, sem imposto, taxa de

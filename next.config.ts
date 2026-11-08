@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Não anunciar o framework/versão (facilita varredura por CVE conhecida).
+  poweredByHeader: false,
   async headers() {
     return [
       {
