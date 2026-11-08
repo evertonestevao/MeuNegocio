@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { closeQuoteSchema, publicResponseSchema, quoteSchema, quoteTransitionSchema } from "@/features/quotes/schemas";
+import { clientIp } from "@/lib/clientIp";
 import { AppError } from "@/lib/errors";
 import { parseMoneyToCents } from "@/lib/money";
 import { taxRatePercentSchema } from "@/lib/tax";
@@ -186,7 +187,8 @@ export async function deleteQuoteAction(
   redirect("/dashboard/quotes");
 }
 
-const publicLimiter = () => createRateLimiter({ limit: 10, windowMs: 10 * 60_000 });
+// Uma instância por processo: recriar a cada chamada zerava o contador em memória.
+const publicLimiter = createRateLimiter({ limit: 10, windowMs: 10 * 60_000 });
 
 /** Resposta do cliente pelo link. Sem sessão: o token é a credencial, e a escrita é do servidor. */
 export async function respondPublicQuoteAction(
@@ -200,8 +202,8 @@ export async function respondPublicQuoteAction(
     if (!token.success) throw new AppError("not_found", "Orçamento não encontrado");
 
     const requestHeaders = await headers();
-    const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
-    await publicLimiter().consume(`public-quote:${ip}`);
+    const ip = clientIp(requestHeaders);
+    await publicLimiter.consume(`public-quote:${ip}`);
 
     const { decision, name, comment } = publicResponseSchema.parse({
       decision: formData.get("decision"),

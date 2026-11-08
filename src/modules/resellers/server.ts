@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { reportError } from "@/adapters/errorReporting";
 import { getServerEnv } from "@/config/env";
+import { clientIp } from "@/lib/clientIp";
 import { AppError } from "@/lib/errors";
 import type { MyDataExport } from "@/types/account";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
@@ -49,10 +50,7 @@ export async function handleReferralClick(
   const cookieCode = await getReferralService().resolveClick({
     code,
     existingCookie: request.cookies.get(REFERRAL_COOKIE)?.value,
-    clientKey:
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip") ||
-      "desconhecido",
+    clientKey: clientIp(request.headers),
   });
   if (cookieCode) {
     const secure = new URL(getServerEnv().APP_URL).protocol === "https:";

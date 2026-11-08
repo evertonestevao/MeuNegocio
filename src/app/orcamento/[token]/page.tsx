@@ -12,6 +12,7 @@ import { formatCents } from "@/lib/money";
 import { brand } from "@/config/brand";
 import { DEMO_QUOTE_TOKEN } from "@/config/demo";
 import { canUsePublicApproval, getDemoPublicQuote, getPublicQuoteRepository, getPublicQuoteService, getPublicQuoteSignatureUrl, viewerCompanyIds } from "@/server/quotes";
+import { clientIp } from "@/lib/clientIp";
 import { createRateLimiter } from "@/server/rateLimit";
 import { formatPhone } from "@/lib/masks";
 
@@ -21,7 +22,9 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 
-const viewLimiter = () => createRateLimiter({ limit: 60, windowMs: 60_000 });
+// Uma instância por processo: o contador em memória precisa persistir entre
+// requisições (recriar a cada chamada zerava o limite).
+const viewLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -29,9 +32,9 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   if (!isDemo && !/^[0-9a-f]{64}$/.test(token)) notFound();
 
   const requestHeaders = await headers();
-  const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
+  const ip = clientIp(requestHeaders);
   try {
-    await viewLimiter().consume(`public-quote-view:${ip}`);
+    await viewLimiter.consume(`public-quote-view:${ip}`);
   } catch {
     notFound();
   }
