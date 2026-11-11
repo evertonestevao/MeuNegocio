@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Plus, Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, planOfferLines } from "@/config/planFeatures";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
 import { PlanForm } from "@/features/plans/components/plan-form";
 import { formatCents } from "@/lib/money";
@@ -76,34 +77,74 @@ export default async function PlansPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {plans.map((plan) => (
-          <Card key={plan.id}>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="flex items-center gap-2">
-                  {plan.name}
-                  {plan.is_active ? null : <Badge variant="secondary">Inativo</Badge>}
-                </CardTitle>
-                <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
-              </div>
-              <CardDescription>
-                Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {plan.billing_interval === "year" ? "ano" : "mês"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PlanForm plan={plan} action={updatePlanAction} submitLabel="Salvar plano" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">Planos existentes</h2>
+        <div className="grid gap-4 xl:grid-cols-2">
+          {plans.map((plan) => (
+            <Card key={plan.id}>
+              <CardHeader>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    {plan.name}
+                    {plan.is_active ? null : <Badge variant="secondary">Inativo</Badge>}
+                  </CardTitle>
+                  <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
+                </div>
+                <CardDescription>
+                  Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {plan.billing_interval === "year" ? "ano" : "mês"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <ul className="flex flex-wrap gap-1.5">
+                  {planOfferLines(plan.features).map((line) => (
+                    <li key={line}>
+                      <Badge variant="outline">{line}</Badge>
+                    </li>
+                  ))}
+                  {plan.extra_seat_price_cents > 0 ? (
+                    <li>
+                      <Badge variant="outline">Membro extra: {formatCents(plan.extra_seat_price_cents, plan.currency)}</Badge>
+                    </li>
+                  ) : null}
+                </ul>
+                {plan.custom_text ? <p className="text-sm text-muted-foreground">{plan.custom_text}</p> : null}
+                <details className="group">
+                  <summary className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium hover:bg-muted [&::-webkit-details-marker]:hidden">
+                    <Pencil className="size-4" />
+                    <span className="group-open:hidden">Editar plano</span>
+                    <span className="hidden group-open:inline">Fechar edição</span>
+                  </summary>
+                  <div className="pt-4">
+                    <PlanForm plan={plan} action={updatePlanAction} submitLabel="Salvar plano" />
+                  </div>
+                </details>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-      <Card>
+      <Card className="border-2 border-dashed border-primary/40 bg-primary/5">
         <CardHeader>
-          <CardTitle>Novo plano</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Plus className="size-4" />
+            </span>
+            Criar um novo plano
+          </CardTitle>
+          <CardDescription>Um plano novo começa desativado até você liberá-lo na oferta.</CardDescription>
         </CardHeader>
         <CardContent>
-          <PlanForm action={createPlanAction} submitLabel="Criar plano" />
+          <details className="group">
+            <summary className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
+              <Plus className="size-4" />
+              <span className="group-open:hidden">Novo plano</span>
+              <span className="hidden group-open:inline">Cancelar</span>
+            </summary>
+            <div className="pt-4">
+              <PlanForm action={createPlanAction} submitLabel="Criar plano" />
+            </div>
+          </details>
         </CardContent>
       </Card>
 
