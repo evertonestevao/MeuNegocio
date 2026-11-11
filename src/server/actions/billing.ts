@@ -14,7 +14,8 @@ import { rejectInDemo } from "@/server/demo/mode";
 import { getCompanyAccess, getExternalPriceId } from "@/server/billing";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
-import { getTenantService } from "@/server/tenant";
+import { getActiveTenant, getTenantService } from "@/server/tenant";
+import { isOnboardingPending } from "@/server/signupFlow";
 import { CARDLESS_TRIAL_OFFERED, createBillingService, isCardlessTrial, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import { createUserService } from "@/services/userService";
@@ -78,8 +79,10 @@ export async function checkoutAction(
         paymentMethods: plan.payment_methods,
       },
       customer: { email: userData.user.email, name: profile?.full_name ?? null },
-      successUrl: `${appUrl}/dashboard/billing?status=success`,
-      cancelUrl: `${appUrl}/dashboard/billing?status=canceled`,
+      // Tela de confirmação: espera o webhook ativar e então leva ao passo certo (não pode cair
+      // direto no painel, que redireciona para /assinar enquanto a assinatura não está ativa).
+      successUrl: `${appUrl}/assinar/confirmando`,
+      cancelUrl: `${appUrl}/assinar`,
       trialDays: withTrial && plan.billing_interval === "month" ? TRIAL_DAYS : undefined,
     });
     checkoutUrl = session.url;
@@ -93,6 +96,17 @@ export async function checkoutAction(
     return toActionError(err);
   }
   redirect(checkoutUrl);
+}
+
+/**
+ * Pós-pagamento: a tela de confirmação chama isto em intervalos até a assinatura ativar (o webhook
+ * é assíncrono). Diz se já há acesso e para onde ir: o passo da empresa, se o cadastro falta, ou o painel.
+ */
+export async function subscriptionConfirmationStatus(): Promise<{ active: boolean; next: string }> {
+  const { active } = await getActiveTenant();
+  if (!active) return { active: false, next: "/dashboard" };
+  const [access, pending] = await Promise.all([getCompanyAccess(active.id), isOnboardingPending(active.id)]);
+  return { active: access.hasAccess, next: pending ? "/onboarding" : "/dashboard" };
 }
 
 /**
