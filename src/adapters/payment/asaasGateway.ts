@@ -260,13 +260,16 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       "GET",
     );
     const reference = await resolveReference(subscription, payment.paymentLink);
+    // Sem empresa/plano identificáveis, o evento não é nosso: ignora (200). Devolver erro aqui
+    // travaria a fila sequencial do Asaas e seguraria os eventos seguintes (inclusive pagamentos bons).
+    if (!reference) return base;
     return {
       ...base,
       type,
       externalSubscriptionId: payment.subscription,
       externalCustomerId: payment.customer ?? subscription.customer ?? null,
-      companyId: reference?.companyId ?? null,
-      planId: reference?.planId ?? null,
+      companyId: reference.companyId,
+      planId: reference.planId,
       currentPeriodStart: dateToIso(payment.dueDate),
       currentPeriodEnd: dateToIso(subscription.nextDueDate),
       // Só pagamento confirmado gera comissão. CONFIRMED e RECEIVED da mesma cobrança

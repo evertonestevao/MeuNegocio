@@ -161,7 +161,10 @@ export function createBillingService(repo: BillingRepository) {
     if (!existing) {
       if (event.type !== "subscription.activated") return {}; // evento órfão: nada a atualizar
       if (!event.companyId || !event.planId) {
-        throw new AppError("payment_error", "Evento de ativação sem company_id/plan_id");
+        // Ativação que não dá para atribuir a uma empresa/plano: ignora em vez de falhar.
+        // Falhar aqui travaria a fila sequencial do gateway e seguraria os próximos eventos.
+        console.warn(`[billing] ativação ignorada sem company_id/plan_id (gateway=${event.gateway}, sub=${event.externalSubscriptionId ?? "-"})`);
+        return {};
       }
       // Reassinatura: a assinatura anterior (ex.: cancelada) ainda ocupa o índice
       // único por empresa. Vai para o histórico para a nova poder entrar.

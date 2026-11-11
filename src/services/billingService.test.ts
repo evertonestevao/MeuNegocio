@@ -625,10 +625,11 @@ describe("applyPaymentEvent", () => {
     expect(state.subscriptions[0].status).toBe("past_due");
   });
 
-  it("rejeita ativação sem company_id/plan_id e ignora eventos 'ignored'", async () => {
+  it("ignora ativação sem company_id/plan_id e eventos 'ignored' (não trava a fila do gateway)", async () => {
     const state = { plans: [] as Plan[], subscriptions: [] as Subscription[] };
     const service = createBillingService(makeRepo(state));
-    await expect(service.applyPaymentEvent(makeEvent({ companyId: null }))).rejects.toThrow();
+    // Não pode lançar: um erro aqui travaria a fila sequencial do Asaas.
+    await service.applyPaymentEvent(makeEvent({ companyId: null }));
     await service.applyPaymentEvent(makeEvent({ type: "ignored" }));
     expect(state.subscriptions).toHaveLength(0);
   });
