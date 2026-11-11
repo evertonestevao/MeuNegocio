@@ -75,6 +75,7 @@ export async function checkoutAction(
         billingInterval: plan.billing_interval,
         // Só gateways com catálogo usam (PAYMENT_PRICE_<CODE>) — ver src/server/billing.ts.
         externalPriceId: getExternalPriceId(plan.code),
+        paymentMethods: plan.payment_methods,
       },
       customer: { email: userData.user.email, name: profile?.full_name ?? null },
       successUrl: `${appUrl}/dashboard/billing?status=success`,

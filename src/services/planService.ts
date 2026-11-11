@@ -1,4 +1,5 @@
 import { PLAN_FEATURES } from "@/config/planFeatures";
+import { PAYMENT_METHOD_KEYS } from "@/config/paymentMethods";
 import { AppError } from "@/lib/errors";
 import type { Plan, PlanAuditEntry } from "@/types/database";
 import { DEFAULT_PLAN_CODE } from "./billingService";
@@ -14,6 +15,8 @@ export interface PlanInput {
   extraSeatPriceCents: number;
   features: Record<string, number | boolean | null>;
   customText: string | null;
+  paymentMethods: string[];
+  trialDays: number;
 }
 
 export interface PlanRepository {
@@ -46,6 +49,15 @@ export function createPlanService(repo: PlanRepository) {
     // O plano padrão vale para quem não tem assinatura, então não há como cobrá-lo.
     if (code === DEFAULT_PLAN_CODE && (input.priceCents !== 0 || input.extraSeatPriceCents !== 0)) {
       throw new AppError("validation_error", "O plano padrão, sem assinatura, precisa ser gratuito");
+    }
+    if (input.paymentMethods.length === 0) {
+      throw new AppError("validation_error", "Escolha ao menos um meio de pagamento para o plano");
+    }
+    if (!input.paymentMethods.every((method) => PAYMENT_METHOD_KEYS.includes(method as never))) {
+      throw new AppError("validation_error", "Meio de pagamento inválido no plano");
+    }
+    if (!Number.isInteger(input.trialDays) || input.trialDays < 0 || input.trialDays > 90) {
+      throw new AppError("validation_error", "Dias de teste: use um número de 0 a 90");
     }
   }
 

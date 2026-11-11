@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-08
+**Última atualização:** 2026-11-11
 
 ## Sumário
 
@@ -213,6 +213,9 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 
 - Cria planos e edita nome, preço, membro extra, limites, recursos e um texto livre de até 2000
   caracteres, exibido na oferta do plano em `/dashboard/billing`. A página inicial não mostra planos nem preços por enquanto. Ativa e desativa.
+- A tela separa criar de editar: os planos existentes aparecem como cartões-resumo (preço, limites, recursos, dias de teste e meios de pagamento em etiquetas), com a edição recolhida atrás de "Editar plano"; "Criar um novo plano" é um cartão destacado à parte.
+- **Meios de pagamento** aceitos por plano (cartão, PIX, boleto; **padrão só cartão**). No Asaas, um único meio restringe o checkout a ele; vários liberam a escolha ao cliente (o provedor não aceita subconjunto de dois). O plano Anual é sempre no cartão (parcelado).
+- **Dias de teste grátis** por plano (0 a 90; **padrão 7**). Guardado no plano; o adiamento da 1ª cobrança (cobrar só depois do teste) ainda depende de validação no gateway e não está ligado.
 - O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
   oferta e quem já assina continua neles.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio

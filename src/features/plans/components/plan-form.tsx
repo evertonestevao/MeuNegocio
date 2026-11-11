@@ -8,6 +8,7 @@ import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PLAN_FEATURES } from "@/config/planFeatures";
+import { PAYMENT_METHODS, DEFAULT_PAYMENT_METHODS, DEFAULT_TRIAL_DAYS } from "@/config/paymentMethods";
 import { firstValidationMessage, parsePlanForm, planCodeSchema } from "@/features/plans/schemas";
 import { centsToMoneyInput } from "@/lib/money";
 import type { ActionState } from "@/server/actions/action-state";
@@ -92,6 +93,36 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
           className="border-input min-h-20 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         />
       </Field>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-1 text-sm font-medium">Cobrança</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field id={`${idPrefix}-trial`} label="Dias de teste grátis" hint="Cobra só depois desse prazo. 0 = cobra na hora.">
+            <Input
+              id={`${idPrefix}-trial`}
+              name="trialDays"
+              inputMode="numeric"
+              defaultValue={String(plan?.trial_days ?? DEFAULT_TRIAL_DAYS)}
+              placeholder={String(DEFAULT_TRIAL_DAYS)}
+            />
+          </Field>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label>Meios de pagamento</Label>
+            <div className="flex flex-col gap-2 pt-1">
+              {PAYMENT_METHODS.map((method) => {
+                const checked = plan ? plan.payment_methods.includes(method.key) : DEFAULT_PAYMENT_METHODS.includes(method.key);
+                return (
+                  <label key={method.key} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name={`method:${method.key}`} defaultChecked={checked} className="size-4" />
+                    {method.label}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">Vários meios: o cliente escolhe na tela do pagamento.</p>
+          </div>
+        </div>
+      </fieldset>
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 text-sm font-medium">Limites e recursos</legend>

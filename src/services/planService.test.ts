@@ -11,7 +11,7 @@ const FEATURES: PlanInput["features"] = {
   hours: false,
 };
 
-const INPUT: PlanInput = { customText: null, name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES };
+const INPUT: PlanInput = { customText: null, name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES, paymentMethods: ["credit_card"], trialDays: 7 };
 
 function makePlan(overrides: Partial<Plan> = {}): Plan {
   return {
@@ -24,6 +24,8 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     features: FEATURES,
     custom_text: null,
     extra_seat_price_cents: 500,
+    payment_methods: ["credit_card"],
+    trial_days: 7,
     is_active: true,
     deleted_at: null,
     created_at: "",
@@ -88,6 +90,14 @@ describe("planService", () => {
     await expect(service.update("p1", { ...INPUT, features: missing }, "a")).rejects.toMatchObject({
       code: "validation_error",
     });
+  });
+
+  it("recusa sem meio de pagamento, meio inválido ou dias de teste fora de 0..90", async () => {
+    const service = createPlanService(makeRepo());
+    await expect(service.update("p1", { ...INPUT, paymentMethods: [] }, "a")).rejects.toMatchObject({ code: "validation_error" });
+    await expect(service.update("p1", { ...INPUT, paymentMethods: ["crypto"] }, "a")).rejects.toMatchObject({ code: "validation_error" });
+    await expect(service.update("p1", { ...INPUT, trialDays: -1 }, "a")).rejects.toMatchObject({ code: "validation_error" });
+    await expect(service.update("p1", { ...INPUT, trialDays: 120 }, "a")).rejects.toMatchObject({ code: "validation_error" });
   });
 
   it("o plano padrão não pode ser cobrado nem desativado", async () => {

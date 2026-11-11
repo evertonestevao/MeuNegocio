@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
 import { PLAN_FEATURES, describePlanFeature, planOfferLines } from "@/config/planFeatures";
+import { paymentMethodLabel } from "@/config/paymentMethods";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
 import { PlanForm } from "@/features/plans/components/plan-form";
 import { formatCents } from "@/lib/money";
@@ -106,6 +107,12 @@ export default async function PlansPage() {
                       <Badge variant="outline">Membro extra: {formatCents(plan.extra_seat_price_cents, plan.currency)}</Badge>
                     </li>
                   ) : null}
+                  <li>
+                    <Badge variant="outline">{plan.trial_days > 0 ? `Teste grátis: ${plan.trial_days} dias` : "Sem teste grátis"}</Badge>
+                  </li>
+                  <li>
+                    <Badge variant="outline">Pagamento: {plan.payment_methods.map(paymentMethodLabel).join(", ")}</Badge>
+                  </li>
                 </ul>
                 {plan.custom_text ? <p className="text-sm text-muted-foreground">{plan.custom_text}</p> : null}
                 <details className="group">

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PLAN_FEATURES } from "@/config/planFeatures";
+import { PAYMENT_METHODS, DEFAULT_TRIAL_DAYS } from "@/config/paymentMethods";
 import { parseMoneyToCents } from "@/lib/money";
 
 /** Validação do formulário de planos: roda no navegador e de novo no servidor. */
@@ -61,6 +62,19 @@ export interface PlanFormValues {
   extraSeatPriceCents: number;
   features: PlanFeatureValues;
   customText: string | null;
+  paymentMethods: string[];
+  trialDays: number;
+}
+
+/** Dias de teste: vazio vira o padrão; inteiro de 0 a 90. */
+function parseTrialDays(formData: FormData): number {
+  const raw = formData.get("trialDays");
+  const text = typeof raw === "string" ? raw.trim() : "";
+  if (text === "") return DEFAULT_TRIAL_DAYS;
+  if (!/^\d{1,2}$/.test(text) || Number(text) > 90) {
+    throw new z.ZodError([{ code: "custom", path: ["trialDays"], message: "Dias de teste: use um número de 0 a 90, ou deixe vazio para 7." }]);
+  }
+  return Number(text);
 }
 
 export function parsePlanForm(formData: FormData): PlanFormValues {
@@ -70,7 +84,11 @@ export function parsePlanForm(formData: FormData): PlanFormValues {
     extraSeatPriceCents: formData.get("extraSeatPrice"),
     customText: formData.get("customText") ?? "",
   });
-  return { ...fields, features: parsePlanFeatures(formData) };
+  const paymentMethods = PAYMENT_METHODS.filter((method) => formData.get(`method:${method.key}`) === "on").map((method) => method.key);
+  if (paymentMethods.length === 0) {
+    throw new z.ZodError([{ code: "custom", path: ["paymentMethods"], message: "Escolha ao menos um meio de pagamento." }]);
+  }
+  return { ...fields, features: parsePlanFeatures(formData), paymentMethods, trialDays: parseTrialDays(formData) };
 }
 
 /** Primeira mensagem de um erro de validação, para mostrar no formulário. */

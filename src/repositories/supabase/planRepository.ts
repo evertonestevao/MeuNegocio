@@ -46,6 +46,8 @@ export function createSupabasePlanRepository(client: SupabaseClient): PlanReposi
         p_extra_seat_price_cents: input.extraSeatPriceCents,
         p_features: input.features,
         p_custom_text: input.customText,
+        p_payment_methods: input.paymentMethods,
+        p_trial_days: input.trialDays,
         p_actor: actorId,
       });
       if (error) fail(error);

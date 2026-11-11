@@ -53,6 +53,7 @@ const checkoutParams: CreateCheckoutParams = {
     currency: "BRL",
     billingInterval: "month",
     externalPriceId: null,
+    paymentMethods: ["credit_card"],
   },
   customer: { email: "ana@example.com", name: "Ana" },
   successUrl: "https://app.example.com/dashboard/billing?status=success",
@@ -82,12 +83,24 @@ describe("createCheckout", () => {
     });
     expect(calls[0].body).toMatchObject({
       value: 99,
-      billingType: "UNDEFINED",
+      billingType: "CREDIT_CARD",
       chargeType: "RECURRENT",
       subscriptionCycle: "MONTHLY",
       externalReference: "company-1:plan-pro",
       callback: { successUrl: checkoutParams.successUrl, autoRedirect: true },
     });
+  });
+
+  it("meios de pagamento do plano definem o billingType", async () => {
+    const run = async (paymentMethods: string[]) => {
+      const { gateway, calls } = makeGateway({ "POST /paymentLinks": () => ({ id: "l", url: "u" }) });
+      await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, paymentMethods } });
+      return (calls[0].body as { billingType: string }).billingType;
+    };
+    expect(await run(["credit_card"])).toBe("CREDIT_CARD");
+    expect(await run(["pix"])).toBe("PIX");
+    expect(await run(["boleto"])).toBe("BOLETO");
+    expect(await run(["credit_card", "pix"])).toBe("UNDEFINED");
   });
 
   it("plano anual vira link parcelado em até 12x no cartão, pelo total do ano", async () => {

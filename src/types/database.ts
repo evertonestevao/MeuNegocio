@@ -94,6 +94,10 @@ export interface Plan {
   extra_seat_price_cents: number;
   /** Texto livre do super admin, exibido na oferta do plano. */
   custom_text: string | null;
+  /** Meios de pagamento aceitos no checkout (credit_card, pix, boleto). Padrão: só cartão. */
+  payment_methods: string[];
+  /** Dias de teste grátis antes da 1ª cobrança. 0 = sem teste. Padrão 7. */
+  trial_days: number;
   is_active: boolean;
   deleted_at: string | null;
   created_at: string;

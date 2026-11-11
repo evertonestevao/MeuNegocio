@@ -14,6 +14,8 @@ export interface CheckoutPlan {
   billingInterval: "month" | "year";
   /** Id do preço no catálogo do gateway (PAYMENT_PRICE_<PLANO>), ou null. */
   externalPriceId: string | null;
+  /** Meios aceitos no checkout (credit_card, pix, boleto). Define o billingType no gateway. */
+  paymentMethods: string[];
 }
 
 export interface CreateCheckoutParams {

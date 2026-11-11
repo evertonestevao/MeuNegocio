@@ -30,6 +30,20 @@ import type { PaymentGateway } from "./PaymentGateway";
 
 const ANNUAL_MAX_INSTALLMENTS = 12;
 
+/**
+ * billingType do Asaas a partir dos meios aceitos pelo plano. Um só meio restringe a ele;
+ * vários caem em UNDEFINED (o cliente escolhe na tela). O Asaas não tem subconjunto de 2, então
+ * qualquer combinação de mais de um libera os três.
+ */
+function asaasBillingType(methods: string[]): "CREDIT_CARD" | "PIX" | "BOLETO" | "UNDEFINED" {
+  if (methods.length === 1) {
+    if (methods[0] === "credit_card") return "CREDIT_CARD";
+    if (methods[0] === "pix") return "PIX";
+    if (methods[0] === "boleto") return "BOLETO";
+  }
+  return "UNDEFINED";
+}
+
 const API_URLS = {
   sandbox: "https://api-sandbox.asaas.com/v3",
   production: "https://api.asaas.com/v3",
@@ -297,10 +311,11 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         name: params.plan.name,
         description: `Assinatura do plano ${params.plan.name}`,
         value: toReais(params.plan.priceCents),
-        // Anual: valor do ano em até 12x no cartão. Mensal: o cliente escolhe PIX, boleto ou cartão.
+        // Anual: valor do ano em até 12x no cartão (parcelamento exige cartão). Mensal: usa os
+        // meios aceitos pelo plano (padrão só cartão).
         ...(annual
           ? { billingType: "CREDIT_CARD", chargeType: "INSTALLMENT", maxInstallmentCount: ANNUAL_MAX_INSTALLMENTS }
-          : { billingType: "UNDEFINED", chargeType: "RECURRENT", subscriptionCycle: "MONTHLY" }),
+          : { billingType: asaasBillingType(params.plan.paymentMethods), chargeType: "RECURRENT", subscriptionCycle: "MONTHLY" }),
         dueDateLimitDays: 3,
         externalReference: `${params.companyId}:${params.plan.id}`,
         // O domínio de successUrl precisa estar cadastrado nas informações
