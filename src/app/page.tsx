@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check, MessageCircle } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { brand, salesWhatsappHref } from "@/config/brand";
 import { BrowserFrame, PhoneFrame } from "@/features/marketing/components/device-frames";
@@ -27,7 +28,10 @@ export default async function LandingPage() {
     <div className="flex flex-1 flex-col overflow-x-clip">
       <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
-          <span className="font-semibold tracking-tight">{brand.name}</span>
+          <span className="flex items-center gap-2 font-semibold tracking-tight">
+            <BrandMark className="size-7" />
+            {brand.name}
+          </span>
           <nav className="flex items-center gap-1 sm:gap-2" aria-label="Principal">
             <a href="/demo" className="hidden px-2 text-sm font-medium text-foreground hover:underline md:block">
               Demonstração

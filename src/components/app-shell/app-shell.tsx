@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { brand } from "@/config/brand";
@@ -71,8 +72,9 @@ export function AppShell({
         )}
       >
         <div className={cn("flex h-14 items-center border-b border-sidebar-border px-4", collapsed && "px-2 justify-center")}>
-          <Link href={homeHref} className="truncate font-semibold tracking-tight">
-            {collapsed ? brand.name.slice(0, 1) : brand.name}
+          <Link href={homeHref} className="flex min-w-0 items-center gap-2 font-semibold tracking-tight">
+            <BrandMark className="size-8" />
+            {collapsed ? null : <span className="truncate">{brand.name}</span>}
           </Link>
         </div>
         {nav(collapsed)}
@@ -96,9 +98,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 print:hidden items-center gap-2 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground lg:border-border lg:bg-background/95 lg:text-foreground lg:backdrop-blur">
           <Link href={homeHref} className="flex min-w-0 items-center gap-2.5 lg:hidden">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-lg font-extrabold text-sidebar-primary-foreground" aria-hidden>
-              {brand.name.slice(0, 1)}
-            </span>
+            <BrandMark className="size-8" />
             <span className="truncate font-heading text-lg font-bold tracking-tight">{brand.name}</span>
           </Link>
           <div className="hidden min-w-0 lg:block">
