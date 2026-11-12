@@ -13,12 +13,13 @@ export const brand = {
   url: "https://negocioapp.com.br",
   /**
    * Dados legais exibidos no rodapé e nas páginas de política (Decreto 7.962/2013).
-   * address ainda é PLACEHOLDER — preencha o endereço do MEI antes de produção.
+   * MEI: usamos só a cidade/UF para não expor o endereço residencial. Se um dia
+   * houver endereço comercial (escritório virtual), trocar `address` por ele.
    */
   legal: {
     companyName: "70.103.001 Suelen Priscila Camargo Silva",
     cnpj: "70.103.001/0001-47",
-    address: "Rua, nº — Cidade/UF — CEP",
+    address: "Guaiçara/SP",
     supportEmail: "suporte@negocioapp.com.br",
     /** Encarregado de dados (DPO) — canal para direitos do titular (LGPD, art. 41). */
     dpoEmail: "privacidade@negocioapp.com.br",
