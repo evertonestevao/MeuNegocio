@@ -13,11 +13,10 @@ export const brand = {
   url: "https://negocioapp.com.br",
   /**
    * Dados legais exibidos no rodapé e nas páginas de política (Decreto 7.962/2013).
-   * companyName e address ainda são PLACEHOLDERS — preencha a razão social e o
-   * endereço reais do CNPJ antes de ir para produção.
+   * address ainda é PLACEHOLDER — preencha o endereço do MEI antes de produção.
    */
   legal: {
-    companyName: "Minha Empresa Ltda.",
+    companyName: "70.103.001 Suelen Priscila Camargo Silva",
     cnpj: "70.103.001/0001-47",
     address: "Rua, nº — Cidade/UF — CEP",
     supportEmail: "suporte@negocioapp.com.br",
