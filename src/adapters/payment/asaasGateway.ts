@@ -102,7 +102,9 @@ export function parseExternalReference(
 }
 
 const ASAAS_EVENT_MAP: Record<string, PaymentEventType> = {
-  // Checkout hospedado concluído: cria a assinatura (em teste até a 1ª cobrança).
+  // Checkout hospedado concluído: a assinatura foi criada (em teste, se a 1ª
+  // cobrança é futura). É o ÚNICO evento que traz o externalReference (empresa:plano),
+  // porque a assinatura/cobrança criadas pelo checkout vêm sem ele.
   CHECKOUT_PAID: "subscription.activated",
   PAYMENT_CONFIRMED: "subscription.activated",
   PAYMENT_RECEIVED: "subscription.activated",
@@ -112,6 +114,9 @@ const ASAAS_EVENT_MAP: Record<string, PaymentEventType> = {
   PAYMENT_REFUNDED: "payment.refunded",
   PAYMENT_PARTIALLY_REFUNDED: "payment.refunded",
 };
+
+/** Eventos de cobrança efetivamente paga (geram comissão e assinatura ativa). */
+const PAID_EVENTS = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
 
 interface AsaasWebhookEvent {
   event?: string;
@@ -136,6 +141,8 @@ interface AsaasWebhookEvent {
   checkout?: {
     id?: string;
     externalReference?: string | null;
+    /** Bloco da assinatura: nextDueDate é a data da 1ª cobrança (fim do teste). */
+    subscription?: { nextDueDate?: string } | null;
   };
 }
 
@@ -144,20 +151,8 @@ interface AsaasSubscription {
   customer?: string;
   externalReference?: string | null;
   nextDueDate?: string;
-}
-
-/**
- * GET /checkouts/{id}: o essencial para ligar o checkout concluído à assinatura
- * criada. Os nomes dos campos da assinatura/cliente podem variar — confirmar no
- * sandbox (ver scripts/asaas-sandbox-checkout.md) e ajustar se necessário.
- */
-interface AsaasCheckout {
-  id?: string;
-  externalReference?: string | null;
-  customer?: string | null;
-  status?: string;
-  subscription?: string | { id?: string; nextDueDate?: string } | null;
-  nextDueDate?: string | null;
+  /** Id do checkout que originou a assinatura — como a ligamos ao CHECKOUT_PAID. */
+  checkoutSession?: string | null;
 }
 
 interface AsaasRefund {
@@ -170,9 +165,15 @@ function toCents(reais: number): number {
   return Math.round(reais * 100);
 }
 
-/** "2026-10-26" -> ISO em UTC; null se ausente. */
+/**
+ * Data do Asaas -> ISO em UTC; null se ausente ou inválida. Aceita só data
+ * ("2026-10-26", tratada como meia-noite UTC) e timestamp completo
+ * ("2026-11-26T03:00:00+0000", como vem no bloco subscription do checkout).
+ */
 function dateToIso(date: string | undefined | null): string | null {
-  return date ? new Date(`${date}T00:00:00Z`).toISOString() : null;
+  if (!date) return null;
+  const parsed = new Date(date.includes("T") ? date : `${date}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 function installmentId(installment: string | { id?: string } | null | undefined): string | null {
@@ -239,29 +240,26 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     };
     if (type === "ignored") return base;
 
-    // Checkout hospedado concluído: o cliente cadastrou o cartão e a assinatura
-    // foi criada, mas a 1ª cobrança só acontece em nextDueDate. Entra como teste
-    // (trialEndsAt) até lá; a cobrança futura chega depois como PAYMENT_CONFIRMED.
+    // Checkout hospedado concluído. Traz o externalReference (empresa:plano) e a data
+    // da 1ª cobrança, mas NÃO o id da assinatura criada — então achamos a assinatura
+    // pelo campo checkoutSession (= id do checkout). Com vencimento futuro, entra
+    // "em teste"; com vencimento hoje (sem teste), entra ativa.
     if (event.event === "CHECKOUT_PAID") {
       const checkoutId = event.checkout?.id;
-      if (!checkoutId) return base;
-      const checkout = await asaasRequest<AsaasCheckout>(`/checkouts/${checkoutId}`, "GET");
-      const reference = parseExternalReference(checkout.externalReference ?? event.checkout?.externalReference);
-      const subscriptionId =
-        typeof checkout.subscription === "string" ? checkout.subscription : (checkout.subscription?.id ?? null);
-      // Sem assinatura ou sem empresa/plano, não há o que ativar: ignora (200) em
-      // vez de falhar, para não travar a fila sequencial do Asaas.
-      if (!reference || !subscriptionId) return base;
-      const nextDueDate =
-        (typeof checkout.subscription === "object" ? checkout.subscription?.nextDueDate : null) ?? checkout.nextDueDate ?? null;
-      const firstChargeIso = dateToIso(nextDueDate);
-      // nextDueDate no futuro = período de teste; hoje/passado = cobra já (sem teste).
+      const reference = parseExternalReference(event.checkout?.externalReference);
+      if (!checkoutId || !reference) return base;
+      // Não há filtro por checkoutSession na API: lista as assinaturas recentes e casa
+      // pelo campo. A recém-criada vem no topo (ordem decrescente).
+      const list = await asaasRequest<{ data?: AsaasSubscription[] }>(`/subscriptions?limit=100&offset=0`, "GET");
+      const subscription = (list.data ?? []).find((s) => s.checkoutSession === checkoutId);
+      if (!subscription) return base;
+      const firstChargeIso = dateToIso(event.checkout?.subscription?.nextDueDate ?? subscription.nextDueDate);
       const inTrial = firstChargeIso !== null && Date.parse(firstChargeIso) > Date.now();
       return {
         ...base,
         type: "subscription.activated",
-        externalSubscriptionId: subscriptionId,
-        externalCustomerId: checkout.customer ?? null,
+        externalSubscriptionId: subscription.id,
+        externalCustomerId: subscription.customer ?? null,
         companyId: reference.companyId,
         planId: reference.planId,
         currentPeriodStart: new Date().toISOString(),
@@ -314,8 +312,12 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     }
 
     const payment = event.payment;
+    const paid = PAID_EVENTS.has(event.event ?? "");
+    const isActivation = type === "subscription.activated";
     // Compra do plano anual: vem de um link nosso e não tem assinatura. Cobrança avulsa é ignorada.
     if (payment && !payment.subscription) {
+      // Anual só libera acesso quando a parcela é efetivamente paga. Vencimento (payment.failed) segue.
+      if (isActivation && !paid) return base;
       const reference = await resolveReference(null, payment.paymentLink);
       if (!reference || !payment.id) return base;
       const parcel = installmentId(payment.installment);
@@ -333,10 +335,7 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         currentPeriodEnd: end.toISOString(),
         nonRenewing: true,
         installmentPayment: parcel !== null,
-        payment:
-          type === "subscription.activated" && payment.value
-            ? { externalId: payment.id, grossAmountCents: toCents(payment.value) }
-            : undefined,
+        payment: paid && payment.value ? { externalId: payment.id, grossAmountCents: toCents(payment.value) } : undefined,
       };
     }
     if (!payment?.subscription) return base;
@@ -344,25 +343,23 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       `/subscriptions/${payment.subscription}`,
       "GET",
     );
+    // A assinatura criada pelo checkout vem sem externalReference; o vínculo com a
+    // empresa já foi gravado no CHECKOUT_PAID. Aqui casamos pelo id da assinatura
+    // (findSubscriptionByExternalId no service), então seguimos mesmo sem reference —
+    // é a cobrança real (fim do teste ou renovação) que ativa/renova a assinatura.
     const reference = await resolveReference(subscription, payment.paymentLink);
-    // Sem empresa/plano identificáveis, o evento não é nosso: ignora (200). Devolver erro aqui
-    // travaria a fila sequencial do Asaas e seguraria os eventos seguintes (inclusive pagamentos bons).
-    if (!reference) return base;
     return {
       ...base,
       type,
       externalSubscriptionId: payment.subscription,
       externalCustomerId: payment.customer ?? subscription.customer ?? null,
-      companyId: reference.companyId,
-      planId: reference.planId,
+      companyId: reference?.companyId ?? null,
+      planId: reference?.planId ?? null,
       currentPeriodStart: dateToIso(payment.dueDate),
       currentPeriodEnd: dateToIso(subscription.nextDueDate),
       // Só pagamento confirmado gera comissão. CONFIRMED e RECEIVED da mesma cobrança
       // têm o mesmo id, e o par único no banco evita o lançamento duplicado.
-      payment:
-        type === "subscription.activated" && payment.id && payment.value
-          ? { externalId: payment.id, grossAmountCents: toCents(payment.value) }
-          : undefined,
+      payment: paid && payment.id && payment.value ? { externalId: payment.id, grossAmountCents: toCents(payment.value) } : undefined,
     };
   }
 

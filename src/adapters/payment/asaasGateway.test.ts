@@ -216,47 +216,86 @@ describe("handleWebhook", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("CHECKOUT_PAID com cobrança adiada entra como teste (trialing) até nextDueDate", async () => {
-    const future = "2099-01-01";
+  it("CHECKOUT_PAID com cobrança futura entra como teste (trialing), achando a sub pelo checkoutSession", async () => {
+    const future = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
     const { gateway } = makeGateway({
-      "GET /checkouts/chk_1": () => ({
-        id: "chk_1",
-        externalReference: "company-1:plan-pro",
-        customer: "cus_1",
-        subscription: { id: "sub_1", nextDueDate: future },
+      // A API não filtra por checkoutSession: devolve a lista e o adapter casa pelo campo.
+      "GET /subscriptions?limit=100&offset=0": () => ({
+        data: [
+          { id: "sub_outra", checkoutSession: "chk_zzz", customer: "cus_x" },
+          { id: "sub_1", checkoutSession: "chk_1", customer: "cus_1", nextDueDate: "2099-02-01" },
+        ],
       }),
     });
-    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_1" } }));
+    const event = await gateway.handleWebhook(
+      webhook({
+        event: "CHECKOUT_PAID",
+        checkout: { id: "chk_1", externalReference: "company-1:plan-pro", subscription: { nextDueDate: future } },
+      }),
+    );
     expect(event).toMatchObject({
       type: "subscription.activated",
       externalSubscriptionId: "sub_1",
       externalCustomerId: "cus_1",
       companyId: "company-1",
       planId: "plan-pro",
-      trialEndsAt: "2099-01-01T00:00:00.000Z",
+      trialEndsAt: `${future}T00:00:00.000Z`,
     });
+    // Teste não gera comissão: nada foi pago ainda.
+    expect(event.payment).toBeUndefined();
   });
 
-  it("CHECKOUT_PAID sem teste (nextDueDate hoje/passado) não marca trialEndsAt", async () => {
+  it("CHECKOUT_PAID aceita nextDueDate como timestamp completo (formato do checkout)", async () => {
     const { gateway } = makeGateway({
-      "GET /checkouts/chk_2": () => ({
-        id: "chk_2",
-        externalReference: "company-1:plan-pro",
-        customer: "cus_1",
-        subscription: "sub_2",
-        nextDueDate: "2000-01-01",
-      }),
+      "GET /subscriptions?limit=100&offset=0": () => ({ data: [{ id: "sub_ts", checkoutSession: "chk_ts" }] }),
     });
-    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_2" } }));
+    const event = await gateway.handleWebhook(
+      webhook({
+        event: "CHECKOUT_PAID",
+        checkout: { id: "chk_ts", externalReference: "company-1:plan-pro", subscription: { nextDueDate: "2099-11-26T03:00:00+0000" } },
+      }),
+    );
+    expect(event).toMatchObject({ type: "subscription.activated", externalSubscriptionId: "sub_ts", trialEndsAt: "2099-11-26T03:00:00.000Z" });
+  });
+
+  it("CHECKOUT_PAID com cobrança hoje (sem teste) entra ativo, sem trialEndsAt", async () => {
+    const { gateway } = makeGateway({
+      "GET /subscriptions?limit=100&offset=0": () => ({ data: [{ id: "sub_2", checkoutSession: "chk_2", customer: "cus_2" }] }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({
+        event: "CHECKOUT_PAID",
+        checkout: { id: "chk_2", externalReference: "company-1:plan-pro", subscription: { nextDueDate: "2000-01-01" } },
+      }),
+    );
     expect(event).toMatchObject({ type: "subscription.activated", externalSubscriptionId: "sub_2", trialEndsAt: null });
   });
 
-  it("CHECKOUT_PAID sem assinatura ou sem referência é ignorado", async () => {
+  it("CHECKOUT_PAID sem referência ou sem assinatura correspondente é ignorado", async () => {
     const { gateway } = makeGateway({
-      "GET /checkouts/chk_3": () => ({ id: "chk_3", externalReference: null, subscription: null }),
+      "GET /subscriptions?limit=100&offset=0": () => ({ data: [{ id: "sub_x", checkoutSession: "outro" }] }),
     });
-    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_3" } }));
-    expect(event.type).toBe("ignored");
+    // Sem externalReference válido.
+    await expect(
+      gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_9", externalReference: null } })),
+    ).resolves.toMatchObject({ type: "ignored" });
+    // Referência ok, mas nenhuma assinatura casa o checkoutSession.
+    await expect(
+      gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_9", externalReference: "c:p" } })),
+    ).resolves.toMatchObject({ type: "ignored" });
+  });
+
+  it("cobrança confirmada de sub do checkout (sem externalReference) ativa casando pelo id", async () => {
+    const { gateway } = makeGateway({
+      // Sub criada pelo checkout: externalReference nulo. O vínculo veio no CHECKOUT_PAID.
+      "GET /subscriptions/sub_1": () => ({ id: "sub_1", externalReference: null, nextDueDate: "2099-02-01" }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", subscription: "sub_1", value: 99, dueDate: "2099-01-01" } }),
+    );
+    expect(event).toMatchObject({ type: "subscription.activated", externalSubscriptionId: "sub_1", companyId: null });
+    // A comissão é registrada no pagamento real.
+    expect(event.payment).toEqual({ externalId: "pay_1", grossAmountCents: 9900 });
   });
 
   it("pagamento avulso e eventos desconhecidos são ignorados", async () => {

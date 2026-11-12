@@ -30,28 +30,30 @@ Esperado: `HTTP 200` e um `link`. O `nextDueDate` impresso é a data da 1ª cobr
    - **Não há cobrança “recebida/confirmada” hoje.** Se aparecer uma cobrança
      paga na hora, o adiamento não funcionou — **pare e me avise**.
 
-## 3. Conferir os webhooks (manual)
+## 3. Webhook: eventos necessários
 
-Com o webhook apontando para o ambiente (ou um coletor como webhook.site),
-observe a ordem dos eventos ao concluir o checkout e na data da 1ª cobrança:
+O webhook do Asaas **precisa ter `CHECKOUT_PAID` habilitado** (além de
+`PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`/`PAYMENT_OVERDUE`/refunds/cancelamentos).
+Confira em `GET /webhooks`; se faltar, adicione `CHECKOUT_PAID` à lista de eventos.
 
-- Ao concluir o checkout: deve chegar **`CHECKOUT_PAID`**. O adapter consulta
-  `GET /checkouts/{id}` para achar a assinatura criada e o `externalReference`, e
-  marca a assinatura como **em teste (trialing)** até `nextDueDate`.
-- Na data da 1ª cobrança: deve chegar **`PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`**,
-  que ativa a assinatura (vira `active`).
+Por quê: a assinatura e as cobranças criadas pelo checkout vêm **sem**
+`externalReference`. O único evento que carrega o `"<companyId>:<planId>"` é o
+`CHECKOUT_PAID`. O adapter:
 
-### O que confirmar (e ajustar se divergir)
+1. Ao receber `CHECKOUT_PAID`: lê `checkout.externalReference` (empresa:plano) e
+   `checkout.subscription.nextDueDate` (1ª cobrança). Como o payload **não traz o id
+   da assinatura**, lista `GET /subscriptions?limit=100` e acha a assinatura pelo
+   campo **`checkoutSession` = `checkout.id`**. Vencimento futuro → entra **em teste
+   (trialing)**; vencimento hoje → **ativa**.
+2. Na data da 1ª cobrança: chega `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`. A assinatura
+   do checkout não tem `externalReference`, então o casamento é pelo **id da
+   assinatura** (a linha já existe no banco desde o `CHECKOUT_PAID`): passa a `active`.
 
-O tratamento de `CHECKOUT_PAID` em `asaasGateway.ts` assume que:
+### Confirmar no sandbox (fluxo real)
 
-- `GET /checkouts/{id}` retorna o **id da assinatura criada** (em `subscription`,
-  string ou objeto com `id`) e o **`externalReference`** (`"<companyId>:<planId>"`).
-- O `nextDueDate` vem no checkout ou na assinatura.
-
-Se os nomes dos campos vierem diferentes no sandbox, ajuste a interface
-`AsaasCheckout` e o branch de `CHECKOUT_PAID` em `normalize()`. Os testes em
-`asaasGateway.test.ts` cobrem a forma esperada.
+Depois de concluir um checkout de teste, confira em `subscriptions` (nosso banco)
+que a assinatura entrou como `trialing` com o `external_subscription_id` certo, e que
+a tela `/assinar/confirmando` avançou sozinha para o passo 4.
 
 ## 4. Produção
 

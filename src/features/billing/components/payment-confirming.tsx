@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { subscriptionConfirmationStatus } from "@/server/actions/billing";
 
 /**
- * Depois de pagar, o gateway devolve o cliente aqui na hora, mas a ativação vem do webhook, que é
- * assíncrono. Esta tela espera a assinatura ativar (consultando em intervalos) e então leva ao
- * próximo passo. Se demorar demais, explica que a cobrança foi recebida e que a confirmação chega.
+ * Depois do checkout, o gateway devolve o cliente aqui na hora, mas a ativação vem do webhook, que é
+ * assíncrono. Esta tela espera a assinatura entrar (consultando em intervalos) e então leva ao
+ * próximo passo sozinha. Se demorar demais, explica que a confirmação ainda pode chegar. Vale tanto
+ * para assinatura paga quanto para teste grátis (onde nada é cobrado agora), por isso o texto é neutro.
  */
 export function PaymentConfirming() {
   const router = useRouter();
@@ -51,31 +52,26 @@ export function PaymentConfirming() {
     <div className="flex flex-col items-center gap-4 py-10 text-center">
       {slow ? (
         <>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">Pagamento recebido</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">Estamos quase lá</h1>
           <p className="max-w-md text-muted-foreground">
-            A confirmação do seu pagamento pode levar alguns minutos. Você pode continuar: assim que ela chegar,
-            o acesso é liberado.
+            A confirmação da sua assinatura pode levar alguns minutos. Assim que chegar, seu acesso é
+            liberado automaticamente — você não precisa fazer mais nada.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button
-              onClick={() => {
-                tries.current = 0;
-                setSlow(false);
-              }}
-            >
-              Verificar de novo
-            </Button>
-            <Button variant="outline" onClick={() => router.replace("/dashboard")}>
-              Ir para o sistema
-            </Button>
-          </div>
+          <Button
+            onClick={() => {
+              tries.current = 0;
+              setSlow(false);
+            }}
+          >
+            Verificar de novo
+          </Button>
         </>
       ) : (
         <>
           <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">Confirmando pagamento…</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">Confirmando sua assinatura…</h1>
           <p className="max-w-md text-muted-foreground">
-            Estamos confirmando sua assinatura. É só um instante — não feche esta página.
+            É só um instante — não feche esta página. Vamos te levar para o próximo passo automaticamente.
           </p>
         </>
       )}

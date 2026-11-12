@@ -198,7 +198,9 @@ export function createBillingService(repo: BillingRepository) {
       case "subscription.activated":
       case "subscription.updated":
         await repo.updateSubscription(existing.id, {
-          status: "active",
+          // Teste em andamento (trialEndsAt) segue "em teste"; evento duplicado de
+          // cobrança criada não antecipa a ativação. Sem teste, fica ativa.
+          status: event.trialEndsAt ? "trialing" : "active",
           plan_id: event.planId ?? existing.plan_id,
           current_period_start: event.currentPeriodStart ?? existing.current_period_start,
           current_period_end: event.currentPeriodEnd ?? existing.current_period_end,
