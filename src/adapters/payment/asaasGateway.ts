@@ -5,6 +5,8 @@ import type {
   ExtraSeatsUpdate,
   NormalizedPaymentEvent,
   PaymentEventType,
+  RenewedSubscription,
+  RenewSubscriptionParams,
   WebhookRequest,
 } from "@/types/billing";
 import type { PaymentGateway } from "./PaymentGateway";
@@ -33,7 +35,8 @@ import type { PaymentGateway } from "./PaymentGateway";
  *  - Portal: o Asaas não tem portal de autogestão — getPortalUrl devolve null.
  */
 
-const ANNUAL_MAX_INSTALLMENTS = 12;
+/** Anual = 12 cobranças mensais (termo), depois renova. */
+const ANNUAL_TERM_MONTHS = 12;
 
 /** Expiração do checkout hospedado, em minutos (limite do Asaas: 10 a 1440). */
 const CHECKOUT_EXPIRES_MINUTES = 60;
@@ -54,14 +57,25 @@ function checkoutBillingTypes(methods: string[]): Array<"CREDIT_CARD" | "PIX"> {
   return types.length > 0 ? types : ["CREDIT_CARD"];
 }
 
-/** Data (YYYY-MM-DD, fuso local do servidor) daqui a `days` dias — nextDueDate do Asaas. */
-function dueDateString(days: number, now: Date = new Date()): string {
-  const date = new Date(now);
-  date.setDate(date.getDate() + Math.max(0, Math.trunc(days)));
+function ymd(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+/** Data (YYYY-MM-DD, fuso local do servidor) daqui a `days` dias — nextDueDate do Asaas. */
+function dueDateString(days: number, now: Date = new Date()): string {
+  const date = new Date(now);
+  date.setDate(date.getDate() + Math.max(0, Math.trunc(days)));
+  return ymd(date);
+}
+
+/** Data (YYYY-MM-DD) `months` meses depois de uma data "YYYY-MM-DD" ou timestamp. */
+function dueDateMonthsAfter(date: string, months: number): string {
+  const base = new Date(date.includes("T") ? date : `${date}T00:00:00Z`);
+  base.setUTCMonth(base.getUTCMonth() + months);
+  return base.toISOString().slice(0, 10);
 }
 
 const API_URLS = {
@@ -153,6 +167,12 @@ interface AsaasSubscription {
   nextDueDate?: string;
   /** Id do checkout que originou a assinatura — como a ligamos ao CHECKOUT_PAID. */
   checkoutSession?: string | null;
+  /** Nº máximo de cobranças do termo (12 no anual). Ausente/nulo = sem termo fixo. */
+  maxPayments?: number | null;
+  /** Valor da cobrança (reais). */
+  value?: number;
+  /** Cartão tokenizado da assinatura, usado para renovar o termo. */
+  creditCard?: { creditCardToken?: string | null } | null;
 }
 
 interface AsaasRefund {
@@ -265,6 +285,9 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         currentPeriodStart: new Date().toISOString(),
         currentPeriodEnd: firstChargeIso,
         trialEndsAt: inTrial ? firstChargeIso : null,
+        gatewayProvider: "asaas",
+        // Token do cartão para renovar o termo (anual em 12x) sem nova entrada de cartão.
+        paymentMethodToken: subscription.creditCard?.creditCardToken ?? null,
       };
     }
 
@@ -348,6 +371,9 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     // (findSubscriptionByExternalId no service), então seguimos mesmo sem reference —
     // é a cobrança real (fim do teste ou renovação) que ativa/renova a assinatura.
     const reference = await resolveReference(subscription, payment.paymentLink);
+    // Termo (anual em 12x): na última parcela paga, prepara a renovação. Conta as
+    // cobranças pagas no Asaas (fonte da verdade, imune a webhook duplicado).
+    const termRenewal = paid ? await detectTermRenewal(payment.subscription, subscription, payment.dueDate) : undefined;
     return {
       ...base,
       type,
@@ -360,14 +386,52 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       // Só pagamento confirmado gera comissão. CONFIRMED e RECEIVED da mesma cobrança
       // têm o mesmo id, e o par único no banco evita o lançamento duplicado.
       payment: paid && payment.id && payment.value ? { externalId: payment.id, grossAmountCents: toCents(payment.value) } : undefined,
+      termRenewal,
     };
   }
 
-  /** Checkout hospedado MENSAL com assinatura e 1ª cobrança em nextDueDate. */
+  /**
+   * Última parcela de um termo (anual em 12x) paga? Conta as cobranças pagas no
+   * Asaas; quando chega a maxPayments, devolve os dados para criar o próximo termo
+   * com o cartão tokenizado. Sem termo (maxPayments nulo) ou sem token, não renova.
+   */
+  async function detectTermRenewal(
+    subscriptionId: string,
+    subscription: AsaasSubscription,
+    lastDueDate: string | undefined,
+  ): Promise<NormalizedPaymentEvent["termRenewal"]> {
+    const maxPayments = subscription.maxPayments ?? null;
+    const token = subscription.creditCard?.creditCardToken ?? null;
+    if (!maxPayments || !token || !subscription.customer || !lastDueDate) return undefined;
+    const payments = await asaasRequest<{ data?: Array<{ status?: string }> }>(
+      `/payments?subscription=${subscriptionId}&limit=100`,
+      "GET",
+    );
+    const paidCount = (payments.data ?? []).filter((p) => p.status === "CONFIRMED" || p.status === "RECEIVED").length;
+    if (paidCount < maxPayments) return undefined;
+    return {
+      externalCustomerId: subscription.customer,
+      paymentMethodToken: token,
+      valueCents: toCents(subscription.value ?? 0),
+      maxPayments,
+      // Próximo termo começa no mês seguinte à última cobrança.
+      nextDueDate: dueDateMonthsAfter(lastDueDate, 1),
+    };
+  }
+
+  /**
+   * Checkout hospedado com assinatura (1ª cobrança em nextDueDate). Mensal: valor do
+   * plano, renovação infinita. Anual: valor por mês (total/12) com maxPayments=12
+   * (termo); ao fim das 12, o webhook renova criando o próximo termo com o cartão
+   * tokenizado. Anual é sempre no cartão (precisa tokenizar para renovar).
+   */
   async function createSubscriptionCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
-    const trialDays = params.trialDays ?? 0;
-    // Com teste, só cartão: PIX/boleto não guardam o meio para a cobrança futura.
-    const billingTypes = trialDays > 0 ? (["CREDIT_CARD"] as const) : checkoutBillingTypes(params.plan.paymentMethods);
+    const annual = params.plan.billingInterval === "year";
+    const trialDays = annual ? 0 : (params.trialDays ?? 0);
+    const valueCents = annual ? Math.round(params.plan.priceCents / ANNUAL_TERM_MONTHS) : params.plan.priceCents;
+    // Com teste ou anual, só cartão: PIX/boleto não guardam o meio para a cobrança futura.
+    const billingTypes =
+      annual || trialDays > 0 ? (["CREDIT_CARD"] as const) : checkoutBillingTypes(params.plan.paymentMethods);
     const checkout = await asaasRequest<{ id: string; link: string }>("/checkouts", "POST", {
       billingTypes,
       chargeTypes: ["RECURRENT"],
@@ -381,36 +445,22 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
           name: params.plan.name.slice(0, 30),
           description: `Assinatura do plano ${params.plan.name}`.slice(0, 150),
           quantity: 1,
-          value: toReais(params.plan.priceCents),
+          value: toReais(valueCents),
           // O schema de itens do checkout exige uma imagem; usamos um 1x1 transparente.
           imageBase64: CHECKOUT_ITEM_IMAGE,
         },
       ],
       subscription: {
         cycle: "MONTHLY",
-        // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje (sem teste).
+        // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje (sem teste/anual).
         nextDueDate: dueDateString(trialDays),
+        // Anual: termo de 12 cobranças. Mensal: sem limite (renova sozinho).
+        ...(annual ? { maxPayments: ANNUAL_TERM_MONTHS } : {}),
       },
       // Sem customerData: a página do Asaas coleta nome, CPF, telefone e endereço do
       // comprador. Enviar customerData parcial é recusado (exige todos esses campos).
     });
     return { id: checkout.id, url: checkout.link };
-  }
-
-  /** Plano anual: Link de Pagamento PARCELADO (compra única em até 12x). */
-  async function createAnnualLink(params: CreateCheckoutParams): Promise<CheckoutSession> {
-    const link = await asaasRequest<{ id: string; url: string }>("/paymentLinks", "POST", {
-      name: params.plan.name,
-      description: `Assinatura do plano ${params.plan.name}`,
-      value: toReais(params.plan.priceCents),
-      billingType: "CREDIT_CARD",
-      chargeType: "INSTALLMENT",
-      maxInstallmentCount: ANNUAL_MAX_INSTALLMENTS,
-      dueDateLimitDays: 3,
-      externalReference: `${params.companyId}:${params.plan.id}`,
-      callback: { successUrl: params.successUrl, autoRedirect: true },
-    });
-    return { id: link.id, url: link.url };
   }
 
   return {
@@ -420,11 +470,30 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     supportsTrial: true,
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
-      // Anual é compra parcelada (não há teste em parcelamento). Mensal vai pelo
-      // checkout com assinatura, com ou sem teste.
-      return params.plan.billingInterval === "year"
-        ? createAnnualLink(params)
-        : createSubscriptionCheckout(params);
+      // Mensal e anual vão pelo checkout com assinatura. O anual é cobrado em 12
+      // parcelas mensais (termo) e renova; o mensal renova sozinho.
+      return createSubscriptionCheckout(params);
+    },
+
+    async renewSubscription(params: RenewSubscriptionParams): Promise<RenewedSubscription> {
+      // Cria o próximo termo com o cartão tokenizado (sem nova entrada de cartão).
+      // nextDueDate futuro: a 1ª cobrança do novo termo acontece na data, não agora.
+      const sub = await asaasRequest<{ id: string }>("/subscriptions", "POST", {
+        customer: params.externalCustomerId,
+        billingType: "CREDIT_CARD",
+        value: toReais(params.valueCents),
+        cycle: "MONTHLY",
+        maxPayments: params.maxPayments,
+        nextDueDate: params.nextDueDate,
+        creditCardToken: params.paymentMethodToken,
+        externalReference: params.externalReference,
+        description: "Renovação do plano anual (12x)",
+      });
+      return {
+        externalSubscriptionId: sub.id,
+        // Acesso coberto até o fim do novo termo.
+        currentPeriodEnd: dateToIso(dueDateMonthsAfter(params.nextDueDate, params.maxPayments)),
+      };
     },
 
     async cancelSubscription(externalSubscriptionId: string): Promise<void> {

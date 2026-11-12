@@ -260,6 +260,6 @@ export const faq = [
   },
   {
     question: "Como funciona o pagamento e o cancelamento?",
-    answer: "No plano anual, você paga em até 12x no cartão e tem 12 meses de acesso, sem renovação automática. No mensal, a cobrança é todo mês, por PIX, boleto ou cartão, e ao cancelar o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
+    answer: "No plano anual, o valor do ano é dividido em 12 cobranças mensais no cartão (um valor mensal menor), e ele renova automaticamente a cada ano, sem você precisar pagar de novo. No mensal, a cobrança é todo mês, por PIX, boleto ou cartão, e ao cancelar o acesso segue até o fim do período pago. As regras de reembolso estão na nossa política.",
   },
 ];

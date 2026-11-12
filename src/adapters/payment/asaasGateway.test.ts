@@ -123,16 +123,18 @@ describe("createCheckout", () => {
     expect(await run(["boleto"])).toEqual(["CREDIT_CARD"]);
   });
 
-  it("plano anual vira link parcelado em até 12x no cartão, pelo total do ano", async () => {
-    const { gateway, calls } = makeGateway({
-      "POST /paymentLinks": () => ({ id: "l", url: "u" }),
-    });
+  it("plano anual vira assinatura mensal 12x (termo), valor por mês e só cartão", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
     await gateway.createCheckout({
+      // priceCents anual = 395880 (R$3.958,80/ano) -> R$329,90/mês.
       ...checkoutParams,
-      plan: { ...checkoutParams.plan, billingInterval: "year" },
+      plan: { ...checkoutParams.plan, billingInterval: "year", priceCents: 395880, paymentMethods: ["credit_card", "pix"] },
     });
-    expect(calls[0].path).toBe("/paymentLinks");
-    expect(calls[0].body).toMatchObject({ chargeType: "INSTALLMENT", billingType: "CREDIT_CARD", maxInstallmentCount: 12 });
+    expect(calls[0].path).toBe("/checkouts");
+    const body = calls[0].body as { billingTypes: string[]; subscription: { cycle: string; maxPayments: number }; items: Array<{ value: number }> };
+    expect(body.billingTypes).toEqual(["CREDIT_CARD"]); // anual só no cartão (para tokenizar e renovar)
+    expect(body.subscription).toMatchObject({ cycle: "MONTHLY", maxPayments: 12 });
+    expect(body.items[0].value).toBe(329.9); // 395880 centavos / 12 = 32990 -> R$329,90
   });
 
   it("erro da API vira payment_error sem vazar o detalhe", async () => {
@@ -296,6 +298,66 @@ describe("handleWebhook", () => {
     expect(event).toMatchObject({ type: "subscription.activated", externalSubscriptionId: "sub_1", companyId: null });
     // A comissão é registrada no pagamento real.
     expect(event.payment).toEqual({ externalId: "pay_1", grossAmountCents: 9900 });
+  });
+
+  it("última parcela do termo anual (12/12) pede renovação com o cartão tokenizado", async () => {
+    const { gateway } = makeGateway({
+      "GET /subscriptions/sub_a": () => ({
+        id: "sub_a",
+        customer: "cus_a",
+        externalReference: null,
+        nextDueDate: "2027-10-15",
+        maxPayments: 12,
+        value: 329.9,
+        creditCard: { creditCardToken: "tok_123" },
+      }),
+      "GET /payments?subscription=sub_a&limit=100": () => ({ data: Array.from({ length: 12 }, () => ({ status: "CONFIRMED" })) }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_12", subscription: "sub_a", value: 329.9, dueDate: "2026-10-15" } }),
+    );
+    expect(event.termRenewal).toEqual({
+      externalCustomerId: "cus_a",
+      paymentMethodToken: "tok_123",
+      valueCents: 32990,
+      maxPayments: 12,
+      nextDueDate: "2026-11-15", // mês seguinte à última cobrança
+    });
+  });
+
+  it("parcela intermediária do termo (ex.: 5/12) não pede renovação", async () => {
+    const { gateway } = makeGateway({
+      "GET /subscriptions/sub_a": () => ({ id: "sub_a", customer: "cus_a", maxPayments: 12, value: 329.9, creditCard: { creditCardToken: "tok_123" } }),
+      "GET /payments?subscription=sub_a&limit=100": () => ({ data: Array.from({ length: 5 }, () => ({ status: "CONFIRMED" })) }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_5", subscription: "sub_a", value: 329.9, dueDate: "2026-04-15" } }),
+    );
+    expect(event.termRenewal).toBeUndefined();
+    expect(event.type).toBe("subscription.activated");
+  });
+
+  it("renewSubscription cria o próximo termo com o token (sem nova entrada de cartão)", async () => {
+    const { gateway, calls } = makeGateway({ "POST /subscriptions": () => ({ id: "sub_novo" }) });
+    const renewed = await gateway.renewSubscription({
+      externalCustomerId: "cus_a",
+      paymentMethodToken: "tok_123",
+      valueCents: 32990,
+      maxPayments: 12,
+      nextDueDate: "2027-11-15",
+      externalReference: "company-1:plan-anual",
+    });
+    expect(renewed.externalSubscriptionId).toBe("sub_novo");
+    expect(calls[0].body).toMatchObject({
+      customer: "cus_a",
+      billingType: "CREDIT_CARD",
+      value: 329.9,
+      cycle: "MONTHLY",
+      maxPayments: 12,
+      nextDueDate: "2027-11-15",
+      creditCardToken: "tok_123",
+      externalReference: "company-1:plan-anual",
+    });
   });
 
   it("pagamento avulso e eventos desconhecidos são ignorados", async () => {

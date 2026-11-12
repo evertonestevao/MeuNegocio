@@ -102,7 +102,7 @@ export function SubscribePanel({
                 <span className="text-sm font-medium text-muted-foreground">/mês</span>
               </span>
               <span className="text-xs text-muted-foreground">
-                {option.interval === "year" ? `${formatCents(option.priceCents)} por ano, em até 12x no cartão` : "Cobrança todo mês. Cancele quando quiser."}
+                {option.interval === "year" ? `12x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho.` : "Cobrança todo mês. Cancele quando quiser."}
               </span>
             </button>
           );
@@ -142,7 +142,7 @@ export function SubscribePanel({
           {withTrial
             ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
             : plan.interval === "year"
-              ? `Cobrança agora de ${formatCents(plan.priceCents)}, em até 12x no cartão.`
+              ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante 12 meses, renovando automaticamente a cada ano. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}
         </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">

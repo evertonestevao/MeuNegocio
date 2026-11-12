@@ -87,4 +87,36 @@ export interface NormalizedPaymentEvent {
   payment?: { externalId: string; grossAmountCents: number };
   /** Estorno: total estornado até agora; null = integral. */
   refund?: { externalPaymentId: string; refundedCents: number | null };
+  /** Gateway que criou a assinatura (gravado na assinatura para multigateway). */
+  gatewayProvider?: string;
+  /** Token do meio de pagamento para renovar sem nova entrada de cartão. */
+  paymentMethodToken?: string | null;
+  /**
+   * Termo (ex.: anual em 12x) chegou à última parcela: o handler deve renovar
+   * criando o próximo termo com estes dados, sem o cliente pagar de novo.
+   */
+  termRenewal?: {
+    externalCustomerId: string;
+    paymentMethodToken: string;
+    valueCents: number;
+    maxPayments: number;
+    /** Início do próximo termo (YYYY-MM-DD): o mês seguinte à última cobrança. */
+    nextDueDate: string;
+  };
+}
+
+/** Renovação de um termo recorrente (ex.: anual em 12x) usando o cartão tokenizado. */
+export interface RenewSubscriptionParams {
+  externalCustomerId: string;
+  paymentMethodToken: string;
+  valueCents: number;
+  maxPayments: number;
+  nextDueDate: string;
+  /** "<companyId>:<planId>" — leva a empresa/plano para os eventos do novo termo. */
+  externalReference: string;
+}
+
+export interface RenewedSubscription {
+  externalSubscriptionId: string;
+  currentPeriodEnd: string | null;
 }

@@ -3,6 +3,8 @@ import type {
   CreateCheckoutParams,
   ExtraSeatsUpdate,
   NormalizedPaymentEvent,
+  RenewSubscriptionParams,
+  RenewedSubscription,
   WebhookRequest,
 } from "@/types/billing";
 
@@ -52,4 +54,12 @@ export interface PaymentGateway {
 
   /** Ajusta a cobrança de seats extras na assinatura. */
   syncExtraSeats(update: ExtraSeatsUpdate): Promise<void>;
+
+  /**
+   * Renova um termo recorrente (ex.: anual em 12x) criando o próximo termo com o
+   * cartão já tokenizado, sem o cliente pagar de novo. Gateways sem termo fixo
+   * (renovação nativa infinita) podem lançar "not_implemented" — o fluxo só chama
+   * quando o evento normalizado pede renovação (termRenewal).
+   */
+  renewSubscription(params: RenewSubscriptionParams): Promise<RenewedSubscription>;
 }

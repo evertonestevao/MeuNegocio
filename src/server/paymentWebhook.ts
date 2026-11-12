@@ -24,11 +24,31 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
     const event = await gateway.handleWebhook({ payload, headers: request.headers });
 
     const admin = getSupabaseAdminClient();
-    const billing = createBillingService(createSupabaseBillingRepository(admin));
+    const billingRepo = createSupabaseBillingRepository(admin);
+    const billing = createBillingService(billingRepo);
     const { endedSubscription } = await billing.applyPaymentEvent(event, gateway);
 
     // Depois do pagamento aplicado: falha de comissão vira pendência, não erro.
     await getCommissionService().processEvent(event);
+
+    // Renovação do termo anual (12x): a última parcela foi paga. Cria o próximo termo
+    // no gateway com o cartão tokenizado (sem o cliente pagar de novo) e aponta a
+    // assinatura para ele. Falha aqui não derruba o webhook: o acesso do termo atual
+    // segue até o fim; a renovação pode ser refeita.
+    if (event.termRenewal && event.externalSubscriptionId) {
+      try {
+        const row = await billingRepo.findSubscriptionByExternalId(event.externalSubscriptionId);
+        if (row) {
+          const renewed = await gateway.renewSubscription({
+            ...event.termRenewal,
+            externalReference: `${row.company_id}:${row.plan_id}`,
+          });
+          await billing.applyRenewal(event.externalSubscriptionId, renewed);
+        }
+      } catch (renewErr) {
+        await reportError(renewErr, { source: "route:/api/webhooks:renewal" });
+      }
+    }
 
     // Evento de sistema na trilha (user_id null): só quando conseguimos
     // atribuir a empresa; eventos "ignored" não sujam a auditoria.

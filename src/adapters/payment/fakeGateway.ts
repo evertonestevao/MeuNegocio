@@ -55,5 +55,13 @@ export function createFakeGateway(config: FakeGatewayConfig = {}): PaymentGatewa
         `[payment:fake] syncExtraSeats sub=${externalSubscriptionId} extras=${quantity}`,
       );
     },
+
+    async renewSubscription(params) {
+      // Gateway fake: simula o próximo termo sem chamar provedor.
+      return {
+        externalSubscriptionId: `fake_renew_${Date.now()}`,
+        currentPeriodEnd: new Date(`${params.nextDueDate}T00:00:00Z`).toISOString(),
+      };
+    },
   };
 }

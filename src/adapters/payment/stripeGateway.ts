@@ -137,6 +137,13 @@ export function createStripeGateway(config: StripeGatewayConfig): PaymentGateway
       }
       // !seatItem && quantity === 0: nada a fazer.
     },
+
+    async renewSubscription(): Promise<never> {
+      // O Stripe renova a assinatura nativamente; não usamos termo em 12x aqui.
+      // O fluxo só chama renewSubscription quando o evento pede (termRenewal), o que
+      // só o Asaas gera. Se chegar aqui, é bug de configuração.
+      throw new AppError("internal_error", "Renovação de termo não se aplica ao Stripe");
+    },
   };
 }
 

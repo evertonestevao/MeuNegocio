@@ -411,6 +411,10 @@ export interface Subscription {
   contracted_extra_seat_price_cents: number;
   /** false: compra parcelada, sem renovação. Vale até current_period_end. */
   renews: boolean;
+  /** Gateway que criou a assinatura (asaas, stripe...). Suporte a multigateway. */
+  gateway_provider: string | null;
+  /** Token do cartão no gateway (creditCardToken no Asaas) para renovar sem nova entrada de cartão. */
+  payment_method_token: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

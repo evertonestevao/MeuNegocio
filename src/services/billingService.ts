@@ -1,6 +1,6 @@
 import { AppError } from "@/lib/errors";
 import type { PaymentGateway } from "@/adapters/payment/PaymentGateway";
-import type { NormalizedPaymentEvent } from "@/types/billing";
+import type { NormalizedPaymentEvent, RenewedSubscription } from "@/types/billing";
 import type { Plan, Subscription } from "@/types/database";
 
 /**
@@ -183,6 +183,9 @@ export function createBillingService(repo: BillingRepository) {
         current_period_end: event.currentPeriodEnd,
         cancel_at_period_end: event.cancelAtPeriodEnd,
         renews: !event.nonRenewing,
+        // Multigateway + renovação do termo anual (token do cartão).
+        gateway_provider: event.gatewayProvider ?? event.gateway,
+        payment_method_token: event.paymentMethodToken ?? null,
       });
       return {};
     }
@@ -343,6 +346,28 @@ export function createBillingService(repo: BillingRepository) {
     });
   }
 
+  /**
+   * Renovação de termo (anual em 12x): aponta a assinatura para o novo termo criado
+   * no gateway, estendendo o período. Mesma linha (mantém company/plan/preço
+   * contratado e o token); o termo antigo no gateway se encerra sozinho. Um evento
+   * duplicado do termo antigo não acha mais esta linha (id já trocado), então não
+   * renova de novo.
+   */
+  async function applyRenewal(
+    oldExternalSubscriptionId: string,
+    renewed: RenewedSubscription,
+  ): Promise<void> {
+    const existing = await repo.findSubscriptionByExternalId(oldExternalSubscriptionId);
+    if (!existing) return;
+    await repo.updateSubscription(existing.id, {
+      status: "active",
+      external_subscription_id: renewed.externalSubscriptionId,
+      current_period_start: new Date().toISOString(),
+      current_period_end: renewed.currentPeriodEnd ?? existing.current_period_end,
+      renews: true,
+    });
+  }
+
   return {
     getAccessState,
     startCardlessTrial,
@@ -350,6 +375,7 @@ export function createBillingService(repo: BillingRepository) {
     canAccessFeature,
     getFeatureLimit,
     applyPaymentEvent,
+    applyRenewal,
     getSeatUsage,
     syncSeatsWithGateway,
   };

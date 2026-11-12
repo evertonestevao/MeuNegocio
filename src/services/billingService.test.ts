@@ -44,6 +44,8 @@ function makeSubscription(overrides: Partial<Subscription>): Subscription {
     contracted_price_cents: 9900,
     contracted_extra_seat_price_cents: 1990,
     renews: true,
+    gateway_provider: "asaas",
+    payment_method_token: null,
     deleted_at: null,
     created_at: "",
     updated_at: "",
@@ -243,6 +245,9 @@ describe("getSeatUsage / syncSeatsWithGateway (billing por seat)", () => {
         },
         async syncExtraSeats(params: (typeof calls)[number]) {
           calls.push(params);
+        },
+        async renewSubscription() {
+          throw new Error("não usado");
         },
       },
     };
