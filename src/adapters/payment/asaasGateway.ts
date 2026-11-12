@@ -13,14 +13,19 @@ import type { PaymentGateway } from "./PaymentGateway";
  * Adapter Asaas via API REST v3 (fetch + JSON), sem SDK.
  *
  * Fluxo:
- *  - Checkout: cria um Link de Pagamento RECORRENTE com o valor do plano. A
- *    página do Asaas coleta nome, CPF/CNPJ e a forma de pagamento (PIX, boleto
- *    ou cartão) e cria cliente + assinatura. `externalReference` leva
+ *  - Checkout MENSAL: cria um Checkout hospedado RECORRENTE (POST /checkouts) com
+ *    um bloco `subscription`. A página do Asaas coleta o cartão (o cartão nunca
+ *    passa pelo nosso servidor) e cria cliente + assinatura. `nextDueDate` define
+ *    a data da PRIMEIRA cobrança: hoje + trialDays. Com trialDays > 0 o cliente
+ *    cadastra o cartão agora e só é cobrado no fim do teste — por isso o teste
+ *    exige cartão (billingType CREDIT_CARD). `externalReference` leva
  *    "<companyId>:<planId>" para o webhook achar a empresa.
- *    No plano anual, o link é PARCELADO, em até 12x no cartão: uma compra única, sem
- *    assinatura no Asaas, que dá 12 meses de acesso e não renova.
+ *  - Checkout ANUAL: continua como Link de Pagamento PARCELADO, em até 12x no
+ *    cartão: uma compra única, sem assinatura no Asaas, que dá 12 meses de
+ *    acesso e não renova.
  *  - Webhook: autenticado pelo header `asaas-access-token` (token definido
- *    ao cadastrar o webhook no painel). Pagamento confirmado de uma
+ *    ao cadastrar o webhook no painel). CHECKOUT_PAID cria a assinatura em teste
+ *    (trialing) antes da primeira cobrança; pagamento confirmado de uma
  *    assinatura ativa ou renova o plano; vencido vira past_due; estorno vira
  *    payment.refunded.
  *  - Seats extras: Asaas cobra por valor, então o adapter atualiza o valor
@@ -30,18 +35,33 @@ import type { PaymentGateway } from "./PaymentGateway";
 
 const ANNUAL_MAX_INSTALLMENTS = 12;
 
+/** Expiração do checkout hospedado, em minutos (limite do Asaas: 10 a 1440). */
+const CHECKOUT_EXPIRES_MINUTES = 60;
+
+/** PNG 1x1 transparente: o item do checkout exige imageBase64, mas não a usamos. */
+const CHECKOUT_ITEM_IMAGE =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
 /**
- * billingType do Asaas a partir dos meios aceitos pelo plano. Um só meio restringe a ele;
- * vários caem em UNDEFINED (o cliente escolhe na tela). O Asaas não tem subconjunto de 2, então
- * qualquer combinação de mais de um libera os três.
+ * billingTypes aceitos no Checkout hospedado. O checkout usa um array (não o
+ * UNDEFINED do link). Boleto não entra: assinatura recorrente no Asaas é cartão
+ * ou PIX, e só o cartão pode guardar o meio para a cobrança futura do teste.
  */
-function asaasBillingType(methods: string[]): "CREDIT_CARD" | "PIX" | "BOLETO" | "UNDEFINED" {
-  if (methods.length === 1) {
-    if (methods[0] === "credit_card") return "CREDIT_CARD";
-    if (methods[0] === "pix") return "PIX";
-    if (methods[0] === "boleto") return "BOLETO";
-  }
-  return "UNDEFINED";
+function checkoutBillingTypes(methods: string[]): Array<"CREDIT_CARD" | "PIX"> {
+  const types: Array<"CREDIT_CARD" | "PIX"> = [];
+  if (methods.includes("credit_card")) types.push("CREDIT_CARD");
+  if (methods.includes("pix")) types.push("PIX");
+  return types.length > 0 ? types : ["CREDIT_CARD"];
+}
+
+/** Data (YYYY-MM-DD, fuso local do servidor) daqui a `days` dias — nextDueDate do Asaas. */
+function dueDateString(days: number, now: Date = new Date()): string {
+  const date = new Date(now);
+  date.setDate(date.getDate() + Math.max(0, Math.trunc(days)));
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 const API_URLS = {
@@ -82,6 +102,8 @@ export function parseExternalReference(
 }
 
 const ASAAS_EVENT_MAP: Record<string, PaymentEventType> = {
+  // Checkout hospedado concluído: cria a assinatura (em teste até a 1ª cobrança).
+  CHECKOUT_PAID: "subscription.activated",
   PAYMENT_CONFIRMED: "subscription.activated",
   PAYMENT_RECEIVED: "subscription.activated",
   PAYMENT_OVERDUE: "payment.failed",
@@ -111,6 +133,10 @@ interface AsaasWebhookEvent {
     externalReference?: string | null;
     nextDueDate?: string;
   };
+  checkout?: {
+    id?: string;
+    externalReference?: string | null;
+  };
 }
 
 interface AsaasSubscription {
@@ -118,6 +144,20 @@ interface AsaasSubscription {
   customer?: string;
   externalReference?: string | null;
   nextDueDate?: string;
+}
+
+/**
+ * GET /checkouts/{id}: o essencial para ligar o checkout concluído à assinatura
+ * criada. Os nomes dos campos da assinatura/cliente podem variar — confirmar no
+ * sandbox (ver scripts/asaas-sandbox-checkout.md) e ajustar se necessário.
+ */
+interface AsaasCheckout {
+  id?: string;
+  externalReference?: string | null;
+  customer?: string | null;
+  status?: string;
+  subscription?: string | { id?: string; nextDueDate?: string } | null;
+  nextDueDate?: string | null;
 }
 
 interface AsaasRefund {
@@ -198,6 +238,37 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       cancelAtPeriodEnd: false,
     };
     if (type === "ignored") return base;
+
+    // Checkout hospedado concluído: o cliente cadastrou o cartão e a assinatura
+    // foi criada, mas a 1ª cobrança só acontece em nextDueDate. Entra como teste
+    // (trialEndsAt) até lá; a cobrança futura chega depois como PAYMENT_CONFIRMED.
+    if (event.event === "CHECKOUT_PAID") {
+      const checkoutId = event.checkout?.id;
+      if (!checkoutId) return base;
+      const checkout = await asaasRequest<AsaasCheckout>(`/checkouts/${checkoutId}`, "GET");
+      const reference = parseExternalReference(checkout.externalReference ?? event.checkout?.externalReference);
+      const subscriptionId =
+        typeof checkout.subscription === "string" ? checkout.subscription : (checkout.subscription?.id ?? null);
+      // Sem assinatura ou sem empresa/plano, não há o que ativar: ignora (200) em
+      // vez de falhar, para não travar a fila sequencial do Asaas.
+      if (!reference || !subscriptionId) return base;
+      const nextDueDate =
+        (typeof checkout.subscription === "object" ? checkout.subscription?.nextDueDate : null) ?? checkout.nextDueDate ?? null;
+      const firstChargeIso = dateToIso(nextDueDate);
+      // nextDueDate no futuro = período de teste; hoje/passado = cobra já (sem teste).
+      const inTrial = firstChargeIso !== null && Date.parse(firstChargeIso) > Date.now();
+      return {
+        ...base,
+        type: "subscription.activated",
+        externalSubscriptionId: subscriptionId,
+        externalCustomerId: checkout.customer ?? null,
+        companyId: reference.companyId,
+        planId: reference.planId,
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: firstChargeIso,
+        trialEndsAt: inTrial ? firstChargeIso : null,
+      };
+    }
 
     if (type === "subscription.canceled") {
       const subscription = event.subscription;
@@ -295,34 +366,68 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     };
   }
 
+  /** Checkout hospedado MENSAL com assinatura e 1ª cobrança em nextDueDate. */
+  async function createSubscriptionCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
+    const trialDays = params.trialDays ?? 0;
+    // Com teste, só cartão: PIX/boleto não guardam o meio para a cobrança futura.
+    const billingTypes = trialDays > 0 ? (["CREDIT_CARD"] as const) : checkoutBillingTypes(params.plan.paymentMethods);
+    const checkout = await asaasRequest<{ id: string; link: string }>("/checkouts", "POST", {
+      billingTypes,
+      chargeTypes: ["RECURRENT"],
+      minutesToExpire: CHECKOUT_EXPIRES_MINUTES,
+      externalReference: `${params.companyId}:${params.plan.id}`,
+      // O domínio de successUrl/cancelUrl precisa estar cadastrado nas informações
+      // comerciais da conta Asaas, senão a API recusa o checkout.
+      callback: { successUrl: params.successUrl, cancelUrl: params.cancelUrl, expiredUrl: params.cancelUrl },
+      items: [
+        {
+          name: params.plan.name.slice(0, 30),
+          description: `Assinatura do plano ${params.plan.name}`.slice(0, 150),
+          quantity: 1,
+          value: toReais(params.plan.priceCents),
+          // O schema de itens do checkout exige uma imagem; usamos um 1x1 transparente.
+          imageBase64: CHECKOUT_ITEM_IMAGE,
+        },
+      ],
+      subscription: {
+        cycle: "MONTHLY",
+        // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje (sem teste).
+        nextDueDate: dueDateString(trialDays),
+      },
+      // Sem customerData: a página do Asaas coleta nome, CPF, telefone e endereço do
+      // comprador. Enviar customerData parcial é recusado (exige todos esses campos).
+    });
+    return { id: checkout.id, url: checkout.link };
+  }
+
+  /** Plano anual: Link de Pagamento PARCELADO (compra única em até 12x). */
+  async function createAnnualLink(params: CreateCheckoutParams): Promise<CheckoutSession> {
+    const link = await asaasRequest<{ id: string; url: string }>("/paymentLinks", "POST", {
+      name: params.plan.name,
+      description: `Assinatura do plano ${params.plan.name}`,
+      value: toReais(params.plan.priceCents),
+      billingType: "CREDIT_CARD",
+      chargeType: "INSTALLMENT",
+      maxInstallmentCount: ANNUAL_MAX_INSTALLMENTS,
+      dueDateLimitDays: 3,
+      externalReference: `${params.companyId}:${params.plan.id}`,
+      callback: { successUrl: params.successUrl, autoRedirect: true },
+    });
+    return { id: link.id, url: link.url };
+  }
+
   return {
     name: "asaas",
-    // O link de pagamento cobra na hora. Adiar a primeira cobrança pede assinatura com cartão
-    // tokenizado e precisa ser validado no sandbox antes de ligar.
-    supportsTrial: false,
+    // O Checkout hospedado aceita nextDueDate futuro: o cartão é guardado na página
+    // do Asaas e a 1ª cobrança só acontece no fim do teste.
+    supportsTrial: true,
 
     async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
-      if (params.trialDays) {
-        // Nunca cobrar na hora dizendo que é grátis.
-        throw new AppError("payment_error", "Teste com cartão ainda não disponível neste meio de pagamento");
-      }
-      const annual = params.plan.billingInterval === "year";
-      const link = await asaasRequest<{ id: string; url: string }>("/paymentLinks", "POST", {
-        name: params.plan.name,
-        description: `Assinatura do plano ${params.plan.name}`,
-        value: toReais(params.plan.priceCents),
-        // Anual: valor do ano em até 12x no cartão (parcelamento exige cartão). Mensal: usa os
-        // meios aceitos pelo plano (padrão só cartão).
-        ...(annual
-          ? { billingType: "CREDIT_CARD", chargeType: "INSTALLMENT", maxInstallmentCount: ANNUAL_MAX_INSTALLMENTS }
-          : { billingType: asaasBillingType(params.plan.paymentMethods), chargeType: "RECURRENT", subscriptionCycle: "MONTHLY" }),
-        dueDateLimitDays: 3,
-        externalReference: `${params.companyId}:${params.plan.id}`,
-        // O domínio de successUrl precisa estar cadastrado nas informações
-        // comerciais da conta Asaas, senão a API recusa o link.
-        callback: { successUrl: params.successUrl, autoRedirect: true },
-      });
-      return { id: link.id, url: link.url };
+      // Anual é compra parcelada (não há teste em parcelamento). Mensal vai pelo
+      // checkout com assinatura, com ou sem teste.
+      return params.plan.billingInterval === "year"
+        ? createAnnualLink(params)
+        : createSubscriptionCheckout(params);
     },
 
     async cancelSubscription(externalSubscriptionId: string): Promise<void> {

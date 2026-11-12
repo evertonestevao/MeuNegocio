@@ -8,7 +8,6 @@ import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { isSignupOpen } from "@/server/signup";
 import { getSignupFlowService, SIGNUP_LEAD_COOKIE } from "@/server/signupFlow";
 import { getSupabaseServerClient } from "@/server/supabase-server";
-import { TRIAL_DAYS } from "@/services/billingService";
 
 export const metadata: Metadata = { title: "Começar" };
 
@@ -30,7 +29,6 @@ export default async function StartSignupPage() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <LeadForm
-          trialDays={TRIAL_DAYS}
           initial={lead ? { fullName: lead.full_name, email: lead.email, emailConsent: lead.email_consent } : undefined}
         />
         <p className="text-center text-sm text-muted-foreground">

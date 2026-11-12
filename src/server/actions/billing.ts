@@ -16,7 +16,7 @@ import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant, getTenantService } from "@/server/tenant";
 import { isOnboardingPending } from "@/server/signupFlow";
-import { CARDLESS_TRIAL_OFFERED, createBillingService, isCardlessTrial, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
+import { CARDLESS_TRIAL_OFFERED, createBillingService, isCardlessTrial, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import { createUserService } from "@/services/userService";
 import type { NormalizedPaymentEvent } from "@/types/billing";
@@ -45,7 +45,8 @@ export async function checkoutAction(
     await requireOwner(companyId);
     const gateway = getPaymentGateway();
     // Teste com cartão: só se a empresa nunca testou e o gateway adia a primeira cobrança.
-    const withTrial = formData.get("trial") === "1" && gateway.supportsTrial && (await getCompanyAccess(companyId)).trialAvailable;
+    // Quantos dias é o próprio plano que decide (plan.trial_days), aplicado abaixo.
+    const trialEligible = formData.get("trial") === "1" && gateway.supportsTrial && (await getCompanyAccess(companyId)).trialAvailable;
 
     const client = await getSupabaseServerClient();
     const repo = createSupabaseBillingRepository(client);
@@ -83,7 +84,9 @@ export async function checkoutAction(
       // direto no painel, que redireciona para /assinar enquanto a assinatura não está ativa).
       successUrl: `${appUrl}/assinar/confirmando`,
       cancelUrl: `${appUrl}/assinar`,
-      trialDays: withTrial && plan.billing_interval === "month" ? TRIAL_DAYS : undefined,
+      // Teste só no mensal e só se o plano oferece dias de teste (> 0).
+      trialDays:
+        trialEligible && plan.billing_interval === "month" && plan.trial_days > 0 ? plan.trial_days : undefined,
     });
     checkoutUrl = session.url;
     await recordAudit({

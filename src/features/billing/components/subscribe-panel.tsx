@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ShieldCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { activateFakePlanAction, checkoutAction, startTrialAction } from "@/server/actions/billing";
 import type { ActionState } from "@/server/actions/action-state";
@@ -15,6 +16,16 @@ export interface SubscribePlan {
   interval: "month" | "year";
   priceCents: number;
   monthlyCents: number;
+  /** Dias de teste grátis do plano (0 = cobra na hora). */
+  trialDays: number;
+}
+
+/** Data da 1ª cobrança (DD/MM/AAAA) para um teste de `trialDays` dias a partir de hoje. */
+function firstChargeDate(trialDays: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + trialDays);
+  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return formatDate(iso);
 }
 
 /**
@@ -29,7 +40,6 @@ export function SubscribePanel({
   trialAvailable,
   cardTrial,
   cardlessTrial,
-  firstChargeDate,
   gatewayName,
   isFakeGateway,
   afterActivationHref = "/dashboard",
@@ -44,7 +54,6 @@ export function SubscribePanel({
   cardTrial: boolean;
   /** Oferece também o teste sem cartão (decisão comercial; ver CARDLESS_TRIAL_OFFERED). */
   cardlessTrial: boolean;
-  firstChargeDate: string;
   gatewayName: string;
   isFakeGateway: boolean;
   /** Para onde vai depois da ativação na hora (gateway de testes). No cadastro, direto ao último passo. */
@@ -54,7 +63,9 @@ export function SubscribePanel({
   const monthly = plans.find((plan) => plan.interval === "month");
   const [selected, setSelected] = useState(monthly?.id ?? plans[0]?.id ?? "");
   const plan = plans.find((candidate) => candidate.id === selected) ?? plans[0];
-  const withTrial = trialAvailable && cardTrial && plan?.interval === "month";
+  // Teste é do mensal e só quando o plano oferece dias de teste. Os dias são por plano.
+  const trialDays = plan?.trialDays ?? 0;
+  const withTrial = trialAvailable && cardTrial && plan?.interval === "month" && trialDays > 0;
 
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await (isFakeGateway ? activateFakePlanAction : checkoutAction)(prev, data);
@@ -125,11 +136,11 @@ export function SubscribePanel({
           </Alert>
         ) : null}
         <Button type="submit" size="lg" disabled={pending} className="h-14 w-full text-base font-semibold md:h-14">
-          {pending ? "Abrindo o pagamento..." : withTrial ? "Começar agora: 7 dias grátis" : `Assinar o plano ${plan.name}`}
+          {pending ? "Abrindo o pagamento..." : withTrial ? `Começar agora: ${trialDays} dias grátis` : `Assinar o plano ${plan.name}`}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {withTrial
-            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate}. Cancele antes e não paga nada.`
+            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
             : plan.interval === "year"
               ? `Cobrança agora de ${formatCents(plan.priceCents)}, em até 12x no cartão.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}

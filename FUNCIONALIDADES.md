@@ -203,8 +203,8 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 **Teste grátis e tela de assinar** (`/assinar`):
 
 - Empresa sem assinatura válida (nova, teste vencido, cancelada depois do período pago ou estornada) vai para `/assinar` em qualquer tela do painel. Os dados ficam guardados; ao assinar, tudo volta como estava. A demonstração nunca é bloqueada.
-- **Proprietário:** escolhe o plano (Mensal primeiro, Anual com a economia) e vê o que está incluso. O botão grande é **"Começar agora: 7 dias grátis"**, com o cartão: "Nada é cobrado hoje. A primeira cobrança de R$ X será em dd/mm/aaaa. Cancele antes e não paga nada." O teste sem cartão não é oferecido por enquanto (`CARDLESS_TRIAL_OFFERED = false` em `src/services/billingService.ts`): a tela não mostra a opção e o servidor recusa o pedido. Quem já estava num teste sem cartão segue até o fim dele.
-- **Teste com cartão** só no Mensal e só em meio de pagamento que adia a primeira cobrança (Stripe; e o de testes). No Asaas, o checkout atual cobra na hora: o botão vira "Assinar o plano Mensal", com "Cobrança agora", até o adiamento ser validado no sandbox. O Anual sempre cobra na hora, em até 12x. Na ativação com teste, a assinatura fica "em teste" até a primeira cobrança.
+- **Proprietário:** escolhe o plano (Mensal primeiro, Anual com a economia) e vê o que está incluso. Quando o plano tem teste, o botão grande é **"Começar agora: N dias grátis"** (N são os dias do plano), com: "Nada é cobrado hoje. A primeira cobrança de R$ X será em dd/mm/aaaa. Cancele antes e não paga nada." A data é calculada a partir dos dias de teste do plano escolhido. O teste sem cartão não é oferecido por enquanto (`CARDLESS_TRIAL_OFFERED = false` em `src/services/billingService.ts`): a tela não mostra a opção e o servidor recusa o pedido. Quem já estava num teste sem cartão segue até o fim dele.
+- **Teste com cartão** só no Mensal e só quando o plano tem dias de teste (`trial_days > 0`). Os **dias são os do plano** (ex.: 15 dias), não um valor fixo. No Asaas, usa o **Checkout hospedado** (`POST /checkouts`) com um bloco `subscription` e `nextDueDate` = hoje + dias de teste: o cliente cadastra o cartão na página do Asaas (nunca passa pelo nosso servidor) e **a primeira cobrança só acontece na data futura**. Com teste, o checkout aceita só cartão (PIX/boleto não guardam o meio para a cobrança futura). O Anual sempre cobra na hora, em até 12x (link parcelado). Na ativação com teste, a assinatura fica "em teste" (trialing) até a primeira cobrança, quando vira ativa.
 - **Teste sem cartão** (desligado por enquanto; regras guardadas para quando voltar): 7 dias do plano Mensal completo, sem gateway e sem renovação. **Uma vez por dono**, não por empresa: se o proprietário já testou ou já assinou em qualquer empresa dele (mesmo no histórico), nenhuma empresa dele ganha outro teste — assim criar empresa nova não renova o benefício. A mesma checagem vale para o adiamento do teste com cartão. Durante o teste, o painel mostra "Faltam N dias do seu teste grátis (até dd/mm)", com "Assinar agora" para o proprietário, e `/dashboard/billing` mostra o teste. Não há o que cancelar: ele termina sozinho, sem cobrança.
 - **Administrador, membro e técnico** veem que quem assina é o proprietário, e que os dados continuam guardados.
 - **Link do orçamento** de empresa sem assinatura continua abrindo para o cliente, só para ver e baixar: no lugar de aprovar, "Para aprovar este orçamento, fale direto com a empresa".
@@ -214,8 +214,8 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 - Cria planos e edita nome, preço, membro extra, limites, recursos e um texto livre de até 2000
   caracteres, exibido na oferta do plano em `/dashboard/billing`. A página inicial não mostra planos nem preços por enquanto. Ativa e desativa.
 - A tela separa criar de editar: os planos existentes aparecem como cartões-resumo (preço, limites, recursos, dias de teste e meios de pagamento em etiquetas), com a edição recolhida atrás de "Editar plano"; "Criar um novo plano" é um cartão destacado à parte.
-- **Meios de pagamento** aceitos por plano (cartão, PIX, boleto; **padrão só cartão**). No Asaas, um único meio restringe o checkout a ele; vários liberam a escolha ao cliente (o provedor não aceita subconjunto de dois). O plano Anual é sempre no cartão (parcelado).
-- **Dias de teste grátis** por plano (0 a 90; **padrão 7**). Guardado no plano; o adiamento da 1ª cobrança (cobrar só depois do teste) ainda depende de validação no gateway e não está ligado.
+- **Meios de pagamento** aceitos por plano (cartão, PIX, boleto; **padrão só cartão**). No Asaas Mensal (checkout com assinatura), valem **cartão e PIX**: boleto não entra em assinatura recorrente, e no teste com cartão o checkout fica só no cartão (para guardar o meio da cobrança futura). O plano Anual é sempre no cartão (parcelado).
+- **Dias de teste grátis** por plano (0 a 90; **padrão 7**). Guardado no plano e **usado de fato** na 1ª cobrança: no Asaas (checkout hospedado) e no Stripe, a primeira cobrança do Mensal é adiada em `trial_days` dias; com 0 dias, cobra na hora.
 - O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
   oferta e quem já assina continua neles.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
@@ -243,7 +243,7 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 
 | Gateway | Como cobra | Formas de pagamento | Portal do cliente |
 |---|---|---|---|
-| `asaas` | Pelo valor do plano no banco | PIX, boleto, cartão | Não |
+| `asaas` | Pelo valor do plano no banco. Mensal via Checkout hospedado com assinatura (adia a 1ª cobrança por `nextDueDate`); Anual via link parcelado em 12x | Mensal: cartão, PIX (cartão no teste); Anual: cartão | Não |
 | `stripe` | Pelo catálogo de preços (`PAYMENT_PRICE_*`) | Cartão | Sim |
 | `fake` | Simulação local | — | Não |
 

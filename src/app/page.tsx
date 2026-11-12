@@ -8,7 +8,6 @@ import { SampleCharts } from "@/features/marketing/components/sample-charts";
 import { SampleServiceResult } from "@/features/marketing/components/sample-service-result";
 import { benefits, faq, hero, journey, LANDING_SCREENS, pains, profitPitch, showcases } from "@/features/marketing/content";
 import { isSignupOpen } from "@/server/signup";
-import { TRIAL_DAYS } from "@/services/billingService";
 
 // O cadastro aberto ou fechado vem do servidor: a página não pode ficar presa ao build.
 export const dynamic = "force-dynamic";
@@ -67,7 +66,7 @@ export default async function LandingPage() {
             <p style={{ "--lp-delay": "160ms" } as React.CSSProperties} className="lp-enter max-w-2xl text-pretty text-sidebar-foreground/80 lg:text-lg">{hero.description}</p>
             <div style={{ "--lp-delay": "240ms" } as React.CSSProperties} className="lp-fade flex flex-wrap justify-center gap-3">
               <Button size="lg" className={YELLOW_BUTTON} nativeButton={false} render={signupOpen ? <Link href="/comecar" /> : <a href={contactHref} target="_blank" rel="noreferrer" />}>
-                {signupOpen ? `Assinar com ${TRIAL_DAYS} dias grátis` : "Falar com a gente"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
+                {signupOpen ? "Assinar com período de teste grátis" : "Falar com a gente"} <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:group-hover/button:translate-x-0.5" aria-hidden />
               </Button>
               <Button
                 size="lg"

@@ -18,7 +18,7 @@ import { getDemoProfile } from "@/server/demo/mode";
 import { isOnboardingPending } from "@/server/signupFlow";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant } from "@/server/tenant";
-import { CARDLESS_TRIAL_OFFERED, TRIAL_DAYS, trialEndsAt } from "@/services/billingService";
+import { CARDLESS_TRIAL_OFFERED } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
@@ -48,7 +48,7 @@ export default async function SubscribePage() {
   const forSale = plansForSale((data ?? []) as Plan[]);
   // Anual e mensal: o mensal primeiro, porque é ele que tem o teste com cartão.
   const plans = forSale
-    .map((plan) => ({ id: plan.id, name: plan.name, interval: plan.billing_interval, priceCents: plan.price_cents, monthlyCents: planMonthlyCents(plan) }))
+    .map((plan) => ({ id: plan.id, name: plan.name, interval: plan.billing_interval, priceCents: plan.price_cents, monthlyCents: planMonthlyCents(plan), trialDays: plan.trial_days }))
     .toSorted((a, b) => Number(a.interval === "year") - Number(b.interval === "year"));
   const featured = forSale.find((plan) => plan.billing_interval === "month") ?? forSale[0];
 
@@ -85,7 +85,6 @@ export default async function SubscribePage() {
             trialAvailable={access.trialAvailable}
             cardTrial={gateway.supportsTrial}
             cardlessTrial={CARDLESS_TRIAL_OFFERED}
-            firstChargeDate={formatDate(trialEndsAt().slice(0, 10))}
             gatewayName={GATEWAY_LABEL[gateway.name] ?? gateway.name}
             isFakeGateway={isFakeGateway}
         afterActivationHref={inSignup ? "/onboarding" : "/dashboard"}
@@ -96,7 +95,7 @@ export default async function SubscribePage() {
               <p className="font-medium">Quem assina é o proprietário da empresa.</p>
               <p className="text-muted-foreground">
                 Peça ao proprietário da {active.name} para assinar o {brand.name}
-                {access.trialAvailable && gateway.supportsTrial ? ` com ${TRIAL_DAYS} dias grátis` : ""}. Os dados continuam guardados enquanto isso.
+                {access.trialAvailable && gateway.supportsTrial ? " com período de teste grátis" : ""}. Os dados continuam guardados enquanto isso.
               </p>
             </CardContent>
           </Card>

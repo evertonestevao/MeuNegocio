@@ -11,7 +11,6 @@ import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { createAccountAction } from "@/server/actions/signup";
 import { isSignupOpen } from "@/server/signup";
 import { getSignupFlowService, SIGNUP_LEAD_COOKIE } from "@/server/signupFlow";
-import { TRIAL_DAYS } from "@/services/billingService";
 
 export const metadata: Metadata = { title: "Criar senha" };
 
@@ -29,7 +28,7 @@ export default async function CreatePasswordPage() {
         <div className="flex flex-col gap-1.5">
           <CardTitle>Olá, {firstName}! Crie sua senha</CardTitle>
           <CardDescription>
-            Com ela, você entra no sistema. Em seguida, escolha o plano: os primeiros {TRIAL_DAYS} dias são grátis.
+            Com ela, você entra no sistema. Em seguida, escolha o plano: você começa com um período de teste grátis.
           </CardDescription>
         </div>
       </CardHeader>

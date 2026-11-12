@@ -72,35 +72,55 @@ describe("parseExternalReference", () => {
 });
 
 describe("createCheckout", () => {
-  it("cria link recorrente com o valor do plano e a referência da empresa", async () => {
+  it("mensal cria checkout hospedado recorrente com o valor e a referência da empresa", async () => {
     const { gateway, calls } = makeGateway({
-      "POST /paymentLinks": () => ({ id: "link-1", url: "https://asaas.com/c/link-1" }),
+      "POST /checkouts": () => ({ id: "chk-1", link: "https://asaas.com/checkout/chk-1" }),
     });
 
     await expect(gateway.createCheckout(checkoutParams)).resolves.toEqual({
-      id: "link-1",
-      url: "https://asaas.com/c/link-1",
+      id: "chk-1",
+      url: "https://asaas.com/checkout/chk-1",
     });
+    expect(calls[0].path).toBe("/checkouts");
     expect(calls[0].body).toMatchObject({
-      value: 99,
-      billingType: "CREDIT_CARD",
-      chargeType: "RECURRENT",
-      subscriptionCycle: "MONTHLY",
+      chargeTypes: ["RECURRENT"],
       externalReference: "company-1:plan-pro",
-      callback: { successUrl: checkoutParams.successUrl, autoRedirect: true },
+      subscription: { cycle: "MONTHLY" },
+      items: [{ value: 99, quantity: 1 }],
+      callback: { successUrl: checkoutParams.successUrl, cancelUrl: checkoutParams.cancelUrl },
     });
   });
 
-  it("meios de pagamento do plano definem o billingType", async () => {
+  it("sem teste, a 1ª cobrança (nextDueDate) é hoje", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+    await gateway.createCheckout(checkoutParams);
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    expect((calls[0].body as { subscription: { nextDueDate: string } }).subscription.nextDueDate).toBe(iso);
+  });
+
+  it("com teste, a 1ª cobrança é adiada em trialDays e o meio é só cartão", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+    await gateway.createCheckout({ ...checkoutParams, trialDays: 15 });
+    const body = calls[0].body as { subscription: { nextDueDate: string }; billingTypes: string[] };
+    const due = new Date(`${body.subscription.nextDueDate}T00:00:00`);
+    const days = Math.round((due.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+    expect(days).toBe(15);
+    // Teste exige cartão: PIX/boleto não guardam o meio para a cobrança futura.
+    expect(body.billingTypes).toEqual(["CREDIT_CARD"]);
+  });
+
+  it("sem teste, os meios do plano definem os billingTypes do checkout", async () => {
     const run = async (paymentMethods: string[]) => {
-      const { gateway, calls } = makeGateway({ "POST /paymentLinks": () => ({ id: "l", url: "u" }) });
+      const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
       await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, paymentMethods } });
-      return (calls[0].body as { billingType: string }).billingType;
+      return (calls[0].body as { billingTypes: string[] }).billingTypes;
     };
-    expect(await run(["credit_card"])).toBe("CREDIT_CARD");
-    expect(await run(["pix"])).toBe("PIX");
-    expect(await run(["boleto"])).toBe("BOLETO");
-    expect(await run(["credit_card", "pix"])).toBe("UNDEFINED");
+    expect(await run(["credit_card"])).toEqual(["CREDIT_CARD"]);
+    expect(await run(["pix"])).toEqual(["PIX"]);
+    expect(await run(["credit_card", "pix"])).toEqual(["CREDIT_CARD", "PIX"]);
+    // Boleto não entra em assinatura; sem meio válido, cai no cartão.
+    expect(await run(["boleto"])).toEqual(["CREDIT_CARD"]);
   });
 
   it("plano anual vira link parcelado em até 12x no cartão, pelo total do ano", async () => {
@@ -111,6 +131,7 @@ describe("createCheckout", () => {
       ...checkoutParams,
       plan: { ...checkoutParams.plan, billingInterval: "year" },
     });
+    expect(calls[0].path).toBe("/paymentLinks");
     expect(calls[0].body).toMatchObject({ chargeType: "INSTALLMENT", billingType: "CREDIT_CARD", maxInstallmentCount: 12 });
   });
 
@@ -193,6 +214,49 @@ describe("handleWebhook", () => {
     );
     expect(event).toMatchObject({ type: "subscription.canceled", externalSubscriptionId: "sub_1" });
     expect(calls).toHaveLength(0);
+  });
+
+  it("CHECKOUT_PAID com cobrança adiada entra como teste (trialing) até nextDueDate", async () => {
+    const future = "2099-01-01";
+    const { gateway } = makeGateway({
+      "GET /checkouts/chk_1": () => ({
+        id: "chk_1",
+        externalReference: "company-1:plan-pro",
+        customer: "cus_1",
+        subscription: { id: "sub_1", nextDueDate: future },
+      }),
+    });
+    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_1" } }));
+    expect(event).toMatchObject({
+      type: "subscription.activated",
+      externalSubscriptionId: "sub_1",
+      externalCustomerId: "cus_1",
+      companyId: "company-1",
+      planId: "plan-pro",
+      trialEndsAt: "2099-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("CHECKOUT_PAID sem teste (nextDueDate hoje/passado) não marca trialEndsAt", async () => {
+    const { gateway } = makeGateway({
+      "GET /checkouts/chk_2": () => ({
+        id: "chk_2",
+        externalReference: "company-1:plan-pro",
+        customer: "cus_1",
+        subscription: "sub_2",
+        nextDueDate: "2000-01-01",
+      }),
+    });
+    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_2" } }));
+    expect(event).toMatchObject({ type: "subscription.activated", externalSubscriptionId: "sub_2", trialEndsAt: null });
+  });
+
+  it("CHECKOUT_PAID sem assinatura ou sem referência é ignorado", async () => {
+    const { gateway } = makeGateway({
+      "GET /checkouts/chk_3": () => ({ id: "chk_3", externalReference: null, subscription: null }),
+    });
+    const event = await gateway.handleWebhook(webhook({ event: "CHECKOUT_PAID", checkout: { id: "chk_3" } }));
+    expect(event.type).toBe("ignored");
   });
 
   it("pagamento avulso e eventos desconhecidos são ignorados", async () => {

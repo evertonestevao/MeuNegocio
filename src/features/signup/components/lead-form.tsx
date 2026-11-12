@@ -18,13 +18,13 @@ export interface LeadFormValues {
  * Primeiro passo: nome, e-mail e aceite. Tudo é guardado ao continuar; o plano vem no passo seguinte.
  * Quem volta do passo da senha para corrigir encontra o que já tinha preenchido.
  */
-export function LeadForm({ trialDays, initial }: { trialDays: number; initial?: LeadFormValues }) {
+export function LeadForm({ initial }: { initial?: LeadFormValues }) {
   return (
     <AuthForm action={startSignupAction} submitLabel="Continuar">
       <p className="flex gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-3 text-sm">
         <Gift className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
         <span>
-          <strong className="font-semibold">Os primeiros {trialDays} dias são grátis.</strong>{" "}
+          <strong className="font-semibold">Você começa com um período de teste grátis.</strong>{" "}
           <span className="text-muted-foreground">Escolha o plano no próximo passo. Se cancelar nesse período, não paga nada.</span>
         </span>
       </p>
