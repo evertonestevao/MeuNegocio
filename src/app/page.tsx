@@ -305,9 +305,7 @@ export default async function LandingPage() {
               Denunciar uso indevido
             </Link>
           </nav>
-          <p>
-            {brand.legal.companyName} · CNPJ {brand.legal.cnpj} · {brand.legal.address}
-          </p>
+          <p>CNPJ {brand.legal.cnpj}</p>
           <p>
             Suporte: {brand.legal.supportEmail} · Encarregado de dados: {brand.legal.dpoEmail}
           </p>
