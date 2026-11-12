@@ -4,24 +4,25 @@
  */
 export const brand = {
   /** Nome exibido na LP, título das páginas e sidebar. */
-  name: "MeuNegócio",
+  name: "NegocioApp",
   /** Descrição curta usada em metadata e na LP. */
   tagline: "Visitas, orçamentos e caixa da sua empresa de serviços",
   /** WhatsApp comercial, só dígitos e com DDI: destino de "Quero contratar". */
   salesWhatsapp: "5514997122258",
   /** Domínio público (links de email usam APP_URL do servidor). */
-  url: "https://meuproduto.com.br",
+  url: "https://negocioapp.com.br",
   /**
    * Dados legais exibidos no rodapé e nas páginas de política (Decreto 7.962/2013).
-   * PLACEHOLDERS — preencha com os dados reais antes de ir para produção.
+   * companyName e address ainda são PLACEHOLDERS — preencha a razão social e o
+   * endereço reais do CNPJ antes de ir para produção.
    */
   legal: {
     companyName: "Minha Empresa Ltda.",
-    cnpj: "00.000.000/0000-00",
+    cnpj: "70.103.001/0001-47",
     address: "Rua, nº — Cidade/UF — CEP",
-    supportEmail: "suporte@meuproduto.com.br",
+    supportEmail: "suporte@negocioapp.com.br",
     /** Encarregado de dados (DPO) — canal para direitos do titular (LGPD, art. 41). */
-    dpoEmail: "privacidade@meuproduto.com.br",
+    dpoEmail: "privacidade@negocioapp.com.br",
   },
 } as const;
 
