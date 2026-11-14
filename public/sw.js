@@ -1,6 +1,8 @@
-// Guarda só arquivos do sistema, que têm nome único por versão. Telas, dados e fotos nunca entram
-// no cache: cada empresa e cada conta vê sempre a resposta do servidor, e nada fica no aparelho.
-const CACHE = "meunegocio-estaticos-v1";
+// Guarda só arquivos do sistema (bundles do _next, com hash no nome, e os ícones). Telas, dados e
+// fotos nunca entram no cache: cada empresa e cada conta vê sempre a resposta do servidor.
+// Os ícones têm nome fixo (icon-192.png) e são servidos em cache-first; para forçar a troca do
+// ícone (ex.: logo nova), suba o número desta versão — o SW novo apaga o cache antigo e recacheia.
+const CACHE = "negocioapp-estaticos-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
