@@ -5,7 +5,9 @@ import { chromium } from "playwright";
 
 const NAVY = "#17222f";
 const AMBER = "#f0b429";
-const LETTER = "M22 76V24h15l13 24 13-24h15v52H63V49L50 72 37 49v27z";
+// Marca do NegocioApp: o "N" com a perna direita em seta para cima (negócio crescendo).
+// É o MESMO desenho do BrandMark (src/components/brand-mark.tsx): mudou um, mude o outro.
+const LETTER = "M22 28h14l26 32V36h-9l16-20 16 20h-9v44H62L36 48v28H22z";
 
 /** Quadrado âmbar com a letra, para uso normal e favicon. */
 const standard = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="${AMBER}"/><path d="${LETTER}" fill="${NAVY}"/></svg>`;

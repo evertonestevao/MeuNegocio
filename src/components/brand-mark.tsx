@@ -1,26 +1,14 @@
-import { brand } from "@/config/brand";
-
 /**
- * Símbolo da marca: a inicial do nome num quadrado arredondado. Usa a inicial de
- * `brand.name`, então acompanha a troca de nome sem precisar editar o desenho.
- * O tamanho vem de className. (Para um logo próprio, trocar o conteúdo do <svg>.)
+ * Símbolo da marca: o "N" do NegocioApp com a perna direita em seta para cima
+ * (ideia de negócio crescendo), num quadrado arredondado. É o MESMO desenho dos
+ * ícones do PWA — ao alterar, rode `node scripts/generate-pwa-icons.mjs` para
+ * manter ícone instalado, favicon e splash iguais. O tamanho vem de className.
  */
 export function BrandMark({ className = "size-8" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" className={`shrink-0 ${className}`} aria-hidden>
       <rect width="100" height="100" rx="22" fill="var(--sidebar-primary)" />
-      <text
-        x="50"
-        y="54"
-        textAnchor="middle"
-        dominantBaseline="central"
-        className="font-heading"
-        fontSize="60"
-        fontWeight="800"
-        fill="var(--sidebar)"
-      >
-        {brand.name.slice(0, 1).toUpperCase()}
-      </text>
+      <path d="M22 28h14l26 32V36h-9l16-20 16 20h-9v44H62L36 48v28H22z" fill="var(--sidebar)" />
     </svg>
   );
 }

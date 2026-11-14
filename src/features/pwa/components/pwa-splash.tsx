@@ -12,7 +12,7 @@ export function PwaSplash() {
       <div className="pwa-splash" aria-hidden="true">
         <svg className="pwa-splash-logo" viewBox="0 0 100 100">
           <rect width="100" height="100" rx="22" fill="#f0b429" />
-          <path d="M22 76V24h15l13 24 13-24h15v52H63V49L50 72 37 49v27z" fill="#17222f" />
+          <path d="M22 28h14l26 32V36h-9l16-20 16 20h-9v44H62L36 48v28H22z" fill="#17222f" />
         </svg>
         <p className="pwa-splash-name">{brand.name}</p>
         <p className="pwa-splash-tagline">{brand.tagline}</p>
