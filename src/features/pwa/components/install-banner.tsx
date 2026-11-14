@@ -12,8 +12,10 @@ export function InstallBanner() {
 
   return (
     <div className="mb-4 flex items-center gap-3 rounded-2xl bg-sidebar p-3 text-sidebar-foreground shadow-xs lg:hidden">
+      {/* O ícone tem nome fixo e fica em cache agressivo (SW + navegador). O ?v= dá uma URL
+          nova a cada troca de logo, forçando a busca do ícone atual. Suba o número ao mudar a logo. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icons/icon-192.png" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl" />
+      <img src="/icons/icon-192.png?v=2" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl" />
       <div className="min-w-0 flex-1">
         <p className="font-heading text-sm font-bold">Instale o {brand.name}</p>
         {mode === "ios" ? (
