@@ -85,7 +85,10 @@ export default async function DashboardPage() {
   const now = { today, time: timeInTimezone(profile.timezone) };
   const [home, firstSteps] = await Promise.all([
     (await getFinanceService()).getHome({ companyId: active.id, role: active.role }, today),
-    (await getFirstStepsService()).get({ companyId: active.id, role: active.role }, Boolean(profile.logo_path)),
+    (await getFirstStepsService()).get(
+      { companyId: active.id, role: active.role },
+      { hasLogo: Boolean(profile.logo_path), dismissed: Boolean(profile.first_steps_dismissed_at) },
+    ),
   ]);
   const { finance, forecast } = home;
   const openQuotes = [...home.awaitingClose, ...home.awaitingReply];
@@ -124,7 +127,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {firstSteps ? <FirstStepsCard companyId={active.id} steps={firstSteps} /> : null}
+      {firstSteps ? <FirstStepsCard steps={firstSteps} /> : null}
 
       <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${finance ? "lg:grid-cols-4" : ""}`}>
         <MetricCard

@@ -195,6 +195,8 @@ export interface CompanyProfile {
   tax_cash_basis?: boolean;
   card_fee_credit_bps?: number;
   card_fee_debit_bps?: number;
+  /** Quando owner/admin dispensou o cartão "Primeiros passos" com "Não mostrar mais"; null = ainda aparece. */
+  first_steps_dismissed_at?: string | null;
 }
 
 /**

@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-11
+**Última atualização:** 2026-11-14 (primeiros passos somem no primeiro orçamento e "Não mostrar mais" fica guardado na empresa)
 
 ## Sumário
 
@@ -281,7 +281,7 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 ## 11. Início e navegação
 
 - **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. 
-- **Primeiros passos** (Início, só proprietário e administrador): enquanto falta algo, um cartão mostra quanto já foi feito e leva a cada passo: enviar o logo, cadastrar serviços no catálogo, trazer os clientes e montar o primeiro orçamento. Some quando os quatro estão feitos, ou com "Não mostrar mais" (guardado no navegador, por empresa). Owner e admin também veem o caixa do mês (recebido − gastos), a pagar em 7 dias, o que vence hoje e um aviso de recebimentos atrasados e dos que vencem em 7 dias, com link para Contas a receber. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturado, recebido e gastos dos últimos 6 meses (owner e admin).
+- **Primeiros passos** (Início, só proprietário e administrador): enquanto falta algo, um cartão mostra quanto já foi feito e leva a cada passo: enviar o logo, cadastrar serviços no catálogo, trazer os clientes e montar o primeiro orçamento. Some assim que o primeiro orçamento é feito — o objetivo do cartão —, mesmo que o logo ou os clientes não tenham sido preenchidos, ou com "Não mostrar mais", que fica guardado na empresa (some em qualquer aparelho, não só no navegador). Owner e admin também veem o caixa do mês (recebido − gastos), a pagar em 7 dias, o que vence hoje e um aviso de recebimentos atrasados e dos que vencem em 7 dias, com link para Contas a receber. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturado, recebido e gastos dos últimos 6 meses (owner e admin).
 - **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
 - **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início, Serviços, Agenda e Orçamentos, ou Minhas visitas para o técnico) e "Mais", com os demais itens, tema e sair.
 - **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturado, recebido, gastos e caixa.

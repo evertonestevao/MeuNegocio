@@ -1,10 +1,12 @@
+import { AppError } from "@/lib/errors";
 import { permissionService } from "./permissionService";
 import type { ActorContext } from "@/server/actor";
 
 /**
  * Primeiros passos de uma empresa nova, no Início: o que falta para o primeiro orçamento sair com a
- * cara da empresa. Some quando tudo foi feito. Só proprietário e administrador veem, porque logo e
- * catálogo são deles.
+ * cara da empresa. Some quando o primeiro orçamento é feito — que é o objetivo do cartão — mesmo que
+ * logo ou clientes não tenham sido preenchidos, ou quando a empresa dispensa com "Não mostrar mais".
+ * Só proprietário e administrador veem, porque logo e catálogo são deles.
  */
 
 export interface FirstStepsCounts {
@@ -15,6 +17,8 @@ export interface FirstStepsCounts {
 
 export interface FirstStepsRepository {
   counts(companyId: string): Promise<FirstStepsCounts>;
+  /** Marca a empresa como "não mostrar mais os primeiros passos". */
+  dismiss(companyId: string): Promise<void>;
 }
 
 export interface FirstStep {
@@ -42,11 +46,24 @@ export function buildFirstSteps(input: { hasLogo: boolean } & FirstStepsCounts):
 
 export function createFirstStepsService(repo: FirstStepsRepository) {
   return {
-    /** null quando não há o que mostrar: papel sem acesso ou tudo feito. */
-    async get(actor: ActorContext, hasLogo: boolean): Promise<FirstStep[] | null> {
+    /**
+     * null quando não há o que mostrar: papel sem acesso, empresa já dispensou, ou o primeiro
+     * orçamento já saiu (o objetivo do cartão — some mesmo sem logo ou clientes).
+     */
+    async get(actor: ActorContext, options: { hasLogo: boolean; dismissed: boolean }): Promise<FirstStep[] | null> {
       if (!permissionService.canEditCompany(actor.role)) return null;
-      const steps = buildFirstSteps({ hasLogo, ...(await repo.counts(actor.companyId)) });
-      return steps.every((step) => step.done) ? null : steps;
+      if (options.dismissed) return null;
+      const counts = await repo.counts(actor.companyId);
+      if (counts.quotes > 0) return null;
+      return buildFirstSteps({ hasLogo: options.hasLogo, ...counts });
+    },
+
+    /** "Não mostrar mais": guarda na empresa, então some em qualquer aparelho. */
+    async dismiss(actor: ActorContext): Promise<void> {
+      if (!permissionService.canEditCompany(actor.role)) {
+        throw new AppError("forbidden", "Só o proprietário e o administrador podem dispensar os primeiros passos");
+      }
+      await repo.dismiss(actor.companyId);
     },
   };
 }

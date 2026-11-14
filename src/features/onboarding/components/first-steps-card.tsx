@@ -1,43 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useTransition } from "react";
 import { CheckCircle2, ChevronRight, Circle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FirstStep } from "@/services/firstStepsService";
+import { dismissFirstStepsAction } from "@/server/actions/firstSteps";
 
-const storageKey = (companyId: string) => `primeiros-passos-escondidos:${companyId}`;
-const listeners = new Set<() => void>();
-
-function readHidden(companyId: string): boolean {
-  try {
-    return window.localStorage.getItem(storageKey(companyId)) === "1";
-  } catch {
-    return false;
-  }
-}
-
-/** O que falta para o primeiro orçamento sair com a cara da empresa. Some quando tudo foi feito. */
-export function FirstStepsCard({ companyId, steps }: { companyId: string; steps: FirstStep[] }) {
-  const hidden = useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => readHidden(companyId),
-    () => false,
-  );
+/**
+ * O que falta para o primeiro orçamento sair com a cara da empresa. Some quando o primeiro orçamento
+ * é feito (decidido no servidor) ou com "Não mostrar mais", que fica guardado na empresa.
+ */
+export function FirstStepsCard({ steps }: { steps: FirstStep[] }) {
+  const [hidden, setHidden] = useState(false);
+  const [pending, startTransition] = useTransition();
   if (hidden) return null;
 
   const done = steps.filter((step) => step.done).length;
 
   function hide() {
-    try {
-      window.localStorage.setItem(storageKey(companyId), "1");
-    } catch {
-      // Sem armazenamento no navegador, o cartão só volta a aparecer.
-    }
-    listeners.forEach((listener) => listener());
+    setHidden(true); // some na hora; o servidor confirma em seguida
+    startTransition(async () => {
+      const result = await dismissFirstStepsAction();
+      if (result?.error) setHidden(false); // falhou: volta para tentar de novo
+    });
   }
 
   return (
@@ -49,7 +35,12 @@ export function FirstStepsCard({ companyId, steps }: { companyId: string; steps:
             {done} de {steps.length} feitos. O que falta para o seu primeiro orçamento sair com a cara da empresa.
           </p>
         </div>
-        <button type="button" onClick={hide} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+        <button
+          type="button"
+          onClick={hide}
+          disabled={pending}
+          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+        >
           Não mostrar mais
         </button>
       </CardHeader>

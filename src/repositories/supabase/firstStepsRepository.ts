@@ -23,5 +23,14 @@ export function createSupabaseFirstStepsRepository(client: SupabaseClient): Firs
       ]);
       return { catalogItems, clients, quotes };
     },
+
+    async dismiss(companyId) {
+      // Upsert: a empresa pode ainda não ter linha de perfil (começa nos padrões). As colunas NOT NULL
+      // de company_profiles têm default, então a linha nova nasce válida. RLS: só owner/admin escreve.
+      const { error } = await client
+        .from("company_profiles")
+        .upsert({ company_id: companyId, first_steps_dismissed_at: new Date().toISOString() });
+      if (error) throw new AppError("internal_error", "Falha ao dispensar os primeiros passos", error);
+    },
   };
 }
