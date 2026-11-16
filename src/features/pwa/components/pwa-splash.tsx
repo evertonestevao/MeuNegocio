@@ -15,7 +15,7 @@ export function PwaSplash() {
           <path d="M22 28h14l26 32V36h-9l16-20 16 20h-9v44H62L36 48v28H22z" fill="#17222f" />
         </svg>
         <p className="pwa-splash-name">{brand.name}</p>
-        <p className="pwa-splash-tagline">{brand.tagline}</p>
+        <p className="pwa-splash-tagline">{brand.splashTagline}</p>
         <span className="pwa-splash-bar" />
       </div>
     </>

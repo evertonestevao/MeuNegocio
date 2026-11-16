@@ -112,7 +112,13 @@ export default async function ExpensesPage({
   };
   const total = expenses.reduce((sum, expense) => sum + expense.amount_cents, 0);
   const defaultDate = today.slice(0, 7) === month.slice(0, 7) ? today : month;
-  const selected = isValidDate(params.d) && params.d.slice(0, 7) === month.slice(0, 7) ? params.d : null;
+  // Sem dia escolhido na URL, a tela abre já no dia de hoje (quando o mês mostrado é o atual).
+  const selected =
+    isValidDate(params.d) && params.d.slice(0, 7) === month.slice(0, 7)
+      ? params.d
+      : !params.d && month.slice(0, 7) === today.slice(0, 7)
+        ? today
+        : null;
   const isFutureMonth = month > `${today.slice(0, 7)}-01`;
 
   function href(overrides: Record<string, string | undefined>): string {

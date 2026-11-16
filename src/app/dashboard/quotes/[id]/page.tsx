@@ -24,7 +24,7 @@ import { canUsePublicApproval, getPublicQuoteUrl, getQuoteService, getQuoteSigna
 import { getEmployeeService, getVisitService } from "@/server/schedule";
 import { getExpenseService } from "@/server/finance";
 import { getReceivableService } from "@/server/receivables";
-import { getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
+import { costCoverage, getServiceCostService, plannedCostCents } from "@/server/serviceCosts";
 import { getTaxService } from "@/server/tax";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
@@ -185,6 +185,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         <ServiceCostSection
           quoteId={quote.id}
           cost={costs.cost}
+          coverage={costCoverage(items, catalog)}
           targetMarginPercent={targetMarginPercent}
           expenseOptions={costs.options}
           today={today}

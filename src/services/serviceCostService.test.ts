@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { TAX_UI_ENABLED } from "@/config/features";
 import type { ActorContext } from "@/server/actor";
 import type { Expense } from "@/types/finance";
 import { buildServiceCost, createServiceCostService, laborRateCents, marginStatus, serviceAlert, type LaborEntry, type ServiceCost, type ServiceVisit } from "./serviceCostService";
@@ -124,8 +125,14 @@ describe("serviço de custos", () => {
   it("cada serviço usa a própria alíquota, e quem não tem segue a da empresa", async () => {
     const { service } = setup();
     const results = await service.getForQuotes(OWNER, [{ id: "q1", totalCents: 1_000, plannedCostCents: null }, { id: "q2", totalCents: 1_000, plannedCostCents: null }], 20);
-    expect(results.get("q1")).toMatchObject({ taxSource: "company", taxCents: 60 });
-    expect(results.get("q2")).toMatchObject({ taxSource: "service", taxCents: 100 });
+    if (TAX_UI_ENABLED) {
+      expect(results.get("q1")).toMatchObject({ taxSource: "company", taxCents: 60 });
+      expect(results.get("q2")).toMatchObject({ taxSource: "service", taxCents: 100 });
+    } else {
+      // Imposto desligado por ora: o serviço não aplica nenhuma alíquota.
+      expect(results.get("q1")).toMatchObject({ taxSource: "none", taxCents: 0 });
+      expect(results.get("q2")).toMatchObject({ taxSource: "none", taxCents: 0 });
+    }
   });
 
   it("só owner e admin mudam o imposto do serviço, dentro de 0 a 40%", async () => {

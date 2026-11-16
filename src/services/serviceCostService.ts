@@ -1,3 +1,4 @@
+import { TAX_UI_ENABLED } from "@/config/features";
 import { AppError } from "@/lib/errors";
 import { estimatedCostCents, marginPercent } from "@/lib/quoteCalc";
 import { MAX_TAX_RATE_BPS, taxCents } from "@/lib/tax";
@@ -265,8 +266,9 @@ export function createServiceCostService(repo: ServiceCostRepository) {
           labor: labor.filter((entry) => entry.quote_id === quote.id),
           rates,
           targetMarginPercent,
-          serviceTaxRateBps: serviceTaxRates.get(quote.id) ?? null,
-          companyTaxRateBps,
+          // Imposto escondido por ora (TAX_UI_ENABLED): sem alíquota, o resultado não o desconta.
+          serviceTaxRateBps: TAX_UI_ENABLED ? serviceTaxRates.get(quote.id) ?? null : null,
+          companyTaxRateBps: TAX_UI_ENABLED ? companyTaxRateBps : null,
           cardFeeCents: cardFees.filter((fee) => fee.quote_id === quote.id).reduce((sum, fee) => sum + fee.fee_cents, 0),
         }),
       ]),

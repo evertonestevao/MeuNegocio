@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BellRing, ChevronRight, ClipboardList, CreditCard, Percent, ScrollText } from "lucide-react";
+import { TAX_UI_ENABLED } from "@/config/features";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AccountDataSection } from "@/features/account/components/account-data-section";
@@ -50,7 +51,7 @@ export default async function SettingsPage() {
       ? [{ href: "/dashboard/settings/checklists", title: "Checklists", description: "Itens padrão de cada tipo de visita", icon: ClipboardList }]
       : []),
     ...(permissionService.canManageFinance(active.role)
-      ? [{ href: "/dashboard/settings/impostos", title: "Impostos e taxas", description: "Imposto e taxas do cartão descontados do resultado dos serviços", icon: Percent }]
+      ? [{ href: "/dashboard/settings/impostos", title: TAX_UI_ENABLED ? "Impostos e taxas" : "Taxas do cartão", description: TAX_UI_ENABLED ? "Imposto e taxas do cartão descontados do resultado dos serviços" : "Taxas da maquininha descontadas do resultado dos serviços", icon: Percent }]
       : []),
     ...(permissionService.canManageBilling(active.role)
       ? [{ href: "/dashboard/billing", title: "Assinatura", description: "Plano, vagas e pagamentos", icon: CreditCard }]

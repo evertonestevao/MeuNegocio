@@ -1,4 +1,5 @@
 import { Clock, PiggyBank, Receipt, Wallet } from "lucide-react";
+import { TAX_UI_ENABLED } from "@/config/features";
 import { MetricCard, type MetricTone } from "@/components/metric-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,6 +23,7 @@ const RESULT_TONE: Record<MarginStatus, MetricTone> = { good: "success", low: "w
 export function ServiceCostSection({
   quoteId,
   cost,
+  coverage,
   targetMarginPercent,
   expenseOptions,
   today,
@@ -29,6 +31,8 @@ export function ServiceCostSection({
 }: {
   quoteId: string;
   cost: ServiceCost;
+  /** Quantos itens têm custo informado, de quantos ao todo. */
+  coverage: { withCost: number; total: number };
   targetMarginPercent: number;
   expenseOptions: ExpenseFormOptions;
   today: string;
@@ -44,7 +48,9 @@ export function ServiceCostSection({
           <h3 id="service-cost-title" className="font-heading text-xl font-extrabold tracking-tight">
             Custos e resultado do serviço
           </h3>
-          <p className="text-sm text-muted-foreground">Gastos ligados a este orçamento, horas da equipe nas visitas dele e imposto estimado. Só você e o administrador veem.</p>
+          <p className="text-sm text-muted-foreground">
+            Só você e o administrador veem — isto não vai para o cliente. Mostra quanto você cobra, quanto gasta e quanto sobra. Começa como estimativa do orçamento e vira o número real conforme você lança os gastos e as horas da equipe{TAX_UI_ENABLED ? " (e o imposto)" : ""}.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:flex-1">
           <NewExpenseButton options={expenseOptions} defaultDate={today} defaultQuoteId={quoteId} label="Lançar gasto" />
@@ -66,21 +72,29 @@ export function ServiceCostSection({
             icon={PiggyBank}
             tone={RESULT_TONE[cost.status]}
             toneValue
-            label="Resultado"
+            label="Quanto sobra"
             value={formatCents(cost.resultCents)}
             hint={marginHint(cost, targetMarginPercent)}
           />
         </div>
       </div>
 
-      <ServiceTaxForm quoteId={quoteId} rateBps={cost.taxRateBps} taxCents={cost.taxCents} source={cost.taxSource} />
+      {coverage.total > 0 && coverage.withCost < coverage.total ? (
+        <p className="rounded-lg bg-warning/10 px-3 py-2 text-sm">
+          Custo informado em <strong>{coverage.withCost}</strong> de <strong>{coverage.total}</strong> itens. Os {coverage.total - coverage.withCost} sem custo contam como R$ 0 na estimativa, então a margem prevista pode estar otimista. Informe o custo de cada item no orçamento ou no catálogo.
+        </p>
+      ) : null}
+
+      {TAX_UI_ENABLED ? (
+        <ServiceTaxForm quoteId={quoteId} rateBps={cost.taxRateBps} taxCents={cost.taxCents} source={cost.taxSource} />
+      ) : null}
 
       {difference !== null ? (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm">
-          Custo previsto no orçamento: <strong className="tabular-nums">{formatCents(cost.plannedCostCents!)}</strong>. Realizado:{" "}
+          Você estimou gastar <strong className="tabular-nums">{formatCents(cost.plannedCostCents!)}</strong> e até agora lançou{" "}
           <strong className="tabular-nums">{formatCents(cost.totalCostCents)}</strong>{" "}
           <span className={difference > 0 ? "text-destructive" : "text-success"}>
-            ({difference > 0 ? `${formatCents(difference)} acima` : difference < 0 ? `${formatCents(-difference)} abaixo` : "igual"} do previsto)
+            ({difference > 0 ? `${formatCents(difference)} a mais` : difference < 0 ? `${formatCents(-difference)} a menos` : "igual"} que a estimativa)
           </span>
         </p>
       ) : null}
@@ -97,7 +111,7 @@ export function ServiceCostSection({
           </CardHeader>
           <CardContent>
             {cost.categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum custo ainda. Lance os gastos do serviço; as horas da equipe e o imposto entram sozinhos.</p>
+              <p className="text-sm text-muted-foreground">Nenhum custo ainda. Lance os gastos do serviço; as horas da equipe{TAX_UI_ENABLED ? " e o imposto" : ""} entram sozinhos.</p>
             ) : (
               <ul className="flex flex-col gap-3 text-sm">
                 {cost.categories.map((category) => (

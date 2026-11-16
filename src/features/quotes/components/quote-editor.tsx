@@ -20,7 +20,8 @@ import { saveQuoteAction } from "@/server/actions/quotes";
 import type { ActionState } from "@/server/actions/action-state";
 import type { CatalogItem, ClientPickerOption, PricingMode, Quote, QuoteItem } from "@/types/database";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
-import { CLIENT_FILTER_FROM, filterClientOptions } from "@/features/clients/picker";
+import { TAX_UI_ENABLED } from "@/config/features";
+import { ClientCombobox } from "@/features/clients/components/client-combobox";
 import { useQuoteEditor, type EditorLine } from "../hooks/use-quote-editor";
 import { QuoteSummary } from "./quote-summary";
 import { quoteSchema } from "../schemas";
@@ -55,8 +56,6 @@ export function QuoteEditor({
   const readOnly = quote !== null && quote.status !== "draft";
   const client = clients.find((candidate) => candidate.id === editor.clientId);
   const activeCatalog = catalog.filter((item) => item.active);
-  const [clientFilter, setClientFilter] = useState("");
-  const visibleClients = filterClientOptions(clients, clientFilter, editor.clientId);
 
   // Alterado desde o último salvamento: o que está na tela não é o que o cliente recebe.
   const current = JSON.stringify(editor.toInput());
@@ -107,42 +106,13 @@ export function QuoteEditor({
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <Label htmlFor="quote-client">Cliente</Label>
-                  {!readOnly && clients.length > CLIENT_FILTER_FROM ? (
-                    <Input
-                      id="quote-client-filter"
-                      type="search"
-                      value={clientFilter}
-                      onChange={(event) => {
-                        const query = event.target.value;
-                        setClientFilter(query);
-                        // Um só resultado e ninguém escolhido ainda: já escolhe.
-                        const matches = filterClientOptions(clients, query, null);
-                        if (!editor.clientId && query.trim() && matches.length === 1) {
-                          editor.chooseClient(matches[0].id, matches[0].locations.map((location) => location.id));
-                        }
-                      }}
-                      placeholder="Filtrar por nome ou CPF/CNPJ"
-                      aria-label="Filtrar clientes"
-                    />
-                  ) : null}
-                  <select
+                  <ClientCombobox
                     id="quote-client"
-                    className={SELECT_CLASS}
+                    clients={clients}
+                    value={editor.clientId}
                     disabled={readOnly}
-                    value={editor.clientId ?? ""}
-                    onChange={(event) => {
-                      const id = event.target.value || null;
-                      const locations = clients.find((option) => option.id === id)?.locations ?? [];
-                      editor.chooseClient(id, locations.map((location) => location.id));
-                    }}
-                  >
-                    <option value="">{visibleClients.length === 0 ? "Nenhum cliente com esse filtro" : "Escolha o cliente"}</option>
-                    {visibleClients.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
+                    onSelect={(id, locationIds) => editor.chooseClient(id, locationIds)}
+                  />
                 </div>
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <Label htmlFor="quote-location">Local do serviço</Label>
@@ -421,10 +391,16 @@ export function QuoteEditor({
                     {editor.totals.estimate.margin === null ? "—" : `${editor.totals.estimate.margin}%`}
                   </span>
                 </div>
-                <span>
-                  Considera só os itens com custo informado.
-                  {taxRateBps === null ? " Sem imposto: informe o regime da empresa em Configurações › Impostos." : null}
-                </span>
+                {editor.totals.coverage.total > 0 && editor.totals.coverage.withCost < editor.totals.coverage.total ? (
+                  <span className="text-warning">
+                    Custo informado em {editor.totals.coverage.withCost} de {editor.totals.coverage.total} itens. Os {editor.totals.coverage.total - editor.totals.coverage.withCost} sem custo contam como R$ 0, então a margem pode estar otimista.
+                  </span>
+                ) : (
+                  <span>Custo informado em todos os itens.</span>
+                )}
+                {TAX_UI_ENABLED && taxRateBps === null ? (
+                  <span>Sem imposto: informe o regime da empresa em Configurações › Impostos.</span>
+                ) : null}
               </div>
             ) : null}
             {readOnly ? null : (
@@ -463,18 +439,30 @@ function LineCost({
   editor: ReturnType<typeof useQuoteEditor>;
 }) {
   const gain = editor.totals.lineGain(line);
+  const costInfo = editor.totals.lineCostInfo(line);
   // Recolhido por padrão: a maioria dos itens não tem "a mais", e o quadro aberto em todos pesava.
   const [open, setOpen] = useState(line.markup.trim() !== "");
   if (!open) {
-    if (readOnly) return null;
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mt-2 flex w-fit items-center gap-1 rounded-md text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <Plus className="size-3.5" aria-hidden /> Valor a mais nesta linha (só você vê)
-      </button>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        {readOnly ? null : (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex w-fit items-center gap-1 rounded-md text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <Plus className="size-3.5" aria-hidden /> Valor a mais nesta linha (só você vê)
+          </button>
+        )}
+        {costInfo.source === "catalog" ? (
+          <span className="text-muted-foreground">
+            Custo <strong className="tabular-nums">{formatCents(costInfo.costCents!)}</strong> (do catálogo)
+            {costInfo.margin !== null ? ` · margem ${costInfo.margin}%` : ""}
+          </span>
+        ) : costInfo.source === null ? (
+          <span className="text-warning">Sem custo informado — este item não entra na margem.</span>
+        ) : null}
+      </div>
     );
   }
   return (

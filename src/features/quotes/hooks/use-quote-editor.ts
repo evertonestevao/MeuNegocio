@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { TAX_UI_ENABLED } from "@/config/features";
 import { centsToMoneyInput, parseMoneyToCents } from "@/lib/money";
 import { estimatedCostCents, lineTotalCents, marginPercent, priceWithMarkup, subtotalCents, totalCents, type MarkupMode } from "@/lib/quoteCalc";
 import { taxCents } from "@/lib/tax";
@@ -204,9 +205,23 @@ export function useQuoteEditor(params: {
         const costTotal = estimatedCostCents([{ ...toCalcLine(line), costCents: parseMoneyToCents(line.unitPrice) ?? 0 }]);
         return { cents: total - costTotal, margin: marginPercent(total, costTotal) };
       },
+      /** Custo e margem desta linha, e de onde o custo veio. `source` null quando a linha não tem custo. */
+      lineCostInfo: (line: EditorLine) => {
+        const hasMarkup = parseMarkup(line) !== null;
+        const unitCost = hasMarkup ? (parseMoneyToCents(line.unitPrice) ?? 0) : catalogCost(line.catalogItemId);
+        if (unitCost === null) return { costCents: null, source: null as null | "markup" | "catalog", margin: null };
+        const lineTotal = lineTotalCents(toCalcLine(line));
+        const costTotal = estimatedCostCents([{ ...toCalcLine(line), costCents: unitCost }]);
+        return { costCents: costTotal, source: (hasMarkup ? "markup" : "catalog") as "markup" | "catalog", margin: marginPercent(lineTotal, costTotal) };
+      },
+      /** Quantos itens têm custo (digitado ou do catálogo) de quantos ao todo: base do aviso de margem otimista. */
+      coverage: {
+        total: lines.length,
+        withCost: lines.filter((line) => (parseMarkup(line) !== null ? true : catalogCost(line.catalogItemId) !== null)).length,
+      },
       estimate: canSeeCost
         ? (() => {
-            const tax = taxRateBps === null ? null : taxCents(total, taxRateBps);
+            const tax = !TAX_UI_ENABLED || taxRateBps === null ? null : taxCents(total, taxRateBps);
             return { cost, tax, profit: total - cost - (tax ?? 0), margin: marginPercent(total, cost + (tax ?? 0)) };
           })()
         : null,

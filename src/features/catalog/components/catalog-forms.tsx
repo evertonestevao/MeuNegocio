@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
 import { Button } from "@/components/ui/button";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CATALOG_UNITS, parseCatalogForm } from "@/features/catalog/schemas";
 import { centsToMoneyInput, parseMoneyToCents } from "@/lib/money";
 import { marginPercent } from "@/lib/quoteCalc";
@@ -16,10 +17,33 @@ import type { CatalogItem, CatalogKind, PricingMode } from "@/types/database";
 const SELECT_CLASS =
   "border-input h-11 md:h-9 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
-function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
+/** Ícone "i" com dica ao passar o mouse ou focar (acessível pelo teclado e no toque). */
+function InfoHint({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={text}
+            className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <Info className="size-3.5" aria-hidden />
+          </button>
+        }
+      />
+      <TooltipContent>{text}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Field({ id, label, hint, info, children }: { id: string; label: string; hint?: string; info?: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={id}>{label}</Label>
+        {info ? <InfoHint text={info} /> : null}
+      </div>
       {children}
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
@@ -68,7 +92,7 @@ function CatalogFields({ item, kind }: { item?: CatalogItem; kind: CatalogKind }
             name={hourly ? undefined : "unit"}
             disabled={hourly}
             value={hourly ? "h" : undefined}
-            defaultValue={hourly ? undefined : (item?.unit ?? (kind === "product" ? "un" : "visita"))}
+            defaultValue={hourly ? undefined : (item?.unit ?? "un")}
             className={SELECT_CLASS}
           >
             {CATALOG_UNITS.map((unit) => (
@@ -86,7 +110,11 @@ function CatalogFields({ item, kind }: { item?: CatalogItem; kind: CatalogKind }
             onChange={(event) => setPrice(event.target.value)}
           />
         </Field>
-        <Field id={`${prefix}-cost`} label={hourly ? "Custo por hora" : "Custo"}>
+        <Field
+          id={`${prefix}-cost`}
+          label={hourly ? "Custo por hora (opcional)" : "Custo (opcional)"}
+          info="Quanto você paga para fazer ou fornecer este item (material, parceiro, mão de obra). Não é o preço que o cliente paga."
+        >
           <MaskedInput mask="money"
             id={`${prefix}-cost`}
             name="cost"
@@ -96,8 +124,9 @@ function CatalogFields({ item, kind }: { item?: CatalogItem; kind: CatalogKind }
         </Field>
       </div>
       <p className="text-xs text-muted-foreground">
-        {margin === null ? "Informe o custo para ver a margem." : `Margem de ${margin}%.`} O custo é opcional e nunca aparece
-        no PDF.
+        {margin === null ? "Sem custo informado: tudo bem, dá para salvar assim." : `Margem de ${margin}%.`} O custo é opcional (às
+        vezes você faz o serviço sem calcular custo) e nunca aparece no PDF. Sem ele, este item entra como R$ 0 na margem dos
+        serviços — você pode informar depois.
       </p>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="active" defaultChecked={item?.active ?? true} className="size-4" />

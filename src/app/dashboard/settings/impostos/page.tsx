@@ -11,8 +11,9 @@ import { CardFeesForm } from "@/features/tax/components/card-fees-form";
 import { cardFeesOf } from "@/lib/installments";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
+import { TAX_UI_ENABLED } from "@/config/features";
 
-export const metadata: Metadata = { title: "Impostos e taxas" };
+export const metadata: Metadata = { title: TAX_UI_ENABLED ? "Impostos e taxas" : "Taxas do cartão" };
 
 export default async function TaxSettingsPage() {
   const { active } = await getActiveTenant();
@@ -30,24 +31,27 @@ export default async function TaxSettingsPage() {
         <ChevronLeft className="size-4" /> Configurações
       </Link>
       <div>
-        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Impostos e taxas</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">{TAX_UI_ENABLED ? "Impostos e taxas" : "Taxas do cartão"}</h1>
         <p className="text-sm text-muted-foreground">
-          Imposto estimado que sai do resultado de cada serviço. É uma estimativa para medir a margem: o valor oficial é o da guia apurada pelo contador. Só você e o
-          administrador veem.
+          {TAX_UI_ENABLED
+            ? "Imposto estimado que sai do resultado de cada serviço. É uma estimativa para medir a margem: o valor oficial é o da guia apurada pelo contador. Só você e o administrador veem."
+            : "Taxas da maquininha descontadas do resultado de cada serviço. Só você e o administrador veem."}
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Regime e alíquota</CardTitle>
-          <CardDescription>A alíquota vale para os serviços aprovados a partir de agora; cada serviço também pode ter a sua.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TaxSettingsForm key={`${tax.regime}-${tax.auto}-${tax.annex}`} tax={tax} />
-        </CardContent>
-      </Card>
+      {TAX_UI_ENABLED ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Regime e alíquota</CardTitle>
+            <CardDescription>A alíquota vale para os serviços aprovados a partir de agora; cada serviço também pode ter a sua.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TaxSettingsForm key={`${tax.regime}-${tax.auto}-${tax.annex}`} tax={tax} />
+          </CardContent>
+        </Card>
+      ) : null}
 
-      {tax.regime === "simples" && tax.detail ? (
+      {TAX_UI_ENABLED && tax.regime === "simples" && tax.detail ? (
         <Card>
           <CardHeader>
             <CardTitle>Faturamento dos últimos 12 meses</CardTitle>
@@ -59,7 +63,7 @@ export default async function TaxSettingsPage() {
             <MonthlyRevenuesForm tax={tax} />
           </CardContent>
         </Card>
-      ) : tax.regime === "simples" ? (
+      ) : TAX_UI_ENABLED && tax.regime === "simples" ? (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm">Escolha o anexo e salve para ver a alíquota calculada pelo faturamento dos últimos 12 meses.</p>
       ) : null}
 

@@ -9,6 +9,11 @@ export async function getServiceCostService(): Promise<ServiceCostService> {
   return createServiceCostService(createSupabaseServiceCostRepository(await getSupabaseServerClient()));
 }
 
+/** O custo do item: o digitado no orçamento (vale mais) ou, sem ele, o do catálogo; null se nenhum. */
+function itemCostCents(item: QuoteItem, costs: Map<string, number | null>): number | null {
+  return item.cost_cents ?? (item.catalog_item_id ? (costs.get(item.catalog_item_id) ?? null) : null);
+}
+
 /** Custo previsto pelo catálogo; null quando nenhum item do orçamento tem custo cadastrado. */
 export function plannedCostCents(items: QuoteItem[], catalog: Pick<CatalogItem, "id" | "cost_cents">[]): number | null {
   const costs = new Map(catalog.map((item) => [item.id, item.cost_cents ?? null]));
@@ -16,8 +21,16 @@ export function plannedCostCents(items: QuoteItem[], catalog: Pick<CatalogItem, 
     pricingMode: item.pricing_mode,
     quantity: Number(item.quantity),
     people: item.people,
-    // O custo digitado no orçamento vale mais que o do catálogo.
-    costCents: item.cost_cents ?? (item.catalog_item_id ? (costs.get(item.catalog_item_id) ?? null) : null),
+    costCents: itemCostCents(item, costs),
   }));
   return lines.some((line) => line.costCents !== null) ? estimatedCostCents(lines) : null;
+}
+
+/** Quantos itens têm custo informado, de quantos ao todo — base do aviso de margem otimista. */
+export function costCoverage(items: QuoteItem[], catalog: Pick<CatalogItem, "id" | "cost_cents">[]): { withCost: number; total: number } {
+  const costs = new Map(catalog.map((item) => [item.id, item.cost_cents ?? null]));
+  return {
+    withCost: items.filter((item) => itemCostCents(item, costs) !== null).length,
+    total: items.length,
+  };
 }

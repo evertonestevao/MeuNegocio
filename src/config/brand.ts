@@ -5,8 +5,10 @@
 export const brand = {
   /** Nome exibido na LP, título das páginas e sidebar. */
   name: "NegocioApp",
-  /** Descrição curta usada em metadata e na LP. */
+  /** Descrição curta usada em metadata e na LP (ótima para SEO: tem as palavras que o cliente busca). */
   tagline: "Visitas, orçamentos e caixa da sua empresa de serviços",
+  /** Frase curta de impacto exibida na tela de abertura do app (splash). */
+  splashTagline: "Seu negócio, sem complicação",
   /** WhatsApp comercial, só dígitos e com DDI: destino de "Quero contratar". */
   salesWhatsapp: "5514997122258",
   /** Domínio público (links de email usam APP_URL do servidor). */

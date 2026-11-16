@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight, HandCoins, Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { TAX_UI_ENABLED } from "@/config/features";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
@@ -238,7 +239,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Card>
           <CardHeader>
             <CardTitle>Resultado por serviço</CardTitle>
-            <CardDescription>Serviços fechados no mês, descontados os gastos ligados, as horas da equipe e o imposto estimado. Meta de margem: {targetMarginPercent}%.</CardDescription>
+            <CardDescription>Serviços fechados no mês, descontados os gastos ligados, as horas da equipe{TAX_UI_ENABLED ? " e o imposto estimado" : ""}. Meta de margem: {targetMarginPercent}%.</CardDescription>
           </CardHeader>
           <CardContent>
             {overview.revenues.length === 0 ? (

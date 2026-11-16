@@ -14,6 +14,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { TAX_UI_ENABLED } from "@/config/features";
 import type { RoleCode } from "@/types/database";
 
 /** Navegação da sidebar — editar aqui ao adicionar módulos do seu produto. */
@@ -64,7 +65,7 @@ const SETTINGS_SUBPAGES: Record<string, string> = {
   "/dashboard/billing": "Assinatura",
   "/dashboard/audit": "Auditoria",
   "/dashboard/settings/checklists": "Checklists",
-  "/dashboard/settings/impostos": "Impostos e taxas",
+  "/dashboard/settings/impostos": TAX_UI_ENABLED ? "Impostos e taxas" : "Taxas do cartão",
 };
 
 export function isSettingsSubpage(pathname: string): boolean {
