@@ -72,7 +72,9 @@ export function SupplierPanel({
                 <li key={item.supplier.id} className="flex flex-col gap-1.5 px-4 py-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex min-w-0 flex-col">
-                      <span className="font-medium break-words">{item.supplier.name}</span>
+                      <Link href={`/dashboard/expenses/suppliers/${item.supplier.id}`} className="font-medium break-words hover:underline">
+                        {item.supplier.name}
+                      </Link>
                       <span className="text-xs text-muted-foreground">
                         {[
                           item.purchases === 0 ? "Sem compras no período" : item.purchases === 1 ? "1 compra" : `${item.purchases} compras`,

@@ -1,4 +1,4 @@
-import { supplierSearchKey, type ExpenseInput, type ExpenseTemplateInput, type SupplierInput } from "@/features/expenses/schemas";
+import { supplierSearchKey, type ExpenseInput, type ExpenseTemplateInput, type SupplierInput, type SupplierPurchaseFilters } from "@/features/expenses/schemas";
 import { AppError } from "@/lib/errors";
 import type { ActorContext } from "@/server/actor";
 import type { Expense, ExpenseCategory, ExpenseTemplate, Supplier, SupplierSpend } from "@/types/finance";
@@ -21,11 +21,14 @@ export interface ExpenseRepository {
   softDeleteTemplate(companyId: string, templateId: string): Promise<void>;
 
   listSuppliers(companyId: string): Promise<Supplier[]>;
+  getSupplier(companyId: string, supplierId: string): Promise<Supplier | null>;
   insertSupplier(companyId: string, input: SupplierInput): Promise<string>;
   updateSupplier(companyId: string, supplierId: string, input: SupplierInput): Promise<void>;
   softDeleteSupplier(companyId: string, supplierId: string): Promise<void>;
   /** Gastos com fornecedor desde `from` (ou todos). */
   listSupplierSpend(companyId: string, from: string | null): Promise<SupplierSpend[]>;
+  /** Todas as compras (gastos) ligadas a um fornecedor, da mais recente para a mais antiga. */
+  listBySupplier(companyId: string, supplierId: string): Promise<Expense[]>;
 
   listCategories(companyId: string): Promise<ExpenseCategory[]>;
   insertCategory(companyId: string, name: string): Promise<void>;
@@ -87,6 +90,51 @@ export function buildSupplierStats(suppliers: Supplier[], spend: SupplierSpend[]
     .sort((a, b) => b.totalCents - a.totalCents);
 
   return { stats, byCategory };
+}
+
+export interface SupplierPurchaseSummary {
+  totalCents: number;
+  count: number;
+  firstPurchase: string | null;
+  lastPurchase: string | null;
+  minCents: number | null;
+  maxCents: number | null;
+  avgCents: number | null;
+}
+
+/** Visão geral das compras de um fornecedor, sempre sobre todas elas (o filtro não a mexe). */
+export function summarizeSupplierPurchases(purchases: Expense[]): SupplierPurchaseSummary {
+  if (purchases.length === 0) {
+    return { totalCents: 0, count: 0, firstPurchase: null, lastPurchase: null, minCents: null, maxCents: null, avgCents: null };
+  }
+  const totalCents = purchases.reduce((sum, item) => sum + item.amount_cents, 0);
+  const amounts = purchases.map((item) => item.amount_cents);
+  const dates = purchases.map((item) => item.expense_date);
+  return {
+    totalCents,
+    count: purchases.length,
+    firstPurchase: dates.reduce((min, date) => (date < min ? date : min)),
+    lastPurchase: dates.reduce((max, date) => (date > max ? date : max)),
+    minCents: Math.min(...amounts),
+    maxCents: Math.max(...amounts),
+    avgCents: Math.round(totalCents / purchases.length),
+  };
+}
+
+const byDateDesc = (a: Expense, b: Expense) => (a.expense_date < b.expense_date ? 1 : a.expense_date > b.expense_date ? -1 : 0);
+
+/** Aplica busca (descrição e categoria), faixa de preço e ordenação à lista de compras. */
+export function filterSupplierPurchases(purchases: Expense[], filters: SupplierPurchaseFilters): Expense[] {
+  const needle = supplierSearchKey(filters.search);
+  const filtered = purchases.filter((item) => {
+    if (filters.minCents !== null && item.amount_cents < filters.minCents) return false;
+    if (filters.maxCents !== null && item.amount_cents > filters.maxCents) return false;
+    if (needle && !supplierSearchKey(`${item.description} ${item.category_name}`).includes(needle)) return false;
+    return true;
+  });
+  return filters.sort === "amount"
+    ? filtered.toSorted((a, b) => b.amount_cents - a.amount_cents || byDateDesc(a, b))
+    : filtered.toSorted(byDateDesc);
 }
 
 export interface CategoryTotal {
@@ -199,6 +247,20 @@ export function createExpenseService(repo: ExpenseRepository) {
       requireAccess(actor);
       const [suppliers, spend] = await Promise.all([repo.listSuppliers(actor.companyId), repo.listSupplierSpend(actor.companyId, from)]);
       return buildSupplierStats(suppliers, spend);
+    },
+
+    /** Ficha do fornecedor: cadastro, visão geral das compras e a lista filtrada. */
+    async supplierDetail(actor: ActorContext, supplierId: string, filters: SupplierPurchaseFilters) {
+      requireAccess(actor);
+      const supplier = await repo.getSupplier(actor.companyId, supplierId);
+      if (!supplier) throw new AppError("not_found", "Fornecedor não encontrado");
+      const purchases = await repo.listBySupplier(actor.companyId, supplierId);
+      return {
+        supplier,
+        summary: summarizeSupplierPurchases(purchases),
+        purchases: filterSupplierPurchases(purchases, filters),
+        totalCount: purchases.length,
+      };
     },
 
     async listCategories(actor: ActorContext) {

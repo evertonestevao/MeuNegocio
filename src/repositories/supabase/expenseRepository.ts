@@ -162,6 +162,18 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
       return (data ?? []) as Supplier[];
     },
 
+    async getSupplier(companyId, supplierId) {
+      const { data, error } = await client
+        .from("suppliers")
+        .select("id, name, document, phone, notes")
+        .eq("company_id", companyId)
+        .eq("id", supplierId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) fail(error);
+      return (data ?? null) as Supplier | null;
+    },
+
     async insertSupplier(companyId, input) {
       const { data, error } = await client
         .from("suppliers")
@@ -200,6 +212,18 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
       if (error) fail(error);
       type Row = Omit<SupplierSpend, "category_name"> & { category: { name: string } | null };
       return ((data ?? []) as unknown as Row[]).map(({ category, ...row }) => ({ ...row, category_name: category?.name ?? "" }));
+    },
+
+    async listBySupplier(companyId, supplierId) {
+      const { data, error } = await client
+        .from("expenses")
+        .select(EXPENSE_SELECT)
+        .eq("company_id", companyId)
+        .eq("supplier_id", supplierId)
+        .is("deleted_at", null)
+        .order("expense_date", { ascending: false });
+      if (error) fail(error);
+      return ((data ?? []) as unknown as WithCategory<Omit<Expense, "category_name">>[]).map((row) => flatten(row) as Expense);
     },
 
     async listCategories(companyId) {

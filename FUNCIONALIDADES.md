@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-14 (primeiros passos somem no primeiro orçamento e "Não mostrar mais" fica guardado na empresa)
+**Última atualização:** 2026-11-15 (ficha do fornecedor: histórico de compras com filtro por descrição e faixa de preço)
 
 ## Sumário
 
@@ -586,6 +586,7 @@ Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calend�
 | **Lançamentos** | Descrição, valor, data, categoria, fornecedor, forma de pagamento (PIX, dinheiro, débito, crédito, boleto, transferência ou outro), serviço, funcionário e observações; só os quatro primeiros são obrigatórios. Tipos: pontual, recorrente, folha e prestador. |
 | **Fornecedor no lançamento** | Ao digitar, lista os fornecedores cadastrados (sem diferença de acento ou maiúscula). Nome novo vira cadastro ao salvar o gasto, sem duplicar um que já existe. |
 | **Fornecedores** (aba) | Nome, CNPJ ou CPF, telefone e observações. Mostra, em 3 meses, 12 meses ou tudo, quanto foi para cada fornecedor, número de compras, última compra e categorias principais, e "De quem mais compramos": os 3 fornecedores que mais receberam em cada categoria. Excluir mantém o nome nos gastos já lançados. |
+| **Ficha do fornecedor** | Em `/dashboard/expenses/suppliers/[id]` (toque no nome do fornecedor na aba). Mostra o cadastro, a visão geral (total comprado, ticket médio, faixa de preço entre a menor e a maior compra, última compra e desde quando) e o histórico de compras, filtrável por descrição (sem diferença de acento ou maiúscula) e por faixa de preço, com ordenação por mais recentes ou maior valor. Só leitura; editar o cadastro abre o mesmo formulário da aba. |
 | **Recorrências** | Valor, categoria, dia de 1 a 28, início, fim opcional, ativa e funcionário opcional. Com funcionário, gera folha. |
 | **Geração mensal** | Um lançamento por mês para cada recorrência, por job idempotente, respeitando início e fim e sem gerar mês futuro. O job roda todo dia, por causa do fuso de cada empresa, e o botão "Gerar recorrentes do mês" faz o mesmo na hora. Excluir o lançamento de um mês não o faz voltar. |
 | **Editar um lançamento gerado** | Muda só aquele mês. Editar a recorrência vale para os próximos. |

@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExpenseInput } from "@/features/expenses/schemas";
-import { expenseSchema, expenseTemplateSchema, supplierSchema, supplierSearchKey } from "@/features/expenses/schemas";
+import { expenseSchema, expenseTemplateSchema, supplierSchema, supplierSearchKey, type SupplierPurchaseFilters } from "@/features/expenses/schemas";
 import type { ActorContext } from "@/server/actor";
 import type { Expense, ExpenseCategory, Supplier, SupplierSpend } from "@/types/finance";
-import { buildSupplierStats, createExpenseService, totalsByCategory, type ExpenseRepository } from "./expenseService";
+import {
+  buildSupplierStats,
+  createExpenseService,
+  filterSupplierPurchases,
+  summarizeSupplierPurchases,
+  totalsByCategory,
+  type ExpenseRepository,
+} from "./expenseService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
 const INPUT = {} as ExpenseInput;
@@ -29,10 +36,12 @@ function makeRepo() {
     softDeleteCategory: vi.fn(async () => undefined),
     categoryInUse: vi.fn(async () => false),
     listSuppliers: vi.fn(async (): Promise<Supplier[]> => [{ id: "s1", name: "Casa do Eletricista", document: null, phone: null, notes: null }]),
+    getSupplier: vi.fn(async (): Promise<Supplier | null> => ({ id: "s1", name: "Casa do Eletricista", document: null, phone: null, notes: null })),
     insertSupplier: vi.fn(async () => "s-new"),
     updateSupplier: vi.fn(async () => undefined),
     softDeleteSupplier: vi.fn(async () => undefined),
     listSupplierSpend: vi.fn(async (): Promise<SupplierSpend[]> => []),
+    listBySupplier: vi.fn(async (): Promise<Expense[]> => []),
   } satisfies ExpenseRepository;
 }
 
@@ -159,5 +168,49 @@ describe("fornecedores", () => {
     expect(supplierSchema.safeParse({ name: "Loja", document: "123" }).success).toBe(false);
     expect(supplierSchema.safeParse({ name: "L" }).success).toBe(false);
     expect(supplierSearchKey("  Elétrica  Paulista ")).toBe("eletrica paulista");
+  });
+});
+
+describe("ficha do fornecedor", () => {
+  const purchase = (id: string, amount_cents: number, expense_date: string, description = "", category_name = "Materiais"): Expense =>
+    ({ id, amount_cents, expense_date, description, category_name, kind: "one_off" }) as Expense;
+
+  const PURCHASES = [
+    purchase("1", 5000, "2026-10-10", "Gás de cozinha", "Combustível"),
+    purchase("2", 20000, "2026-09-01", "Peça do compressor", "Materiais"),
+    purchase("3", 5000, "2026-08-15", "Gás P13", "Combustível"),
+  ];
+
+  const filters = (over: Partial<SupplierPurchaseFilters> = {}): SupplierPurchaseFilters => ({ search: "", minCents: null, maxCents: null, sort: "recent", ...over });
+
+  it("resume total, contagem, faixa de preço e datas", () => {
+    expect(summarizeSupplierPurchases(PURCHASES)).toEqual({
+      totalCents: 30000,
+      count: 3,
+      firstPurchase: "2026-08-15",
+      lastPurchase: "2026-10-10",
+      minCents: 5000,
+      maxCents: 20000,
+      avgCents: 10000,
+    });
+    expect(summarizeSupplierPurchases([])).toMatchObject({ count: 0, totalCents: 0, minCents: null, avgCents: null });
+  });
+
+  it("filtra por faixa de preço e por texto (sem acento), e ordena por valor", () => {
+    expect(filterSupplierPurchases(PURCHASES, filters({ minCents: 10000 })).map((p) => p.id)).toEqual(["2"]);
+    expect(filterSupplierPurchases(PURCHASES, filters({ maxCents: 5000 })).map((p) => p.id)).toEqual(["1", "3"]);
+    expect(filterSupplierPurchases(PURCHASES, filters({ search: "combustível" })).map((p) => p.id)).toEqual(["1", "3"]);
+    expect(filterSupplierPurchases(PURCHASES, filters({ sort: "amount" })).map((p) => p.id)).toEqual(["2", "1", "3"]);
+  });
+
+  it("fornecedor de outra empresa não é encontrado e não busca as compras", async () => {
+    const repo = makeRepo();
+    repo.getSupplier.mockResolvedValue(null);
+    await expect(createExpenseService(repo).supplierDetail(OWNER, "s1", filters())).rejects.toMatchObject({ code: "not_found" });
+    expect(repo.listBySupplier).not.toHaveBeenCalled();
+  });
+
+  it("member não acessa a ficha", async () => {
+    await expect(createExpenseService(makeRepo()).supplierDetail({ companyId: "co", role: "member" }, "s1", filters())).rejects.toMatchObject({ code: "forbidden" });
   });
 });

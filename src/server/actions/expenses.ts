@@ -27,6 +27,8 @@ function refresh(): void {
   revalidatePath("/dashboard/services");
   // O gasto pode estar ligado a um serviço: a página do orçamento mostra o resultado.
   revalidatePath("/dashboard/quotes/[id]", "page");
+  // A ficha do fornecedor mostra o cadastro e o histórico de compras.
+  revalidatePath("/dashboard/expenses/suppliers/[id]", "page");
 }
 
 export async function saveExpenseAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {

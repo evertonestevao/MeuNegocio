@@ -138,6 +138,42 @@ export function supplierSearchKey(name: string): string {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/** Campo de dinheiro vindo da URL: "150,00" vira centavos; vazio ou inválido vira null. */
+const moneyFilter = z
+  .string()
+  .default("")
+  .transform((value) => {
+    const cents = parseMoneyToCents(value.trim());
+    return cents && cents > 0 ? cents : null;
+  });
+
+/** Filtro da ficha do fornecedor: busca na descrição e faixa de preço das compras. */
+export const supplierPurchaseFilterSchema = z
+  .object({
+    search: z.string().trim().max(200).catch("").default(""),
+    min: moneyFilter,
+    max: moneyFilter,
+    sort: z.enum(["recent", "amount"]).catch("recent"),
+  })
+  .transform(({ search, min, max, sort }) => ({
+    search,
+    // Faixa invertida (mínimo acima do máximo) ignora o mínimo, em vez de não achar nada.
+    minCents: min !== null && max !== null && min > max ? null : min,
+    maxCents: max,
+    sort,
+  }));
+
+export type SupplierPurchaseFilters = z.output<typeof supplierPurchaseFilterSchema>;
+
+export function parseSupplierPurchaseFilters(params: { q?: string; min?: string; max?: string; sort?: string }): SupplierPurchaseFilters {
+  return supplierPurchaseFilterSchema.parse({
+    search: params.q ?? "",
+    min: params.min ?? "",
+    max: params.max ?? "",
+    sort: params.sort ?? "recent",
+  });
+}
+
 export const categoryNameSchema = z.string().trim().min(2, "Informe o nome da categoria.").max(80, "Use até 80 caracteres.");
 
 export const EXPENSE_KIND_LABEL = {
