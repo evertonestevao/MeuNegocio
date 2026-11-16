@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 
 /** O escritório registra a decisão em nome do cliente, cancela e tudo fica no histórico do orçamento. */
 test("aprovação por telefone com quem autorizou, cancelamento com motivo e histórico", async ({ page, browser }) => {
@@ -7,7 +7,7 @@ test("aprovação por telefone com quem autorizou, cancelamento com motivo e his
   await createClient(page, "Condomínio Histórico", "Portaria");
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente", { exact: true }).selectOption({ label: "Condomínio Histórico" });
+  await selectQuoteClient(page, "Condomínio Histórico");
   await page.getByLabel("Título do serviço").fill("Troca do quadro da portaria");
   await page.getByRole("button", { name: "Item avulso" }).click();
   await page.locator("#line-0-description").fill("Quadro de distribuição");

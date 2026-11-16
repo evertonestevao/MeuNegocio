@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 import { admin } from "./reseller-helpers";
 
 /**
@@ -20,7 +20,7 @@ test("orçamento novo não repete número quando o contador da empresa está atr
   await admin.from("company_counters").delete().eq("company_id", companyId);
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente").selectOption({ label: "Cliente Numeração E2E" });
+  await selectQuoteClient(page, "Cliente Numeração E2E");
   await page.getByLabel("Título do serviço").fill("Conserto telhado");
   await page.getByRole("button", { name: "Item avulso" }).click();
   await page.getByLabel("Descrição").first().fill("Mão de obra");

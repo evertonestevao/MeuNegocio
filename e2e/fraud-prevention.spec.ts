@@ -63,7 +63,8 @@ test("declaração, conferência do CNPJ, denúncia e suspensão ficam guardadas
   // O cliente recebe o orçamento do impostor e denuncia pelo link.
   await createClient(other, "Cliente Enganado", "Casa");
   await other.goto("/dashboard/quotes/new");
-  await other.getByLabel("Cliente").selectOption({ label: "Cliente Enganado" });
+  await other.getByLabel("Cliente", { exact: true }).fill("Cliente Enganado");
+  await other.getByRole("option", { name: "Cliente Enganado" }).click();
   await other.getByRole("button", { name: "Item avulso" }).click();
   await other.getByLabel("Descrição").last().fill("Sinal do serviço");
   await other.getByLabel("Valor unitário").last().fill("500,00");

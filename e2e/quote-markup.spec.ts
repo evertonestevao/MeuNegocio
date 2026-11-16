@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 
 /** Revenda do serviço de um parceiro: custo e acréscimo ficam com a empresa; o cliente vê só o preço. */
 test("valor a mais sobre o que o parceiro cobra forma o preço e não aparece para o cliente", async ({ browser, page }) => {
@@ -7,7 +7,7 @@ test("valor a mais sobre o que o parceiro cobra forma o preço e não aparece pa
   await createClient(page, "Cliente Revenda E2E", "Sede");
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente").selectOption({ label: "Cliente Revenda E2E" });
+  await selectQuoteClient(page, "Cliente Revenda E2E");
   await page.getByLabel("Título do serviço").fill("Conserto telhado");
   await page.getByRole("button", { name: "Item avulso" }).click();
   await page.getByLabel("Descrição").first().fill("Mão de obra do parceiro");

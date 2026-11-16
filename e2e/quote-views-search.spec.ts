@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 
 const PHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1";
 
@@ -9,7 +9,7 @@ test("desconto em %, quem abriu o link e busca de orçamentos", async ({ page, b
   await createClient(page, "Gonçalves Instalações", "Sede");
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente", { exact: true }).selectOption({ label: "Gonçalves Instalações" });
+  await selectQuoteClient(page, "Gonçalves Instalações");
   // Um local só: já vem escolhido.
   await expect(page.getByLabel("Local do serviço")).toHaveValue(/[0-9a-f-]{36}/);
   await page.getByLabel("Título do serviço").fill("Iluminação do galpão");

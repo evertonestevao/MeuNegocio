@@ -12,7 +12,8 @@ test("editor não salva orçamento vazio nem desconto acima do subtotal, e avisa
   await expect(page.getByText("Escolha o cliente.")).toBeVisible();
   await expect(page).toHaveURL(/\/dashboard\/quotes\/new$/);
 
-  await page.getByLabel("Cliente").selectOption({ label: "Cliente Editor E2E" });
+  await page.getByLabel("Cliente").fill("Cliente Editor E2E");
+  await page.getByRole("option", { name: "Cliente Editor E2E" }).click();
   await page.getByRole("button", { name: "Item avulso" }).click();
   await page.locator("#line-0-description").fill("Instalação de tomadas");
   await page.locator("#line-0-price").fill("100,00");

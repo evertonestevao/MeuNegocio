@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 import { admin } from "./reseller-helpers";
 
 const LOGO = { name: "logo.png", mimeType: "image/png", buffer: readFileSync("public/demo/logo-refrigeracao-exemplo.png") };
@@ -29,7 +29,7 @@ test("logo da empresa: envia, aparece no link do orçamento e remove", async ({ 
   expect(await logoPathOf("Empresa Logo E2E")).toBe(path);
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente").selectOption({ label: "Cliente Logo E2E" });
+  await selectQuoteClient(page, "Cliente Logo E2E");
   await page.getByLabel("Título do serviço").fill("Serviço com logo");
   await page.getByRole("button", { name: "Item avulso" }).click();
   await page.getByLabel("Descrição").last().fill("Visita técnica");

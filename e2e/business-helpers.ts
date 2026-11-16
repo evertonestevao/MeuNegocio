@@ -29,6 +29,12 @@ export async function createClient(page: Page, name: string, locationName: strin
   await expect(page.getByText("Rua das Oficinas, 45")).toBeVisible();
 }
 
+/** Escolhe o cliente no editor de orçamento pelo combobox (digitar + clicar na lista). */
+export async function selectQuoteClient(page: Page, name: string) {
+  await page.getByLabel("Cliente", { exact: true }).fill(name);
+  await page.getByRole("option", { name }).click();
+}
+
 export async function createEmployee(page: Page, name: string, contract: "clt" | "pj", hourlyPay = "") {
   await page.goto("/dashboard/team");
   await page.getByRole("button", { name: "Nova pessoa" }).click();

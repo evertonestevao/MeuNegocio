@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createClient, setupProCompany } from "./business-helpers";
+import { createClient, selectQuoteClient, setupProCompany } from "./business-helpers";
 
 /** Do catálogo ao faturamento: o cliente aprova pelo link, sem login, e o valor entra no financeiro. */
 test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async ({ browser, page }) => {
@@ -17,7 +17,7 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await expect(item).toBeHidden();
 
   await page.goto("/dashboard/quotes/new");
-  await page.getByLabel("Cliente").selectOption({ label: "Hotel E2E" });
+  await selectQuoteClient(page, "Hotel E2E");
   await page.getByLabel("Título do serviço").fill("Ampliação elétrica");
   const picker = page.getByLabel("Adicionar do catálogo");
   await picker.selectOption(await picker.locator("option", { hasText: "Mão de obra E2E" }).getAttribute("value") ?? "");
