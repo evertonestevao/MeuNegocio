@@ -14,6 +14,8 @@ test("texto livre do plano sai do painel para a assinatura, sem prazo de auditor
 
     await page.goto("/admin/planos");
     const field = page.locator(`[id="${plan.id}-custom-text"]`);
+    // A edição fica recolhida atrás de "Editar plano".
+    await page.locator("details", { has: field }).locator("summary").click();
     await field.fill(text);
     await page.locator("form", { has: field }).getByRole("button", { name: "Salvar plano" }).click();
     await expect(page.getByText("Plano salvo")).toBeVisible();

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, signupAndOnboard, startTrial, uniqueEmail } from "./helpers";
+import { PASSWORD, signupAndOnboard, subscribeWithoutTrial, uniqueEmail } from "./helpers";
 
 /** Fluxo crítico 3: trocar empresa ativa (plano §12). */
 test("usuário com duas empresas alterna a ativa pelo switcher", async ({ page }) => {
@@ -17,8 +17,9 @@ test("usuário com duas empresas alterna a ativa pelo switcher", async ({ page }
   await page.getByRole("checkbox", { name: /Declaro que sou responsável/ }).check();
   await page.getByRole("button", { name: "Criar empresa" }).click();
 
-  // nova empresa vira a ativa e, sem assinatura, passa pela tela de assinar
-  await startTrial(page);
+  // nova empresa vira a ativa e, sem assinatura, passa pela tela de assinar. O dono já usou o
+  // teste grátis na primeira empresa, então aqui só há a assinatura direta.
+  await subscribeWithoutTrial(page);
   await expect(page.locator("main").getByText("Segunda Empresa E2E")).toBeVisible();
 
   // troca de volta para a primeira

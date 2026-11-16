@@ -14,7 +14,7 @@ test("cadastro em etapas: nome e e-mail guardados antes da senha, assinatura e d
   await page.getByRole("button", { name: "Assinar", exact: true }).click();
   await expect(page).toHaveURL(/\/comecar$/);
   await expect(page.getByRole("radio")).toHaveCount(0);
-  await expect(page.getByText("Os primeiros 7 dias são grátis.")).toBeVisible();
+  await expect(page.getByText("Você começa com um período de teste grátis.")).toBeVisible();
   await expect(page.getByText("Guardamos seu nome e e-mail a partir daqui")).toBeVisible();
 
   // A tela dividida é a mesma nos quatro passos: só o formulário troca, o painel da marca não remonta.

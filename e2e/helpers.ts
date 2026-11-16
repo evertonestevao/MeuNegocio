@@ -77,6 +77,16 @@ export async function startTrial(page: Page) {
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
+/**
+ * Na tela de assinar, de quem já usou o teste (uma vez por dono, em qualquer empresa dele): assina o
+ * plano selecionado, sem dias grátis, no gateway de teste, e volta ao painel.
+ */
+export async function subscribeWithoutTrial(page: Page) {
+  await expect(page).toHaveURL(/\/assinar/);
+  await page.getByRole("button", { name: /^Assinar o plano / }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+}
+
 export function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}@e2e.local`;
 }
