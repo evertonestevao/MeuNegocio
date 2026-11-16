@@ -46,11 +46,22 @@ export default async function SubscribePage() {
   const { data, error } = await client.from("plans").select("*").is("deleted_at", null).eq("is_active", true);
   if (error) throw new AppError("internal_error", "Falha ao listar planos", error);
   const forSale = plansForSale((data ?? []) as Plan[]);
-  // Anual e mensal: o mensal primeiro, porque é ele que tem o teste com cartão.
+  // O que o banco devolve já respeita a visibilidade: plano privado só chega para quem foi liberado.
+  // A oferta de referência (destaque, lista do que inclui, economia do anual) usa só os públicos.
+  const publicForSale = forSale.filter((plan) => plan.is_public);
+  // Mensal e anual: o mensal primeiro, porque é ele que tem o teste com cartão. Dentro de cada um, o exclusivo vem antes.
   const plans = forSale
-    .map((plan) => ({ id: plan.id, name: plan.name, interval: plan.billing_interval, priceCents: plan.price_cents, monthlyCents: planMonthlyCents(plan), trialDays: plan.trial_days }))
-    .toSorted((a, b) => Number(a.interval === "year") - Number(b.interval === "year"));
-  const featured = forSale.find((plan) => plan.billing_interval === "month") ?? forSale[0];
+    .map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      interval: plan.billing_interval,
+      priceCents: plan.price_cents,
+      monthlyCents: planMonthlyCents(plan),
+      trialDays: plan.trial_days,
+      included: planOfferLines(plan.features),
+      exclusive: !plan.is_public,
+    }))
+    .toSorted((a, b) => Number(a.interval === "year") - Number(b.interval === "year") || Number(b.exclusive) - Number(a.exclusive));
 
   const canSubscribe = permissionService.canManageBilling(active.role);
   const gateway = getPaymentGateway();
@@ -80,8 +91,7 @@ export default async function SubscribePage() {
           <SubscribePanel
             companyId={active.id}
             plans={plans}
-            included={featured ? planOfferLines(featured.features) : []}
-            savingsCents={annualSavingsCents(forSale)}
+            savingsCents={annualSavingsCents(publicForSale)}
             trialAvailable={access.trialAvailable}
             cardTrial={gateway.supportsTrial}
             cardlessTrial={CARDLESS_TRIAL_OFFERED}

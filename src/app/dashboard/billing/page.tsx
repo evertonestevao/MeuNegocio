@@ -158,7 +158,7 @@ export default async function BillingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   {plan.name}
-                  {isCurrent ? <Badge>Atual</Badge> : null}
+                  {isCurrent ? <Badge>Atual</Badge> : plan.is_public ? null : <Badge variant="secondary">Exclusivo</Badge>}
                 </CardTitle>
                 <CardDescription className="text-lg font-semibold text-foreground">
                   {formatPrice(plan)}

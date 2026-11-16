@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getServerEnv } from "@/config/env";
 import { PLAN_FEATURES, describePlanFeature, planOfferLines } from "@/config/planFeatures";
 import { paymentMethodLabel } from "@/config/paymentMethods";
+import { PlanAccessEditor } from "@/features/plans/components/plan-access-editor";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
 import { PlanForm } from "@/features/plans/components/plan-form";
 import { formatCents } from "@/lib/money";
@@ -21,6 +22,8 @@ const ACTION_LABEL: Record<PlanAuditEntry["action"], string> = {
   updated: "Alterou",
   activated: "Ativou",
   deactivated: "Desativou",
+  access_granted: "Liberou e-mails em",
+  access_revoked: "Removeu e-mails de",
 };
 
 const WATCHED_FIELDS: { key: string; label: string; money?: boolean }[] = [
@@ -28,6 +31,7 @@ const WATCHED_FIELDS: { key: string; label: string; money?: boolean }[] = [
   { key: "price_cents", label: "Preço", money: true },
   { key: "extra_seat_price_cents", label: "Membro extra", money: true },
   { key: "custom_text", label: "Texto livre" },
+  { key: "is_public", label: "Visibilidade (público)" },
 ];
 
 function display(value: unknown, money?: boolean): string {
@@ -38,6 +42,10 @@ function display(value: unknown, money?: boolean): string {
 /** O que mudou de um valor para outro, em texto: "Preço: R$ 1,00 → R$ 2,00". */
 function describeChanges(entry: PlanAuditEntry): string[] {
   const before = entry.old_values;
+  if (entry.action === "access_granted" || entry.action === "access_revoked") {
+    const emails = entry.new_values.emails;
+    return Array.isArray(emails) ? [emails.join(", ")] : [];
+  }
   if (!before) return [];
   const after = entry.new_values;
   const fields = WATCHED_FIELDS.filter((field) => before[field.key] !== after[field.key]).map(
@@ -55,7 +63,7 @@ export default async function PlansPage() {
   if (!(await getPlatformAdminId())) redirect("/dashboard");
 
   const service = getPlanAdminService();
-  const [plans, audit] = await Promise.all([service.list(), service.listAudit()]);
+  const [plans, audit, access] = await Promise.all([service.list(), service.listAudit(), service.listAccess()]);
   const planNames = new Map(plans.map((plan) => [plan.id, plan.name]));
   const usesPriceCatalog = getServerEnv().PAYMENT_GATEWAY === "stripe";
 
@@ -65,7 +73,7 @@ export default async function PlansPage() {
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">Planos</h1>
         <p className="text-sm text-muted-foreground">
           Limites e recursos valem na hora para as empresas do plano. Desativar tira o plano da oferta, e quem já
-          assina continua nele.
+          assina continua nele. Plano privado só aparece para os e-mails liberados no cartão dele.
         </p>
       </div>
 
@@ -88,6 +96,7 @@ export default async function PlansPage() {
                   <CardTitle className="flex items-center gap-2">
                     {plan.name}
                     {plan.is_active ? null : <Badge variant="secondary">Inativo</Badge>}
+                    {plan.is_public ? null : <Badge variant="outline">Privado</Badge>}
                   </CardTitle>
                   <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
                 </div>
@@ -115,6 +124,9 @@ export default async function PlansPage() {
                   </li>
                 </ul>
                 {plan.custom_text ? <p className="text-sm text-muted-foreground">{plan.custom_text}</p> : null}
+                {plan.is_public ? null : (
+                  <PlanAccessEditor planId={plan.id} emails={access.filter((entry) => entry.plan_id === plan.id).map((entry) => entry.email)} />
+                )}
                 <details className="group">
                   <summary className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium hover:bg-muted [&::-webkit-details-marker]:hidden">
                     <Pencil className="size-4" />

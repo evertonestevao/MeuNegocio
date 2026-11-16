@@ -421,7 +421,7 @@ begin
   select string_agg(column_name, ', ' order by column_name) into diff
   from information_schema.column_privileges
   where table_schema = 'public' and table_name = 'plans' and grantee = 'anon' and privilege_type = 'SELECT';
-  if diff is distinct from 'billing_interval, code, created_at, currency, deleted_at, extra_seat_price_cents, features, id, is_active, name, price_cents, updated_at' then
+  if diff is distinct from 'billing_interval, code, created_at, currency, deleted_at, extra_seat_price_cents, features, id, is_active, is_public, name, price_cents, updated_at' then
     raise exception 'FALHA grants de coluna: anon em plans: %', diff;
   end if;
 

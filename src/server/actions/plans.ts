@@ -64,3 +64,35 @@ export async function setPlanActiveAction(
     return toActionError(err);
   }
 }
+
+export async function grantPlanAccessAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const adminId = await requirePlatformAdmin();
+    const planId = formData.get("planId");
+    if (typeof planId !== "string") throw new AppError("validation_error", "Plano não informado");
+    const added = await getPlanAdminService().grantAccess(planId, String(formData.get("emails") ?? ""), adminId);
+    refresh();
+    return { success: added.length === 0 ? "Esses e-mails já estavam na lista" : `${added.length} e-mail(s) liberado(s)` };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function revokePlanAccessAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const adminId = await requirePlatformAdmin();
+    const planId = formData.get("planId");
+    if (typeof planId !== "string") throw new AppError("validation_error", "Plano não informado");
+    await getPlanAdminService().revokeAccess(planId, String(formData.get("email") ?? ""), adminId);
+    refresh();
+    return { success: "E-mail removido da lista" };
+  } catch (err) {
+    return toActionError(err);
+  }
+}

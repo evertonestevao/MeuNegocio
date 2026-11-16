@@ -1278,6 +1278,58 @@ select sec_test.must_fail('estranho lê o subconjunto de contato',
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Plano privado: só enxerga quem tem e-mail confirmado na lista ou assina o plano.
+-- ---------------------------------------------------------------------------
+update auth.users set email_confirmed_at = now() where email = 'sec-guest@test.local';
+
+insert into public.plans (code, name, price_cents, features, is_public)
+values ('sec_private', 'Plano Amigo', 1000, '{}'::jsonb, false);
+
+insert into public.plan_access_emails (plan_id, email)
+select id, 'sec-guest@test.local' from public.plans where code = 'sec_private';
+-- E-mail na lista, mas nunca confirmado: não vale.
+insert into public.plan_access_emails (plan_id, email)
+select id, 'sec-stranger@test.local' from public.plans where code = 'sec_private';
+
+-- A empresa FREE assina o plano privado: o dono dela precisa continuar vendo o próprio plano.
+insert into public.subscriptions (company_id, plan_id, status)
+select '5ec0c000-0000-4000-8000-000000000002', id, 'active' from public.plans where code = 'sec_private';
+
+set local role anon;
+select sec_test.must_fail('visitante vê plano privado',
+  $$select 1 from public.plans where code = 'sec_private'$$);
+select sec_test.must_fail('visitante lê a lista de e-mails do plano privado',
+  $$select 1 from public.plan_access_emails$$);
+
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000006', 'sec-guest@test.local');
+select sec_test.must_pass('e-mail liberado e confirmado vê o plano privado',
+  $$select 1 from public.plans where code = 'sec_private'$$);
+select sec_test.must_fail('e-mail liberado lê a lista de e-mails',
+  $$select 1 from public.plan_access_emails$$);
+select sec_test.must_fail('e-mail liberado se inclui na lista',
+  $$insert into public.plan_access_emails (plan_id, email)
+    select id, 'qualquer@test.local' from public.plans where code = 'sec_private'$$);
+select sec_test.must_fail('e-mail liberado altera a visibilidade do plano',
+  $$update public.plans set is_public = true where code = 'sec_private'$$);
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('e-mail na lista, mas não confirmado, vê o plano privado',
+  $$select 1 from public.plans where code = 'sec_private'$$);
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select sec_test.must_fail('dono de outra empresa vê o plano privado',
+  $$select 1 from public.plans where code = 'sec_private'$$);
+select sec_test.must_pass('plano público continua visível para todos',
+  $$select 1 from public.plans where code = 'pro'$$);
+
+select sec_test.login('5ec00000-0000-4000-8000-000000000005', 'sec-free@test.local');
+select sec_test.must_pass('quem assina o plano privado continua vendo o próprio plano',
+  $$select 1 from public.plans where code = 'sec_private'$$);
+
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -1321,6 +1373,9 @@ begin
   if v_list is not null then raise exception 'FALHA invariante: escrita aberta: %', v_list; end if;
 
   -- Criar empresa para outra pessoa é só do servidor.
+  if has_function_privilege('authenticated', 'public.admin_set_plan_access(uuid, text[], boolean, uuid)', 'execute') then
+    raise exception 'FALHA invariante: usuário comum altera a lista de acesso de plano privado';
+  end if;
   if has_function_privilege('authenticated', 'public.admin_create_company(text, text, uuid, uuid, uuid)', 'execute') then
     raise exception 'FALHA invariante: usuário comum cria empresa para outra pessoa';
   end if;

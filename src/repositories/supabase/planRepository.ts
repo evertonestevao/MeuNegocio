@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
 import type { PlanRepository } from "@/services/planService";
-import type { Plan, PlanAuditEntry } from "@/types/database";
+import type { Plan, PlanAccessEntry, PlanAuditEntry } from "@/types/database";
 
 /** Catálogo de planos. Escrita só por RPC do service_role: o client quem injeta é src/server/plans.ts. */
 export function createSupabasePlanRepository(client: SupabaseClient): PlanRepository {
@@ -48,6 +48,7 @@ export function createSupabasePlanRepository(client: SupabaseClient): PlanReposi
         p_custom_text: input.customText,
         p_payment_methods: input.paymentMethods,
         p_trial_days: input.trialDays,
+        p_is_public: input.isPublic,
         p_actor: actorId,
       });
       if (error) fail(error);
@@ -62,6 +63,26 @@ export function createSupabasePlanRepository(client: SupabaseClient): PlanReposi
       });
       if (error) fail(error);
       return data as Plan;
+    },
+
+    async listAccess() {
+      const { data, error } = await client
+        .from("plan_access_emails")
+        .select("plan_id, email, created_at")
+        .order("email", { ascending: true });
+      if (error) fail(error);
+      return (data ?? []) as PlanAccessEntry[];
+    },
+
+    async setAccess({ planId, emails, grant, actorId }) {
+      const { data, error } = await client.rpc("admin_set_plan_access", {
+        p_plan_id: planId,
+        p_emails: emails,
+        p_grant: grant,
+        p_actor: actorId,
+      });
+      if (error) fail(error);
+      return (data ?? []) as string[];
     },
 
     async listAudit(limit) {

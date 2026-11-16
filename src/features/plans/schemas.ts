@@ -64,6 +64,7 @@ export interface PlanFormValues {
   customText: string | null;
   paymentMethods: string[];
   trialDays: number;
+  isPublic: boolean;
 }
 
 /** Dias de teste: vazio vira o padrão; inteiro de 0 a 90. */
@@ -88,7 +89,7 @@ export function parsePlanForm(formData: FormData): PlanFormValues {
   if (paymentMethods.length === 0) {
     throw new z.ZodError([{ code: "custom", path: ["paymentMethods"], message: "Escolha ao menos um meio de pagamento." }]);
   }
-  return { ...fields, features: parsePlanFeatures(formData), paymentMethods, trialDays: parseTrialDays(formData) };
+  return { ...fields, features: parsePlanFeatures(formData), paymentMethods, trialDays: parseTrialDays(formData), isPublic: formData.get("isPrivate") !== "on" };
 }
 
 /** Primeira mensagem de um erro de validação, para mostrar no formulário. */

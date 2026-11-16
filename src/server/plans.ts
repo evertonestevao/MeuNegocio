@@ -23,12 +23,12 @@ export async function requirePlatformAdmin(): Promise<string> {
 }
 
 /**
- * Planos da oferta pública. Visitante não tem GRANT em plans, de propósito: a leitura passa pelo
+ * Planos da oferta pública (sem os privados). Visitante não tem GRANT em plans, de propósito: a leitura passa pelo
  * servidor e devolve só o que está à venda. Se o banco falhar, a página abre sem eles.
  */
 export async function getPublicPlans(): Promise<Plan[]> {
   try {
-    return await getPlanAdminService().listActive();
+    return await getPlanAdminService().listPublicActive();
   } catch (err) {
     console.error("[plans] falha ao carregar os planos públicos:", err);
     return [];

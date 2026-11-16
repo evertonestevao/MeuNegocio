@@ -22,6 +22,7 @@ function makePlan(overrides: Partial<Plan>): Plan {
     custom_text: null,
     payment_methods: ["credit_card"],
     trial_days: 7,
+    is_public: true,
     is_active: true,
     deleted_at: null,
     created_at: "",

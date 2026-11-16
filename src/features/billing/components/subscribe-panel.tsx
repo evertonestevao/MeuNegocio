@@ -18,6 +18,10 @@ export interface SubscribePlan {
   monthlyCents: number;
   /** Dias de teste grátis do plano (0 = cobra na hora). */
   trialDays: number;
+  /** O que o plano inclui, em texto de oferta. */
+  included: string[];
+  /** Plano privado, liberado só para este e-mail. */
+  exclusive: boolean;
 }
 
 /** Data da 1ª cobrança (DD/MM/AAAA) para um teste de `trialDays` dias a partir de hoje. */
@@ -35,7 +39,6 @@ function firstChargeDate(trialDays: number): string {
 export function SubscribePanel({
   companyId,
   plans,
-  included,
   savingsCents,
   trialAvailable,
   cardTrial,
@@ -46,7 +49,6 @@ export function SubscribePanel({
 }: {
   companyId: string;
   plans: SubscribePlan[];
-  included: string[];
   savingsCents: number;
   /** A empresa ainda não usou o teste grátis. */
   trialAvailable: boolean;
@@ -60,6 +62,7 @@ export function SubscribePanel({
   afterActivationHref?: string;
 }) {
   const router = useRouter();
+  // Quem tem plano exclusivo já chega nele; os demais, no mensal.
   const monthly = plans.find((plan) => plan.interval === "month");
   const [selected, setSelected] = useState(monthly?.id ?? plans[0]?.id ?? "");
   const plan = plans.find((candidate) => candidate.id === selected) ?? plans[0];
@@ -93,7 +96,9 @@ export function SubscribePanel({
             >
               <span className="flex items-center justify-between gap-2">
                 <span className="font-heading text-lg font-bold">{option.name}</span>
-                {option.interval === "year" && savingsCents > 0 ? (
+                {option.exclusive ? (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Exclusivo para você</span>
+                ) : option.interval === "year" && savingsCents > 0 ? (
                   <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">Economize {formatCents(savingsCents)}</span>
                 ) : null}
               </span>
@@ -109,9 +114,9 @@ export function SubscribePanel({
         })}
       </div>
 
-      {included.length > 0 ? (
+      {plan.included.length > 0 ? (
         <ul className="grid gap-2 text-sm sm:grid-cols-2">
-          {included.map((line) => (
+          {plan.included.map((line) => (
             <li key={line} className="flex items-center gap-2">
               <Check className="size-4 shrink-0 text-success" /> {line}
             </li>

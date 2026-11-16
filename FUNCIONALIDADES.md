@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-15 (ficha do fornecedor: histórico de compras com filtro por descrição e faixa de preço)
+**Última atualização:** 2026-11-16 (planos privados: plano com preço especial, visível só para e-mails liberados)
 
 ## Sumário
 
@@ -220,7 +220,13 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
   oferta e quem já assina continua neles.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
   é ilimitado.
-- O plano padrão (`free`) não pode ser desativado nem cobrado, porque vale para quem não tem assinatura.
+- O plano padrão (`free`) não pode ser desativado, cobrado nem privado, porque vale para quem não tem assinatura.
+- **Plano privado** (caixa "Plano privado" no formulário; vale na criação e na edição): não aparece para ninguém, só para quem o super admin liberou. Serve para preço especial (ex.: amigo ou parceiro pagando metade), com limites, teste e meios de pagamento próprios. No cartão do plano privado, "Quem pode ver este plano" lista os e-mails liberados: dá para colar vários de uma vez (separados por vírgula, espaço ou linha, até 200 por vez; um e-mail inválido recusa o pedido todo) e remover um a um.
+  - **Quem vê o plano:** a pessoa cujo e-mail está na lista **e já confirmou o e-mail da conta** (o cadastro precisa usar exatamente esse e-mail), ou qualquer membro de uma empresa que já assina o plano. Esses veem o plano em `/assinar` e em `/dashboard/billing`, marcado "Exclusivo para você" (na tela de assinar, ele vem selecionado). Quem tem um plano exclusivo mensal já chega nele; os planos públicos continuam na tela.
+  - **Quem não vê:** visitantes e demais clientes. A trava é no banco (RLS de `plans`): tentar assinar um plano privado trocando o `planId` da requisição resulta em "Plano não encontrado". O destaque, a lista do que inclui e a economia do anual usam só os planos públicos.
+  - **Remover um e-mail** só impede nova escolha do plano: quem já assina continua nele, com o mesmo preço. Tornar um plano público de novo também não afeta quem já assina.
+  - Liberar e remover e-mails ficam em `plan_audit_log` ("Liberou e-mails em…" / "Removeu e-mails de…"), assim como mudar a visibilidade. Plano privado não entra na lista de planos dos vendedores.
+  - Alternativa sem lista: em `/admin/empresas`, o super admin também pode criar uma empresa já com um plano (inclusive privado), sem cobrança.
 - Limites e recursos valem na hora para todas as empresas do plano.
 - Preços não: cada assinatura guarda o preço e o valor do membro extra da contratação
   (`contracted_price_cents`, `contracted_extra_seat_price_cents`). Editar o plano só afeta novas

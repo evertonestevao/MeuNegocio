@@ -94,6 +94,16 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
         />
       </Field>
 
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="isPrivate" defaultChecked={plan ? !plan.is_public : false} className="mt-0.5 size-4" />
+        <span>
+          <span className="font-medium">Plano privado</span>
+          <span className="block text-xs text-muted-foreground">
+            Não aparece para ninguém. Só quem tem o e-mail liberado vê e assina. A lista de e-mails fica no cartão do plano, depois de salvar.
+          </span>
+        </span>
+      </label>
+
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 text-sm font-medium">Cobrança</legend>
         <div className="grid gap-4 sm:grid-cols-2">

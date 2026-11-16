@@ -98,6 +98,8 @@ export interface Plan {
   payment_methods: string[];
   /** Dias de teste grátis antes da 1ª cobrança. 0 = sem teste. Padrão 7. */
   trial_days: number;
+  /** Plano privado (false) só aparece para os e-mails liberados pelo super admin. */
+  is_public: boolean;
   is_active: boolean;
   deleted_at: string | null;
   created_at: string;
@@ -386,10 +388,17 @@ export interface QuotePickerOption {
   status: QuoteStatus;
 }
 
+/** E-mail liberado para ver um plano privado. */
+export interface PlanAccessEntry {
+  plan_id: string;
+  email: string;
+  created_at: string;
+}
+
 export interface PlanAuditEntry {
   id: string;
   plan_id: string;
-  action: "created" | "updated" | "activated" | "deactivated";
+  action: "created" | "updated" | "activated" | "deactivated" | "access_granted" | "access_revoked";
   changed_by: string | null;
   changed_by_name: string | null;
   old_values: Record<string, unknown> | null;
