@@ -1,5 +1,5 @@
 /**
- * Símbolo da marca: o "N" do NegocioApp com a perna direita em seta para cima
+ * Símbolo da marca: o "N" do produto com a perna direita em seta para cima
  * (ideia de negócio crescendo), num quadrado arredondado. É o MESMO desenho dos
  * ícones do PWA — ao alterar, rode `node scripts/generate-pwa-icons.mjs` para
  * manter ícone instalado, favicon e splash iguais. O tamanho vem de className.
