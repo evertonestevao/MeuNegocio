@@ -112,7 +112,23 @@ npm run test:e2e     # Playwright
 npm run lint
 npm run typecheck
 npx supabase migration up   # aplicar migrations locais
+bash scripts/atualizar-minipc.sh   # atualiza o stage (mini PC): migrations locais, build e reinício
 ```
+
+## Publicação: stage primeiro, produção depois
+
+Há dois ambientes, e a ordem é sempre a mesma:
+
+- **Stage** = mini PC (`https://meunegocio.everapps.com.br`), com o Supabase local. Só muda quando se roda `bash scripts/atualizar-minipc.sh`.
+- **Produção** = Vercel (`https://www.negocioapp.com.br`), com o Supabase na nuvem. Publica sozinha a cada push na `master`.
+
+Fluxo de toda mudança:
+
+1. Fazer e testar (typecheck, lint, testes, e o que a mudança pedir).
+2. Commitar na branch de trabalho e subir **a branch**, nunca a `master`.
+3. **Atualizar o stage** (`bash scripts/atualizar-minipc.sh`) e avisar que ele já reflete a mudança, com prints quando for tela.
+4. **Esperar a aprovação do dono.** Só depois dela, publicar na `master` (avanço simples, sem forçar). Aprovação para uma mudança não vale para a seguinte.
+5. Mudança com migration: aplicar no banco de produção **antes** de publicar na `master`, senão a produção quebra. A senha do banco é temporária e o dono a troca depois.
 
 ## O que NÃO fazer sem perguntar antes
 
