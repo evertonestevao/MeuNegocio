@@ -167,7 +167,7 @@ export default async function PlansPage() {
                 <li key={entry.id} className="flex flex-col gap-1 py-3 text-sm first:pt-0 last:pb-0">
                   <p>
                     <span className="font-medium">{entry.changed_by_name ?? "Usuário removido"}</span>{" "}
-                    {ACTION_LABEL[entry.action].toLowerCase()} {planNames.get(entry.plan_id) ?? "o plano"}
+                    {ACTION_LABEL[entry.action].toLowerCase()} {planNames.get(entry.plan_id) ?? (typeof entry.new_values.name === "string" ? entry.new_values.name : "o plano")}
                     <span className="text-muted-foreground">
                       {" "}
                       · {new Date(entry.changed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
