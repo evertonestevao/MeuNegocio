@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Plan } from "@/types/database";
-import { createPlanService, parseAccessEmails, type PlanInput, type PlanRepository } from "./planService";
+import type { Plan, PlanUsage } from "@/types/database";
+import { createPlanService, describeDeletionBlock, isSystemPlan, parseAccessEmails, type PlanInput, type PlanRepository } from "./planService";
 
 const FEATURES: PlanInput["features"] = {
   max_members: 5,
@@ -43,6 +43,8 @@ function makeRepo(plan: Plan | null = makePlan()) {
     save: vi.fn(async () => makePlan()),
     setActive: vi.fn(async () => makePlan()),
     listAudit: vi.fn(async () => []),
+    listUsage: vi.fn(async () => [] as PlanUsage[]),
+    remove: vi.fn(async () => makePlan()),
     listAccess: vi.fn(async () => []),
     setAccess: vi.fn(async ({ emails }: { emails: string[] }) => emails),
   } satisfies PlanRepository;
@@ -165,5 +167,70 @@ describe("planService", () => {
     expect(() => parseAccessEmails("ok@a.com, sem-arroba")).toThrow(/sem-arroba/);
     const many = Array.from({ length: 201 }, (_, index) => `u${index}@a.com`).join(" ");
     expect(() => parseAccessEmails(many)).toThrow();
+  });
+
+  describe("excluir plano", () => {
+    const usage = (overrides: Partial<PlanUsage> = {}): PlanUsage => ({ plan_id: "p1", subscribers: 0, reseller_links: 0, commission_rules: 0, ...overrides });
+
+    it("exclui o plano que ninguém usa, registrando quem excluiu", async () => {
+      const repo = makeRepo(makePlan({ code: "plus" }));
+      repo.listUsage.mockResolvedValue([usage()]);
+      await createPlanService(repo).remove("p1", "admin-1");
+      expect(repo.remove).toHaveBeenCalledWith({ planId: "p1", actorId: "admin-1" });
+    });
+
+    it("plano sem nenhuma linha de uso (nunca usado) também pode ser excluído", async () => {
+      const repo = makeRepo(makePlan({ code: "plus" }));
+      await createPlanService(repo).remove("p1", "a");
+      expect(repo.remove).toHaveBeenCalled();
+    });
+
+    it("recusa plano em uso por empresa, com a quantidade, e não chama o banco", async () => {
+      const repo = makeRepo(makePlan({ code: "plus" }));
+      repo.listUsage.mockResolvedValue([usage({ subscribers: 3 })]);
+      await expect(createPlanService(repo).remove("p1", "a")).rejects.toMatchObject({ code: "conflict", message: expect.stringContaining("Em uso por 3 empresas") });
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it("recusa plano com vínculo de vendedor ou regra de comissão", async () => {
+      for (const extra of [{ reseller_links: 1 }, { commission_rules: 2 }]) {
+        const repo = makeRepo(makePlan({ code: "plus" }));
+        repo.listUsage.mockResolvedValue([usage(extra)]);
+        await expect(createPlanService(repo).remove("p1", "a")).rejects.toMatchObject({ code: "conflict", message: expect.stringContaining("comissão") });
+        expect(repo.remove).not.toHaveBeenCalled();
+      }
+    });
+
+    it("o uso é de cada plano: outro plano em uso não trava este", async () => {
+      const repo = makeRepo(makePlan({ code: "plus" }));
+      repo.listUsage.mockResolvedValue([usage({ plan_id: "outro", subscribers: 9 })]);
+      await createPlanService(repo).remove("p1", "a");
+      expect(repo.remove).toHaveBeenCalled();
+    });
+
+    it("plano do sistema nunca se exclui, mesmo sem uso", async () => {
+      for (const code of ["free", "pro"]) {
+        const repo = makeRepo(makePlan({ code }));
+        await expect(createPlanService(repo).remove("p1", "a")).rejects.toMatchObject({ code: "validation_error", message: expect.stringContaining("sistema") });
+        expect(repo.remove).not.toHaveBeenCalled();
+      }
+    });
+
+    it("plano inexistente devolve not_found", async () => {
+      await expect(createPlanService(makeRepo(null)).remove("x", "a")).rejects.toMatchObject({ code: "not_found" });
+    });
+
+    it("a mensagem do bloqueio: singular, plural e sem bloqueio", () => {
+      expect(describeDeletionBlock("plus", usage({ subscribers: 1 }))).toContain("Em uso por 1 empresa.");
+      expect(describeDeletionBlock("plus", usage({ subscribers: 2 }))).toContain("Em uso por 2 empresas.");
+      expect(describeDeletionBlock("plus", usage())).toBeNull();
+      expect(describeDeletionBlock("plus", undefined)).toBeNull();
+    });
+
+    it("quem é plano do sistema", () => {
+      expect(isSystemPlan("free")).toBe(true);
+      expect(isSystemPlan("pro")).toBe(true);
+      expect(isSystemPlan("anual")).toBe(false);
+    });
   });
 });

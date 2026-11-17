@@ -96,3 +96,19 @@ export async function revokePlanAccessAction(
     return toActionError(err);
   }
 }
+
+export async function deletePlanAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const adminId = await requirePlatformAdmin();
+    const planId = formData.get("planId");
+    if (typeof planId !== "string") throw new AppError("validation_error", "Plano não informado");
+    await getPlanAdminService().remove(planId, adminId);
+    refresh();
+    return { success: "Plano excluído" };
+  } catch (err) {
+    return toActionError(err);
+  }
+}

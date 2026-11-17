@@ -9,17 +9,20 @@ import { PLAN_FEATURES, describePlanFeature, planOfferLines } from "@/config/pla
 import { paymentMethodLabel } from "@/config/paymentMethods";
 import { PlanAccessEditor } from "@/features/plans/components/plan-access-editor";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
+import { PlanDeleteButton } from "@/features/plans/components/plan-delete-button";
 import { PlanForm } from "@/features/plans/components/plan-form";
 import { PlansHeader } from "@/features/plans/components/plans-header";
 import { formatCents } from "@/lib/money";
 import { createPlanAction, updatePlanAction } from "@/server/actions/plans";
 import { getPlanAdminService, getPlatformAdminId } from "@/server/plans";
+import { describeDeletionBlock, isSystemPlan } from "@/services/planService";
 import type { PlanAuditEntry } from "@/types/database";
 
 export const metadata: Metadata = { title: "Planos" };
 
 const ACTION_LABEL: Record<PlanAuditEntry["action"], string> = {
   created: "Criou",
+  deleted: "Excluiu",
   updated: "Alterou",
   activated: "Ativou",
   deactivated: "Desativou",
@@ -64,7 +67,8 @@ export default async function PlansPage() {
   if (!(await getPlatformAdminId())) redirect("/dashboard");
 
   const service = getPlanAdminService();
-  const [plans, audit, access] = await Promise.all([service.list(), service.listAudit(), service.listAccess()]);
+  const [plans, audit, access, usage] = await Promise.all([service.list(), service.listAudit(), service.listAccess(), service.listUsage()]);
+  const usageByPlan = new Map(usage.map((entry) => [entry.plan_id, entry]));
   const planNames = new Map(plans.map((plan) => [plan.id, plan.name]));
   const usesPriceCatalog = getServerEnv().PAYMENT_GATEWAY === "stripe";
 
@@ -92,8 +96,20 @@ export default async function PlansPage() {
                     {plan.name}
                     {plan.is_active ? null : <Badge variant="secondary">Inativo</Badge>}
                     {plan.is_public ? null : <Badge variant="outline">Privado</Badge>}
+                    {isSystemPlan(plan.code) ? <Badge variant="outline">Do sistema</Badge> : null}
+                    {(usageByPlan.get(plan.id)?.subscribers ?? 0) > 0 ? (
+                      <Badge variant="secondary">Em uso por {usageByPlan.get(plan.id)?.subscribers}</Badge>
+                    ) : null}
                   </CardTitle>
-                  <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
+                  <div className="flex items-center gap-2">
+                    <PlanActiveButton planId={plan.id} isActive={plan.is_active} />
+                    <PlanDeleteButton
+                      planId={plan.id}
+                      planName={plan.name}
+                      planCode={plan.code}
+                      blockedReason={describeDeletionBlock(plan.code, usageByPlan.get(plan.id))}
+                    />
+                  </div>
                 </div>
                 <CardDescription>
                   Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {plan.billing_interval === "year" ? "ano" : "mês"}

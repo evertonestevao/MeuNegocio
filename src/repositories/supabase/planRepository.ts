@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
 import type { PlanRepository } from "@/services/planService";
-import type { Plan, PlanAccessEntry, PlanAuditEntry } from "@/types/database";
+import type { Plan, PlanAccessEntry, PlanAuditEntry, PlanUsage } from "@/types/database";
 
 /** Catálogo de planos. Escrita só por RPC do service_role: o client quem injeta é src/server/plans.ts. */
 export function createSupabasePlanRepository(client: SupabaseClient): PlanRepository {
@@ -62,6 +62,25 @@ export function createSupabasePlanRepository(client: SupabaseClient): PlanReposi
         p_actor: actorId,
       });
       if (error) fail(error);
+      return data as Plan;
+    },
+
+    async listUsage() {
+      const { data, error } = await client.rpc("admin_plan_usage");
+      if (error) fail(error);
+      return (data ?? []) as PlanUsage[];
+    },
+
+    async remove({ planId, actorId }) {
+      const { data, error } = await client.rpc("admin_delete_plan", { p_plan_id: planId, p_actor: actorId });
+      if (error) {
+        // O banco reconfere o uso: se alguém passou a usar o plano depois de a tela carregar, recusa.
+        if (error.message?.includes("plan_in_use")) {
+          throw new AppError("conflict", "Este plano passou a ser usado e não pode mais ser excluído. Atualize a tela.");
+        }
+        if (error.message?.includes("plan_not_found")) throw new AppError("not_found", "Plano não encontrado");
+        fail(error);
+      }
       return data as Plan;
     },
 

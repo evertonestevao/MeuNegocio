@@ -1,8 +1,8 @@
 import { PLAN_FEATURES } from "@/config/planFeatures";
 import { PAYMENT_METHOD_KEYS } from "@/config/paymentMethods";
 import { AppError } from "@/lib/errors";
-import type { Plan, PlanAccessEntry, PlanAuditEntry } from "@/types/database";
-import { DEFAULT_PLAN_CODE } from "./billingService";
+import type { Plan, PlanAccessEntry, PlanAuditEntry, PlanUsage } from "@/types/database";
+import { DEFAULT_PLAN_CODE, TRIAL_PLAN_CODE } from "./billingService";
 
 /**
  * Regras do catálogo de planos, operado pelo super_admin em /admin/planos. Quem chama já
@@ -48,6 +48,9 @@ export interface PlanRepository {
   save(params: { planId: string | null; code: string; input: PlanInput; actorId: string }): Promise<Plan>;
   setActive(params: { planId: string; isActive: boolean; actorId: string }): Promise<Plan>;
   listAudit(limit: number): Promise<PlanAuditEntry[]>;
+  listUsage(): Promise<PlanUsage[]>;
+  /** Exclui (lógico) e registra no histórico. O banco reconfere o uso e recusa se alguém usa o plano. */
+  remove(params: { planId: string; actorId: string }): Promise<Plan>;
   listAccess(): Promise<PlanAccessEntry[]>;
   /** Libera ou remove e-mails e devolve só os que de fato mudaram. */
   setAccess(params: { planId: string; emails: string[]; grant: boolean; actorId: string }): Promise<string[]>;
@@ -66,6 +69,35 @@ function assertKnownFeatures(features: PlanInput["features"]): void {
   if (PLAN_FEATURES.some((feature) => !(feature.key in features))) {
     throw new AppError("validation_error", "Preencha todos os limites e recursos do plano");
   }
+}
+
+/** Planos de que o sistema depende e que, por isso, nunca se excluem. */
+const SYSTEM_PLANS: Record<string, string> = {
+  [DEFAULT_PLAN_CODE]: "plano padrão de quem não tem assinatura",
+  [TRIAL_PLAN_CODE]: "plano do teste grátis sem cartão",
+};
+
+export function isSystemPlan(code: string): boolean {
+  return code in SYSTEM_PLANS;
+}
+
+/**
+ * Por que o plano não pode ser excluído agora, ou null se pode. Plano do sistema nunca; plano em uso
+ * (empresa assinando, vínculo de vendedor ou regra de comissão) também não: desative-o, que ele sai da
+ * oferta e quem já assina continua nele.
+ */
+export function describeDeletionBlock(code: string, usage: PlanUsage | undefined): string | null {
+  const system = SYSTEM_PLANS[code];
+  if (system) return `O sistema depende deste plano (${system}). Edite ou desative em vez de excluir.`;
+  const subscribers = usage?.subscribers ?? 0;
+  if (subscribers > 0) {
+    const who = subscribers === 1 ? "1 empresa" : `${subscribers} empresas`;
+    return `Em uso por ${who}. Só dá para excluir quando ninguém usa o plano; desative-o para tirá-lo da oferta.`;
+  }
+  if ((usage?.reseller_links ?? 0) > 0 || (usage?.commission_rules ?? 0) > 0) {
+    return "Há vínculos ou regras de comissão de vendedores neste plano. Remova-os antes de excluir.";
+  }
+  return null;
 }
 
 export function createPlanService(repo: PlanRepository) {
@@ -97,6 +129,7 @@ export function createPlanService(repo: PlanRepository) {
     listPublicActive: async () => (await repo.list()).filter((plan) => plan.is_active && plan.is_public),
     listAccess: () => repo.listAccess(),
     listAudit: (limit = 30) => repo.listAudit(limit),
+    listUsage: () => repo.listUsage(),
 
     async create(code: string, input: PlanInput, actorId: string): Promise<Plan> {
       validate(code, input);
@@ -131,6 +164,16 @@ export function createPlanService(repo: PlanRepository) {
       const plan = await repo.getById(planId);
       if (!plan) throw new AppError("not_found", "Plano não encontrado");
       return repo.setAccess({ planId, emails, grant: false, actorId });
+    },
+
+    /** Exclui um plano que ninguém usa. O histórico de alterações guarda quem excluiu e o que havia. */
+    async remove(planId: string, actorId: string): Promise<Plan> {
+      const plan = await repo.getById(planId);
+      if (!plan) throw new AppError("not_found", "Plano não encontrado");
+      const usage = (await repo.listUsage()).find((entry) => entry.plan_id === planId);
+      const block = describeDeletionBlock(plan.code, usage);
+      if (block) throw new AppError(isSystemPlan(plan.code) ? "validation_error" : "conflict", block);
+      return repo.remove({ planId, actorId });
     },
 
     /** Desativar tira o plano da oferta; quem já assina continua nele. */

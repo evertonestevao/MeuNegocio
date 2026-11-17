@@ -388,6 +388,17 @@ export interface QuotePickerOption {
   status: QuoteStatus;
 }
 
+/** Quanto um plano é usado: o que impede a exclusão. */
+export interface PlanUsage {
+  plan_id: string;
+  /** Empresas com assinatura neste plano (qualquer status, ainda não apagada). */
+  subscribers: number;
+  /** Clientes de vendedor ligados ao plano. */
+  reseller_links: number;
+  /** Regras de comissão deste plano. */
+  commission_rules: number;
+}
+
 /** E-mail liberado para ver um plano privado. */
 export interface PlanAccessEntry {
   plan_id: string;
@@ -398,7 +409,7 @@ export interface PlanAccessEntry {
 export interface PlanAuditEntry {
   id: string;
   plan_id: string;
-  action: "created" | "updated" | "activated" | "deactivated" | "access_granted" | "access_revoked";
+  action: "created" | "updated" | "activated" | "deactivated" | "access_granted" | "access_revoked" | "deleted";
   changed_by: string | null;
   changed_by_name: string | null;
   old_values: Record<string, unknown> | null;

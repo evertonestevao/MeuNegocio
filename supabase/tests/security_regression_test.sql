@@ -1350,6 +1350,86 @@ select sec_test.must_pass('super admin lê a visão geral', $$select public.admi
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Excluir plano: só quando ninguém usa; a exclusão é lógica e o código fica livre.
+-- ---------------------------------------------------------------------------
+insert into public.companies (id, name, slug, created_by) values
+  ('5ec0c000-0000-4000-8000-000000000003', 'Del', 'sec-del', '5ec00000-0000-4000-8000-000000000001');
+
+insert into public.plans (code, name, price_cents, features) values
+  ('sec_del_free', 'Sem uso', 1000, '{}'::jsonb),
+  ('sec_del_subs', 'Com assinatura', 1000, '{}'::jsonb),
+  ('sec_del_rule', 'Com regra de comissão', 1000, '{}'::jsonb);
+insert into public.plan_access_emails (plan_id, email)
+  select id, 'quem@test.local' from public.plans where code = 'sec_del_free';
+insert into public.subscriptions (company_id, plan_id, status)
+  select '5ec0c000-0000-4000-8000-000000000003', id, 'active' from public.plans where code = 'sec_del_subs';
+insert into public.commission_rules (plan_id, commission_type, commission_percent)
+  select id, 'percent', 10 from public.plans where code = 'sec_del_rule';
+
+do $$
+declare
+  v_plan public.plans;
+begin
+  -- Em uso por empresa ou por regra de comissão: o banco recusa, e o plano segue de pé.
+  begin
+    perform public.admin_delete_plan((select id from public.plans where code = 'sec_del_subs'), '5ec00000-0000-4000-8000-000000000001');
+    raise exception 'FALHA: excluiu plano com assinatura';
+  exception when others then
+    if sqlerrm <> 'plan_in_use' then raise exception 'FALHA: erro inesperado ao excluir plano com assinatura: %', sqlerrm; end if;
+  end;
+  begin
+    perform public.admin_delete_plan((select id from public.plans where code = 'sec_del_rule'), '5ec00000-0000-4000-8000-000000000001');
+    raise exception 'FALHA: excluiu plano com regra de comissão';
+  exception when others then
+    if sqlerrm <> 'plan_in_use' then raise exception 'FALHA: erro inesperado ao excluir plano com regra: %', sqlerrm; end if;
+  end;
+  if (select count(*) from public.plans where code in ('sec_del_subs', 'sec_del_rule') and deleted_at is null) <> 2 then
+    raise exception 'FALHA: plano em uso foi alterado pela tentativa de exclusão';
+  end if;
+
+  -- Sem uso: exclui, registra no histórico, esconde, limpa a lista de e-mails e libera o código.
+  v_plan := public.admin_delete_plan((select id from public.plans where code = 'sec_del_free'), '5ec00000-0000-4000-8000-000000000001');
+  if v_plan.deleted_at is null or v_plan.is_active then raise exception 'FALHA: plano excluído sem deleted_at ou ainda ativo'; end if;
+  if v_plan.code = 'sec_del_free' then raise exception 'FALHA: o código do plano excluído não foi liberado'; end if;
+  if (select count(*) from public.plan_audit_log where plan_id = v_plan.id and action = 'deleted') <> 1 then
+    raise exception 'FALHA: exclusão sem registro no histórico';
+  end if;
+  if (select count(*) from public.plan_access_emails where plan_id = v_plan.id) <> 0 then
+    raise exception 'FALHA: lista de e-mails do plano excluído não foi limpa';
+  end if;
+  insert into public.plans (code, name, price_cents, features) values ('sec_del_free', 'Mesmo código de novo', 1000, '{}'::jsonb);
+
+  -- Plano inexistente (ou já excluído) não vira exclusão de novo.
+  begin
+    perform public.admin_delete_plan(v_plan.id, '5ec00000-0000-4000-8000-000000000001');
+    raise exception 'FALHA: excluiu duas vezes o mesmo plano';
+  exception when others then
+    if sqlerrm <> 'plan_not_found' then raise exception 'FALHA: erro inesperado ao excluir de novo: %', sqlerrm; end if;
+  end;
+
+  -- O uso aparece na contagem que alimenta a tela.
+  if (select subscribers from public.admin_plan_usage() u join public.plans p on p.id = u.plan_id where p.code = 'sec_del_subs') <> 1 then
+    raise exception 'FALHA: admin_plan_usage não contou a assinatura';
+  end if;
+  if (select commission_rules from public.admin_plan_usage() u join public.plans p on p.id = u.plan_id where p.code = 'sec_del_rule') <> 1 then
+    raise exception 'FALHA: admin_plan_usage não contou a regra de comissão';
+  end if;
+end $$;
+
+-- Plano excluído some para visitante e para usuário logado.
+set local role anon;
+select sec_test.must_fail('visitante vê plano excluído',
+  $$select 1 from public.plans where code like 'sec_del_free_excluido_%'$$);
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select sec_test.must_fail('usuário logado vê plano excluído',
+  $$select 1 from public.plans where code like 'sec_del_free_excluido_%'$$);
+select sec_test.must_fail('usuário comum exclui plano',
+  $$select public.admin_delete_plan((select id from public.plans where code = 'sec_del_subs'), '5ec00000-0000-4000-8000-000000000001')$$);
+select sec_test.must_fail('usuário comum lê o uso dos planos', $$select * from public.admin_plan_usage()$$);
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -1393,6 +1473,12 @@ begin
   if v_list is not null then raise exception 'FALHA invariante: escrita aberta: %', v_list; end if;
 
   -- Criar empresa para outra pessoa é só do servidor.
+  if has_function_privilege('anon', 'public.admin_delete_plan(uuid, uuid)', 'execute')
+     or has_function_privilege('authenticated', 'public.admin_delete_plan(uuid, uuid)', 'execute')
+     or has_function_privilege('anon', 'public.admin_plan_usage()', 'execute')
+     or has_function_privilege('authenticated', 'public.admin_plan_usage()', 'execute') then
+    raise exception 'FALHA invariante: usuário comum exclui plano ou lê o uso dos planos';
+  end if;
   if has_function_privilege('anon', 'public.admin_overview()', 'execute') then
     raise exception 'FALHA invariante: visitante executa a visão geral do super admin';
   end if;

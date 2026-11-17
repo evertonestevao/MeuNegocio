@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-17 (tela de planos: botão "Novo plano" no topo abre o formulário acima da lista)
+**Última atualização:** 2026-11-17 (planos: exclusão de plano que ninguém usa)
 
 ## Sumário
 
@@ -217,8 +217,8 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 - A tela abre só com os planos existentes, como cartões-resumo (preço, limites, recursos, dias de teste e meios de pagamento em etiquetas), com a edição recolhida atrás de "Editar plano". O botão **"Novo plano"**, no topo, abre o formulário de criação acima da lista (e vira "Cancelar"); ao criar, o formulário fecha sozinho e o plano aparece na lista. O plano novo já nasce **ativo** (aparece na oferta, a menos que seja privado); para guardá-lo sem vender, é só desativar depois.
 - **Meios de pagamento** aceitos por plano (cartão, PIX, boleto; **padrão só cartão**). No Asaas Mensal (checkout com assinatura), valem **cartão e PIX**: boleto não entra em assinatura recorrente, e no teste com cartão o checkout fica só no cartão (para guardar o meio da cobrança futura). O plano Anual é sempre no cartão (12 cobranças mensais que renovam; precisa tokenizar o cartão).
 - **Dias de teste grátis** por plano (0 a 90; **padrão 7**). Guardado no plano e **usado de fato** na 1ª cobrança: no Asaas (checkout hospedado) e no Stripe, a primeira cobrança do Mensal é adiada em `trial_days` dias; com 0 dias, cobra na hora.
-- O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da
-  oferta e quem já assina continua neles.
+- O código do plano não muda depois de criado. **Desativar** tira o plano da oferta, e quem já assina continua nele.
+- **Excluir plano** (botão "Excluir" no cartão, com confirmação): só quando **ninguém usa** o plano. Conta como uso: empresa com assinatura no plano (qualquer status, enquanto a assinatura existir), cliente de vendedor ligado ao plano e regra de comissão do plano. Plano em uso fica com o botão travado, e o cartão mostra "Em uso por N". Os planos de que o sistema depende (`free`, o padrão de quem não assina, e `pro`, usado no teste grátis sem cartão) nunca se excluem e mostram "Do sistema". A exclusão é lógica (`deleted_at`): o plano some da lista e da oferta, a lista de e-mails de um plano privado é apagada e o **código fica livre** para um plano novo. Fica no histórico de alterações como "Excluiu". O banco reconfere o uso na hora de excluir, caso a tela esteja desatualizada.
 - Limites e recursos vêm de uma lista fechada no código (`src/config/planFeatures.ts`). Limite vazio
   é ilimitado.
 - O plano padrão (`free`) não pode ser desativado, cobrado nem privado, porque vale para quem não tem assinatura.
