@@ -34,6 +34,8 @@ export const EXPORT_TABLES: ExportTable[] = [
   { table: "time_entries", file: "horas.csv" },
 ];
 
+/** Colunas internas, sem utilidade para quem recebe a cópia. */
+const NOISE_COLUMNS = ["search_text", "deleted_at"];
 const PAGE = 1000;
 const MAX_ROWS_PER_TABLE = 50_000;
 
@@ -62,7 +64,7 @@ async function fetchTable(companyId: string, { table, omit = [] }: ExportTable):
     if (error) throw new AppError("internal_error", "Falha ao exportar", { table, code: error.code });
     const page = (data ?? []) as Array<Record<string, unknown>>;
     for (const row of page) {
-      for (const column of omit) delete row[column];
+      for (const column of [...omit, ...NOISE_COLUMNS]) delete row[column];
       rows.push(row);
     }
     if (page.length < PAGE) break;
