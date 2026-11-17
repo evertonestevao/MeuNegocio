@@ -32,7 +32,8 @@ export function OverviewTiles({ tiles }: { tiles: OverviewTile[] }) {
       {tiles.map((tile) => (
         <li
           key={tile.key}
-          className={`flex flex-col gap-1.5 rounded-xl border bg-card p-4 ${tile.alert ? "border-destructive/50" : ""}`}
+          // Faixa na lateral: cor da marca nos indicadores normais; vermelha no que está com problema.
+          className={`flex flex-col gap-1.5 rounded-xl border border-l-4 bg-card p-4 ${tile.alert ? "border-destructive/50 border-l-destructive" : "border-l-primary"}`}
         >
           <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             {tile.alert ? <AlertTriangle className="size-4 text-destructive" aria-hidden /> : null}
