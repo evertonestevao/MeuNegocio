@@ -5,10 +5,11 @@ import { Check, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, planTermPayments, plansForSale } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, planTermPayments, plansForSale, switchablePlans } from "@/config/planFeatures";
 import {
   CancelSubscriptionButton,
   SubscribeButton,
+  SwitchPlanButton,
 } from "@/features/billing/components/plan-actions";
 import { AppError } from "@/lib/errors";
 import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
@@ -77,6 +78,16 @@ export default async function BillingPage() {
   const canceledWithAccess =
     subscription != null && subscription.status === "canceled" && hasPlanAccess(subscription);
 
+  // Assinatura paga e renovando: em vez de assinar de novo, só se oferece a troca por plano melhor para o
+  // dono (mensalidade maior ou período maior), que vale no fim do período já pago.
+  const switchMode = subscription != null && hasActiveSubscription && subscription.status === "active" && Boolean(subscription.external_subscription_id);
+  const subscribedPlan = (subscription && plans.find((plan) => plan.id === subscription.plan_id)) ?? currentPlan;
+  const scheduledPlan = subscription?.scheduled_plan_id ? plans.find((plan) => plan.id === subscription.scheduled_plan_id) : undefined;
+  const plansToShow =
+    switchMode && subscribedPlan && subscription
+      ? switchablePlans(subscribedPlan, planMonthlyCents(subscribedPlan, subscription.contracted_price_cents), plansForSale(plans))
+      : plansForSale(plans);
+
   return (
     <div className="flex flex-col gap-6">
       <Link href="/dashboard/settings" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -101,6 +112,13 @@ export default async function BillingPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Plano pago até {new Date(subscription.current_period_end!).toLocaleDateString("pt-BR")}, sem renovação automática.
             Depois disso, contrate de novo para continuar.
+          </p>
+        ) : null}
+        {subscription?.scheduled_plan_id ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Troca agendada para {scheduledPlan?.name ?? "outro plano"} em{" "}
+            {new Date(subscription.scheduled_change_at ?? subscription.current_period_end!).toLocaleDateString("pt-BR")}, quando o período atual
+            termina. Até lá, nada muda.
           </p>
         ) : null}
         {canceledWithAccess ? (
@@ -149,8 +167,21 @@ export default async function BillingPage() {
         </CardContent>
       </Card>
 
+      {switchMode ? (
+        <div>
+          <h2 className="font-heading text-lg font-bold">Trocar de plano</h2>
+          <p className="text-sm text-muted-foreground">
+            {subscription?.scheduled_plan_id
+              ? "Você já tem uma troca agendada. Ela entra no fim do período."
+              : plansToShow.length > 0
+                ? "A troca vale no fim do período já pago: até lá você segue no plano atual, e a nova cobrança começa na data."
+                : "Não há plano com mensalidade ou período maior para trocar."}
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {plansForSale(plans).map((plan) => {
+        {plansToShow.map((plan) => {
           // No teste grátis, o plano em teste ainda pode ser assinado.
           const isCurrent = currentPlan?.id === plan.id && !inTrial;
           return (
@@ -184,6 +215,8 @@ export default async function BillingPage() {
                     isCurrent ? (
                       <Badge variant="secondary">Plano padrão sem assinatura</Badge>
                     ) : null
+                  ) : switchMode ? (
+                    subscription?.scheduled_plan_id ? null : <SwitchPlanButton planId={plan.id} />
                   ) : (
                     <SubscribeButton
                       planId={plan.id}

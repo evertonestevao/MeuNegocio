@@ -69,6 +69,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "subscription.trial_started": "Teste grátis iniciado",
   "subscription.updated": "Assinatura alterada",
   "subscription.canceled": "Assinatura cancelada",
+  "subscription.switch_scheduled": "Troca de plano agendada",
   "subscription.checkout_started": "Contratação iniciada",
   "subscription.ended_by_refund": "Assinatura encerrada por estorno",
   "time_suggestion.dismissed": "Sugestão de horas retirada",

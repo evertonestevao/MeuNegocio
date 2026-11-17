@@ -441,6 +441,10 @@ export interface Subscription {
   payment_method_token: string | null;
   /** Ids dos termos já encerrados no gateway (renovados). Evento de termo encerrado é ignorado. */
   ended_external_ids: string[];
+  /** Troca de plano agendada para o fim do período pago: plano que entra, quando, e a assinatura dele já criada no gateway. */
+  scheduled_plan_id: string | null;
+  scheduled_change_at: string | null;
+  scheduled_external_subscription_id: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

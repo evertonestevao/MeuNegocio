@@ -8,6 +8,7 @@ import {
   activateFakePlanAction,
   cancelSubscriptionAction,
   checkoutAction,
+  scheduleSwitchAction,
 } from "@/server/actions/billing";
 
 /** Botão de assinar um plano. Com gateway fake, ativa direto (dev). */
@@ -48,6 +49,26 @@ export function SubscribeButton({
       ) : null}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Processando..." : isFakeGateway ? "Ativar (teste)" : "Assinar"}
+      </Button>
+    </form>
+  );
+}
+
+/** Botão de trocar de plano: a troca vale no fim do período já pago, nada muda hoje. */
+export function SwitchPlanButton({ planId }: { planId: string }) {
+  const { active } = useTenant();
+  const [state, formAction, pending] = useActionState(scheduleSwitchAction, undefined);
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <input type="hidden" name="companyId" value={active.id} />
+      <input type="hidden" name="planId" value={planId} />
+      {state?.error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      ) : null}
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? "Agendando..." : "Trocar no fim do período"}
       </Button>
     </form>
   );

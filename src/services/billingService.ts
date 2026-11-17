@@ -2,6 +2,7 @@ import { AppError } from "@/lib/errors";
 import type { PaymentGateway } from "@/adapters/payment/PaymentGateway";
 import type { NormalizedPaymentEvent, RenewedSubscription } from "@/types/billing";
 import type { Plan, Subscription } from "@/types/database";
+import { isBetterPlanForOwner, planMonthlyCents, planTermPayments } from "@/config/planFeatures";
 
 /**
  * Regras de negócio de billing. Sem I/O direto: o repositório é injetado,
@@ -193,7 +194,11 @@ export function createBillingService(repo: BillingRepository) {
         renews: !event.nonRenewing,
         // Multigateway + renovação do termo anual (token do cartão).
         gateway_provider: event.gatewayProvider ?? event.gateway,
-        payment_method_token: event.paymentMethodToken ?? null,
+        payment_method_token: event.paymentMethodToken ?? previous?.payment_method_token ?? null,
+        // O termo anterior acabou: evento dele, daqui em diante, é ignorado (inclui o que foi trocado de plano).
+        ended_external_ids: previous
+          ? [...(previous.ended_external_ids ?? []), ...(previous.external_subscription_id ? [previous.external_subscription_id] : [])]
+          : [],
       });
       return {};
     }
@@ -219,6 +224,9 @@ export function createBillingService(repo: BillingRepository) {
         });
         break;
       case "subscription.canceled":
+        // Troca agendada: o cancelamento é o da assinatura antiga, que foi encerrada de propósito.
+        // A assinatura nova já existe no gateway e assume na data; o cliente segue com acesso.
+        if (existing.scheduled_external_subscription_id) return { ignored: true };
         await repo.updateSubscription(existing.id, { status: "canceled" });
         break;
       case "payment.failed":
@@ -364,6 +372,7 @@ export function createBillingService(repo: BillingRepository) {
   async function applyRenewal(
     oldExternalSubscriptionId: string,
     renewed: RenewedSubscription,
+    newPlanId?: string,
   ): Promise<void> {
     const existing = await repo.findSubscriptionByExternalId(oldExternalSubscriptionId);
     if (!existing) return;
@@ -375,6 +384,8 @@ export function createBillingService(repo: BillingRepository) {
       current_period_start: new Date().toISOString(),
       current_period_end: renewed.currentPeriodEnd ?? existing.current_period_end,
       renews: true,
+      // Troca agendada que entra agora: o plano muda e o agendamento some.
+      ...(newPlanId ? { plan_id: newPlanId, scheduled_plan_id: null, scheduled_change_at: null, scheduled_external_subscription_id: null } : {}),
     });
   }
 
@@ -395,11 +406,16 @@ export function createBillingService(repo: BillingRepository) {
     const oldTermId = event.externalSubscriptionId;
     const row = await repo.findSubscriptionByExternalId(oldTermId);
     if (!row) return false;
+    // Troca agendada: o próximo termo já nasce no plano novo (valor e parcelas dele).
+    const target = row.scheduled_plan_id ? await repo.getPlanById(row.scheduled_plan_id) : null;
+    const nextPlan = target && !target.deleted_at && target.is_active ? target : null;
+    const termPayments = nextPlan ? planTermPayments(nextPlan) : null;
     const renewed = await gateway.renewSubscription({
       ...event.termRenewal,
-      externalReference: `${row.company_id}:${row.plan_id}`,
+      ...(nextPlan ? { valueCents: planMonthlyCents(nextPlan), maxPayments: termPayments! > 1 ? termPayments : null } : {}),
+      externalReference: `${row.company_id}:${nextPlan?.id ?? row.plan_id}`,
     });
-    await applyRenewal(oldTermId, renewed);
+    await applyRenewal(oldTermId, renewed, nextPlan?.id);
     // O termo antigo já cumpriu as parcelas. O Asaas o deixa "ativo" até depois da data, e se ele ainda
     // gerasse uma cobrança, o cliente pagaria o termo velho e o novo. Encerra-o por garantia (o que já
     // foi pago continua registrado). Falhar aqui não desfaz a renovação: só é registrado.
@@ -411,7 +427,71 @@ export function createBillingService(repo: BillingRepository) {
     return true;
   }
 
+  /**
+   * Agenda a troca para um plano melhor, que vale no fim do período já pago (nada muda hoje).
+   * - Plano atual mensal: cria já a assinatura do plano novo no gateway, com a primeira cobrança no fim
+   *   do período, e encerra a antiga (o mês corrente já está pago). Se encerrar a antiga falhar, desfaz a
+   *   nova para o cliente nunca ficar com duas.
+   * - Plano atual em ciclo (parcelas): as parcelas restantes continuam; o próximo termo nasce no plano novo.
+   * Só cartão guardado (renovação sem digitar de novo) e assinatura em dia.
+   */
+  async function scheduleSwitch(
+    companyId: string,
+    target: Plan,
+    gateway: Pick<PaymentGateway, "renewSubscription" | "cancelSubscription">,
+  ): Promise<Subscription> {
+    const sub = await repo.getActiveSubscription(companyId);
+    if (!sub || !sub.renews || sub.status !== "active" || !sub.external_subscription_id) {
+      throw new AppError("conflict", "A troca de plano só vale para assinatura ativa com renovação automática.");
+    }
+    if (sub.scheduled_plan_id) {
+      throw new AppError("conflict", "Já existe uma troca agendada. Ela entra no fim do período.");
+    }
+    if (!sub.payment_method_token || !sub.external_customer_id || !sub.current_period_end) {
+      throw new AppError("conflict", "Não há cartão guardado para trocar o plano. Fale com o suporte.");
+    }
+    const current = await repo.getPlanById(sub.plan_id);
+    if (!current) throw new AppError("not_found", "Plano atual não encontrado");
+    if (!target.is_active || target.deleted_at) throw new AppError("not_found", "Plano indisponível");
+    if (!isBetterPlanForOwner(current, planMonthlyCents(current, sub.contracted_price_cents), target)) {
+      throw new AppError("validation_error", "Este plano não está disponível para troca.");
+    }
+    const changeAt = sub.current_period_end;
+    if (new Date(changeAt).getTime() <= Date.now()) {
+      throw new AppError("conflict", "O período atual terminou. Aguarde a próxima cobrança para trocar.");
+    }
+
+    if (planTermPayments(current) === 1) {
+      const termPayments = planTermPayments(target);
+      const created = await gateway.renewSubscription({
+        externalCustomerId: sub.external_customer_id,
+        paymentMethodToken: sub.payment_method_token,
+        valueCents: planMonthlyCents(target),
+        maxPayments: termPayments > 1 ? termPayments : null,
+        nextDueDate: changeAt.slice(0, 10),
+        externalReference: `${companyId}:${target.id}`,
+      });
+      try {
+        await gateway.cancelSubscription(sub.external_subscription_id);
+      } catch (err) {
+        try {
+          await gateway.cancelSubscription(created.externalSubscriptionId);
+        } catch {
+          console.error(`[billing] troca: assinatura nova não desfeita (sub=${created.externalSubscriptionId})`);
+        }
+        throw err;
+      }
+      return repo.updateSubscription(sub.id, {
+        scheduled_plan_id: target.id,
+        scheduled_change_at: changeAt,
+        scheduled_external_subscription_id: created.externalSubscriptionId,
+      });
+    }
+    return repo.updateSubscription(sub.id, { scheduled_plan_id: target.id, scheduled_change_at: changeAt });
+  }
+
   return {
+    scheduleSwitch,
     getAccessState,
     startCardlessTrial,
     getEffectivePlan,

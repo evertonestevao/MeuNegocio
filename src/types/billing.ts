@@ -112,7 +112,8 @@ export interface RenewSubscriptionParams {
   externalCustomerId: string;
   paymentMethodToken: string;
   valueCents: number;
-  maxPayments: number;
+  /** Parcelas do termo; null = assinatura mensal sem fim. */
+  maxPayments: number | null;
   nextDueDate: string;
   /** "<companyId>:<planId>" — leva a empresa/plano para os eventos do novo termo. */
   externalReference: string;

@@ -106,3 +106,26 @@ export function plansForSale<T extends PricedPlan>(plans: T[]): T[] {
     .filter((plan) => plan.price_cents > 0)
     .toSorted((a, b) => Number(b.billing_interval === "year") - Number(a.billing_interval === "year"));
 }
+
+/**
+ * Troca de plano: só se oferece o que é melhor para quem vende. O candidato entra se tem mensalidade
+ * maior OU período maior (vale para trimestral, semestral e anual). Menor e no mesmo período não entra.
+ * `currentMonthlyCents` é o que o cliente paga hoje por mês (o preço contratado, não o de tabela).
+ */
+export function isBetterPlanForOwner(
+  current: Pick<PricedPlan, "billing_interval" | "term_payments">,
+  currentMonthlyCents: number,
+  candidate: PricedPlan,
+): boolean {
+  if (candidate.price_cents <= 0) return false;
+  return planMonthlyCents(candidate) > currentMonthlyCents || planTermPayments(candidate) > planTermPayments(current);
+}
+
+/** Planos para os quais a assinatura atual pode migrar (o próprio plano e os piores ficam de fora). */
+export function switchablePlans<T extends PricedPlan & { id: string }>(
+  current: Pick<PricedPlan, "billing_interval" | "term_payments"> & { id: string },
+  currentMonthlyCents: number,
+  plans: T[],
+): T[] {
+  return plans.filter((plan) => plan.id !== current.id && isBetterPlanForOwner(current, currentMonthlyCents, plan));
+}

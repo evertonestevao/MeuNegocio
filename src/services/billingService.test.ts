@@ -49,6 +49,9 @@ function makeSubscription(overrides: Partial<Subscription>): Subscription {
     gateway_provider: "asaas",
     payment_method_token: null,
     ended_external_ids: [],
+    scheduled_plan_id: null,
+    scheduled_change_at: null,
+    scheduled_external_subscription_id: null,
     deleted_at: null,
     created_at: "",
     updated_at: "",
@@ -707,7 +710,7 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
 
   /** Gateway de mentira que só guarda as renovações pedidas e devolve um id de termo novo a cada uma. */
   function makeRenewalGateway(options: { failWith?: Error; cancelFailsWith?: Error } = {}) {
-    const renewals: Array<{ externalReference: string; maxPayments: number; nextDueDate: string; paymentMethodToken: string }> = [];
+    const renewals: Array<{ externalReference: string; maxPayments: number | null; nextDueDate: string; paymentMethodToken: string }> = [];
     const canceled: string[] = [];
     return {
       renewals,
@@ -874,5 +877,126 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
     const { gateway, canceled } = makeRenewalGateway({ failWith: new Error("Asaas fora do ar") });
     await expect(run(service, gateway, parcel("ext-termo-1", 3, 3))).rejects.toThrow();
     expect(canceled).toHaveLength(0);
+  });
+});
+
+describe("troca de plano no fim do período", () => {
+  const COMPANY = "company-1";
+  const monthly = makePlan({ id: "plan-m", price_cents: 10000 });
+  const better = makePlan({ id: "plan-max", code: "max", price_cents: 20000 });
+  const quarterly = makePlan({ id: "plan-q", code: "tri", price_cents: 24000, billing_interval: "year", term_payments: 3 });
+  const worse = makePlan({ id: "plan-low", code: "low", price_cents: 5000 });
+  const periodEnd = new Date(Date.now() + 10 * 86400000).toISOString();
+
+  function setup(subOverrides: Partial<Subscription> = {}, currentPlan: Plan = monthly) {
+    const state = {
+      plans: [currentPlan, better, quarterly, worse],
+      subscriptions: [
+        makeSubscription({
+          plan_id: currentPlan.id,
+          contracted_price_cents: currentPlan.price_cents,
+          payment_method_token: "tok",
+          current_period_end: periodEnd,
+          ...subOverrides,
+        }),
+      ],
+    };
+    const calls: string[] = [];
+    const renewals: Array<{ valueCents: number; maxPayments: number | null; nextDueDate: string; externalReference: string }> = [];
+    const gateway = {
+      async cancelSubscription(id: string) {
+        calls.push(`cancel:${id}`);
+      },
+      async renewSubscription(params: { valueCents: number; maxPayments: number | null; nextDueDate: string; externalReference: string }) {
+        renewals.push(params);
+        calls.push("renew");
+        return { externalSubscriptionId: "ext-novo", currentPeriodEnd: periodEnd };
+      },
+    };
+    return { state, calls, renewals, gateway, service: createBillingService(makeRepo(state)) };
+  }
+
+  it("mensal: cria a assinatura nova com a 1ª cobrança no fim do período e encerra a antiga", async () => {
+    const { service, gateway, state, renewals, calls } = setup();
+    await service.scheduleSwitch(COMPANY, better, gateway);
+    expect(renewals[0]).toMatchObject({ valueCents: 20000, maxPayments: null, nextDueDate: periodEnd.slice(0, 10), externalReference: `${COMPANY}:plan-m`.replace("plan-m", "plan-max") });
+    expect(calls).toEqual(["renew", "cancel:ext-1"]);
+    // Nada muda hoje: o plano segue o atual até a data.
+    expect(state.subscriptions[0]).toMatchObject({ plan_id: "plan-m", scheduled_plan_id: "plan-max", scheduled_external_subscription_id: "ext-novo", status: "active" });
+  });
+
+  it("mensal para ciclo: a parcela é o total dividido e o termo tem as parcelas do plano", async () => {
+    const { service, gateway, renewals } = setup();
+    await service.scheduleSwitch(COMPANY, quarterly, gateway);
+    expect(renewals[0]).toMatchObject({ valueCents: 8000, maxPayments: 3 });
+  });
+
+  it("recusa plano pior ou igual e troca já agendada", async () => {
+    const { service, gateway } = setup();
+    await expect(service.scheduleSwitch(COMPANY, worse, gateway)).rejects.toThrow();
+    await expect(service.scheduleSwitch(COMPANY, monthly, gateway)).rejects.toThrow();
+    await service.scheduleSwitch(COMPANY, better, gateway);
+    await expect(service.scheduleSwitch(COMPANY, quarterly, gateway)).rejects.toThrow(/agendada/);
+  });
+
+  it("recusa sem cartão guardado ou sem renovação automática", async () => {
+    await expect(setup({ payment_method_token: null }).service.scheduleSwitch(COMPANY, better, setup().gateway)).rejects.toThrow();
+    await expect(setup({ renews: false }).service.scheduleSwitch(COMPANY, better, setup().gateway)).rejects.toThrow();
+  });
+
+  it("se encerrar a antiga falha, desfaz a nova e não agenda", async () => {
+    const { service, state, calls } = setup();
+    const gateway = {
+      async cancelSubscription(id: string) {
+        calls.push(`cancel:${id}`);
+        if (id === "ext-1") throw new Error("fora do ar");
+      },
+      async renewSubscription() {
+        calls.push("renew");
+        return { externalSubscriptionId: "ext-novo", currentPeriodEnd: periodEnd };
+      },
+    };
+    await expect(service.scheduleSwitch(COMPANY, better, gateway)).rejects.toThrow();
+    expect(calls).toEqual(["renew", "cancel:ext-1", "cancel:ext-novo"]);
+    expect(state.subscriptions[0].scheduled_plan_id).toBeNull();
+  });
+
+  it("o cancelamento da assinatura antiga não cancela a assinatura da empresa", async () => {
+    const { service, gateway, state } = setup();
+    await service.scheduleSwitch(COMPANY, better, gateway);
+    const result = await service.applyPaymentEvent({ type: "subscription.canceled", gateway: "asaas", externalSubscriptionId: "ext-1", externalCustomerId: "cus-1", companyId: COMPANY, planId: "plan-m", currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false });
+    expect(result.ignored).toBe(true);
+    expect(state.subscriptions[0].status).toBe("active");
+  });
+
+  it("a 1ª cobrança do plano novo vira a assinatura nova, herdando cartão e termos encerrados", async () => {
+    const { service, gateway, state } = setup();
+    await service.scheduleSwitch(COMPANY, better, gateway);
+    await service.applyPaymentEvent({ type: "subscription.activated", gateway: "asaas", externalSubscriptionId: "ext-novo", externalCustomerId: "cus-1", companyId: COMPANY, planId: "plan-max", currentPeriodStart: periodEnd, currentPeriodEnd: periodEnd, cancelAtPeriodEnd: false });
+    const active = state.subscriptions.find((s) => !s.deleted_at)!;
+    expect(active).toMatchObject({ plan_id: "plan-max", external_subscription_id: "ext-novo", payment_method_token: "tok", scheduled_plan_id: null });
+    expect(active.ended_external_ids).toContain("ext-1");
+  });
+
+  it("ciclo: a troca entra na renovação do termo, com valor e parcelas do plano novo", async () => {
+    const annual = makePlan({ id: "plan-y", code: "ano", price_cents: 12000, billing_interval: "year", term_payments: 12 });
+    const { service, state } = setup({ external_subscription_id: "ext-termo" }, annual);
+    state.plans.push(better);
+    const calls: Array<{ valueCents: number; maxPayments: number | null; externalReference: string }> = [];
+    const gateway = {
+      async cancelSubscription() {},
+      async renewSubscription(params: { valueCents: number; maxPayments: number | null; externalReference: string }) {
+        calls.push(params);
+        return { externalSubscriptionId: "ext-termo-2", currentPeriodEnd: periodEnd };
+      },
+    };
+    await service.scheduleSwitch(COMPANY, better, gateway);
+    expect(calls).toHaveLength(0); // parcelas restantes continuam: nada criado agora
+    await service.renewTerm(
+      { type: "subscription.activated", gateway: "asaas", externalSubscriptionId: "ext-termo", externalCustomerId: "cus-1", companyId: COMPANY, planId: "plan-y", currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, termRenewal: { externalCustomerId: "cus-1", paymentMethodToken: "tok", valueCents: 1000, maxPayments: 12, nextDueDate: "2027-12-01" } },
+      gateway,
+    );
+    expect(calls[0]).toMatchObject({ valueCents: 20000, maxPayments: null, externalReference: `${COMPANY}:plan-max` });
+    expect(state.subscriptions[0]).toMatchObject({ plan_id: "plan-max", scheduled_plan_id: null, external_subscription_id: "ext-termo-2" });
   });
 });

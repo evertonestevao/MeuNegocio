@@ -485,16 +485,16 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         billingType: "CREDIT_CARD",
         value: toReais(params.valueCents),
         cycle: "MONTHLY",
-        maxPayments: params.maxPayments,
+        ...(params.maxPayments ? { maxPayments: params.maxPayments } : {}),
         nextDueDate: params.nextDueDate,
         creditCardToken: params.paymentMethodToken,
         externalReference: params.externalReference,
-        description: `Renovação do plano (${params.maxPayments}x)`,
+        description: params.maxPayments ? `Renovação do plano (${params.maxPayments}x)` : "Plano mensal",
       });
       return {
         externalSubscriptionId: sub.id,
         // Acesso coberto até o fim do novo termo.
-        currentPeriodEnd: dateToIso(dueDateMonthsAfter(params.nextDueDate, params.maxPayments)),
+        currentPeriodEnd: dateToIso(dueDateMonthsAfter(params.nextDueDate, params.maxPayments ?? 1)),
       };
     },
 

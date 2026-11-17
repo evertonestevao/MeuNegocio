@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-17 (teste grátis em qualquer cobrança, inclusive planos em ciclo)
+**Última atualização:** 2026-11-18 (troca de plano no fim do período)
 
 ## Sumário
 
@@ -239,6 +239,7 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 | Função | Quem | Como funciona |
 |---|---|---|
 | **Ver plano e uso de vagas** (`/dashboard/billing`, em Configurações › Assinatura) | Owner | No teste com cartão, mostra até quando vai o teste e o valor e a data da primeira cobrança; assinatura ativa que renova mostra a data da próxima cobrança. |
+| **Trocar de plano** (`/dashboard/billing`) | Owner | Quem tem assinatura paga e renovando vê só planos **melhores para o dono**: mensalidade maior **ou** período maior (vale para trimestral, semestral e anual); o mais barato no mesmo período não aparece. A troca **vale no fim do período já pago**: até lá nada muda. Plano atual mensal: a assinatura do plano novo é criada no gateway já com a 1ª cobrança nessa data e a antiga é encerrada (o cliente nunca fica com duas); se encerrar a antiga falhar, a nova é desfeita. Plano atual em ciclo (parcelas): as parcelas restantes seguem e o próximo ciclo já nasce no plano novo. Usa o cartão guardado; sem ele, recusa. Uma troca por vez, e cancelar a assinatura cancela também a troca. Quem já tem assinatura ativa não consegue assinar outro plano pelo checkout (evita cobrança em dobro). Plano com troca agendada não pode ser excluído. |
 | **Assinar / trocar plano** | Owner | Página de pagamento hospedada pelo gateway. No Asaas, o cliente escolhe PIX, boleto ou cartão. Com `PAYMENT_GATEWAY=fake`, ativa o plano direto, para desenvolvimento. |
 | **Cancelar assinatura** | Owner | Cancela no gateway, sem novas cobranças. O plano e seus limites seguem até o fim do período pago, informado em `/dashboard/billing`, e depois o acesso pausa até assinar de novo, com os dados guardados. Nesse intervalo o owner pode assinar de novo, o que inicia uma nova cobrança. |
 | **Estorno integral** | Automático (Asaas) | Estorno integral da cobrança do período atual cancela a assinatura no gateway e encerra o plano na hora, e o acesso pausa até assinar de novo. Estorno parcial ou de cobrança antiga não muda a assinatura. Fica na auditoria como `subscription.ended_by_refund`. No Stripe, o estorno ainda não é tratado e o encerramento é manual. |

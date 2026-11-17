@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CYCLE_CHOICES, cycleSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale, termCycleLabel, termRenewalLabel } from "./planFeatures";
+import { CYCLE_CHOICES, cycleSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale, termCycleLabel, termRenewalLabel, switchablePlans } from "./planFeatures";
 
 describe("oferta do plano", () => {
   it("mostra limites e omite recurso que o plano não tem", () => {
@@ -93,5 +93,24 @@ describe("ciclos prontos e economia por plano", () => {
 
   it("as opções do formulário: mensal, trimestral, semestral, anual e personalizado", () => {
     expect(CYCLE_CHOICES.map((choice) => [choice.value, choice.termPayments])).toEqual([["month", null], ["quarter", 3], ["semester", 6], ["year", 12], ["custom", null]]);
+  });
+});
+
+describe("troca de plano: só o que é melhor para o dono", () => {
+  const monthly = { id: "m", price_cents: 37990, billing_interval: "month" as const };
+  const annual = { id: "a", price_cents: 300000, billing_interval: "year" as const, term_payments: 12 };
+  const max = { id: "x", price_cents: 49990, billing_interval: "month" as const };
+  const essential = { id: "e", price_cents: 3990, billing_interval: "month" as const };
+  const quarterlyCheap = { id: "q", price_cents: 30000, billing_interval: "year" as const, term_payments: 3 };
+
+  it("mensal atual: anual e plano mais caro aparecem; mais barato no mesmo período some", () => {
+    const ids = switchablePlans(monthly, 37990, [monthly, annual, max, essential, quarterlyCheap]).map((p) => p.id);
+    expect(ids).toEqual(["a", "x", "q"]);
+  });
+
+  it("trimestral atual: só período maior (semestral, anual) ou mensalidade maior", () => {
+    const current = { id: "q", billing_interval: "year" as const, term_payments: 3 };
+    const semester = { id: "s", price_cents: 40000, billing_interval: "year" as const, term_payments: 6 };
+    expect(switchablePlans(current, 10000, [semester, essential]).map((p) => p.id)).toEqual(["s"]);
   });
 });

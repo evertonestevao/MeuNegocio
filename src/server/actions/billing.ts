@@ -16,7 +16,7 @@ import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant, getTenantService } from "@/server/tenant";
 import { isOnboardingPending } from "@/server/signupFlow";
-import { CARDLESS_TRIAL_OFFERED, createBillingService, isCardlessTrial, trialEndsAt } from "@/services/billingService";
+import { CARDLESS_TRIAL_OFFERED, createBillingService, hasPlanAccess, isCardlessTrial, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import { createUserService } from "@/services/userService";
 import type { NormalizedPaymentEvent } from "@/types/billing";
@@ -62,6 +62,13 @@ export async function checkoutAction(
       throw new AppError("not_found", "Plano não encontrado");
     }
 
+    // Quem já tem assinatura paga com renovação automática troca de plano pela tela de troca (vale no fim
+    // do período). Uma segunda assinatura no gateway cobraria o cliente em dobro.
+    const current = await repo.getActiveSubscription(companyId);
+    if (current?.renews && current.external_subscription_id && ["active", "past_due"].includes(current.status) && hasPlanAccess(current)) {
+      throw new AppError("conflict", "Você já tem uma assinatura ativa. Para mudar de plano, use a troca de plano.");
+    }
+
     // Antes de cobrar: o primeiro pagamento já precisa encontrar o vínculo.
     await linkCompanyAtCheckout(companyId, plan.id);
 
@@ -100,6 +107,37 @@ export async function checkoutAction(
     return toActionError(err);
   }
   redirect(checkoutUrl);
+}
+
+/** Troca de plano que vale no fim do período já pago. Só o proprietário; o plano precisa ser melhor que o atual. */
+export async function scheduleSwitchAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const companyId = String(formData.get("companyId") ?? "");
+    const planId = String(formData.get("planId") ?? "");
+    await requireOwner(companyId);
+
+    // O plano é lido com a sessão do usuário (RLS): plano privado só aparece para quem tem acesso.
+    const userRepo = createSupabaseBillingRepository(await getSupabaseServerClient());
+    const target = await userRepo.getPlanById(planId);
+    if (!target) throw new AppError("not_found", "Plano não encontrado");
+
+    const service = createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient()));
+    const updated = await service.scheduleSwitch(companyId, target, getPaymentGateway());
+    await recordAudit({
+      companyId,
+      action: "subscription.switch_scheduled",
+      entityType: "subscription",
+      entityId: updated.id,
+      metadata: { from_plan_id: updated.plan_id, to_plan_id: target.id, at: updated.scheduled_change_at },
+    });
+    revalidatePath("/dashboard/billing");
+    return { success: "Troca agendada para o fim do período" };
+  } catch (err) {
+    return toActionError(err);
+  }
 }
 
 /**
@@ -197,12 +235,19 @@ export async function cancelSubscriptionAction(
       throw new AppError("conflict", "Esta compra é parcelada e não renova sozinha. Para desistir, fale com o suporte.");
     }
 
-    if (subscription.external_subscription_id) {
-      await getPaymentGateway().cancelSubscription(subscription.external_subscription_id);
+    const gateway = getPaymentGateway();
+    if (subscription.scheduled_external_subscription_id) {
+      // Troca agendada: a assinatura antiga já foi encerrada; a do plano novo também precisa parar.
+      await gateway.cancelSubscription(subscription.scheduled_external_subscription_id);
+    } else if (subscription.external_subscription_id) {
+      await gateway.cancelSubscription(subscription.external_subscription_id);
     }
     await repo.updateSubscription(subscription.id, {
       status: "canceled",
       cancel_at_period_end: true,
+      scheduled_plan_id: null,
+      scheduled_change_at: null,
+      scheduled_external_subscription_id: null,
     });
     // O webhook também encerra; aqui cobre gateway sem webhook de cancelamento. Idempotente.
     await endCompanyResellerLink(companyId);
