@@ -27,6 +27,15 @@ const SELECT_CLASS =
 
 const METHODS = Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][];
 
+/**
+ * Botões de ação da parcela. No celular não existe "passar o mouse", então o texto fica ao lado do
+ * ícone; a partir de 640px (sm) viram só o ícone, com a legenda no `title` ao passar o mouse.
+ */
+const ICON_ACTION = "sm:w-9 sm:px-0 md:w-7";
+function ActionLabel({ children }: { children: React.ReactNode }) {
+  return <span className="sm:hidden">{children}</span>;
+}
+
 function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 }
@@ -212,8 +221,16 @@ function ReceiveDifferentButton({ item, today }: { item: Receivable; today: stri
       action={receiveInstallmentAction}
       submitLabel="Registrar"
       trigger={(open) => (
-        <Button size="icon-sm" variant="outline" aria-label={`Recebeu outro valor ou em outra data: parcela de ${formatCents(item.amount_cents)}`} onClick={open}>
+        <Button
+          size="sm"
+          variant="outline"
+          className={ICON_ACTION}
+          title="Recebeu diferente? Outro valor, outra data ou antecipação do banco"
+          aria-label={`Recebeu outro valor ou em outra data: parcela de ${formatCents(item.amount_cents)}`}
+          onClick={open}
+        >
           <HandCoins className="size-4" />
+          <ActionLabel>Outro valor</ActionLabel>
         </Button>
       )}
     >
@@ -247,8 +264,16 @@ function RescheduleButton({ item }: { item: Receivable }) {
       action={rescheduleInstallmentAction}
       submitLabel="Salvar"
       trigger={(open) => (
-        <Button size="icon-sm" variant="outline" aria-label={`Alterar a parcela de ${formatCents(item.amount_cents)}`} onClick={open}>
+        <Button
+          size="sm"
+          variant="outline"
+          className={ICON_ACTION}
+          title="Alterar o vencimento ou a forma de pagamento"
+          aria-label={`Alterar a parcela de ${formatCents(item.amount_cents)}`}
+          onClick={open}
+        >
           <CalendarClock className="size-4" />
+          <ActionLabel>Vencimento</ActionLabel>
         </Button>
       )}
     >
@@ -310,17 +335,20 @@ export function ReceivableList({
               <span className={`text-xs font-medium ${status.tone}`}>{status.text}</span>
               {details.length > 0 ? <span className="text-xs text-muted-foreground">{details.join(" · ")}</span> : null}
             </span>
-            <span className="flex shrink-0 items-center gap-2">
-              <span className="mr-auto font-semibold tabular-nums sm:mr-0">{formatCents(item.received_cents ?? item.amount_cents)}</span>
+            <span className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
+              <span className="basis-full font-semibold tabular-nums sm:basis-auto">{formatCents(item.received_cents ?? item.amount_cents)}</span>
               {companyName && !item.received_on && (reminderPhone ?? item.contact_phone) ? (
                 <Button
-                  size="icon-sm"
+                  size="sm"
                   variant="outline"
+                  className={ICON_ACTION}
+                  title="Lembrar o cliente da cobrança pelo WhatsApp"
                   aria-label={`Lembrar ${item.contact_name ?? item.client_name ?? "o cliente"} pelo WhatsApp`}
                   render={<a href={whatsappUrl(reminderPhone ?? item.contact_phone ?? null, reminderText(item, companyName, today))} target="_blank" rel="noopener noreferrer" />}
                   nativeButton={false}
                 >
                   <MessageCircle className="size-4" />
+                  <ActionLabel>Lembrar</ActionLabel>
                 </Button>
               ) : null}
               {item.received_on ? <ReceiptButton item={item} /> : null}
@@ -328,10 +356,13 @@ export function ReceivableList({
                 <ActionButton
                   action={undoReceiveInstallmentAction}
                   fields={{ receivableId: item.id, quoteId: item.quote_id }}
-                  size="icon-sm"
+                  size="sm"
+                  className={ICON_ACTION}
+                  title="Desfazer o recebimento: a parcela volta para a receber"
                   ariaLabel={`Desfazer o recebimento de ${formatCents(item.received_cents ?? item.amount_cents)}`}
                 >
                   <Undo2 className="size-4" />
+                  <ActionLabel>Desfazer</ActionLabel>
                 </ActionButton>
               ) : (
                 <>

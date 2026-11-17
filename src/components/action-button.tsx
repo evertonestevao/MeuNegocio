@@ -13,6 +13,8 @@ export function ActionButton({
   variant = "outline",
   size = "sm",
   ariaLabel,
+  title,
+  className,
 }: {
   action: (prev: ActionState | undefined, formData: FormData) => Promise<ActionState>;
   fields: Record<string, string>;
@@ -20,6 +22,9 @@ export function ActionButton({
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "icon-sm";
   ariaLabel?: string;
+  /** Legenda que o navegador mostra ao passar o mouse. */
+  title?: string;
+  className?: string;
 }) {
   const [, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await action(prev, data);
@@ -35,6 +40,8 @@ export function ActionButton({
       size={size}
       disabled={pending}
       aria-label={ariaLabel}
+      title={title}
+      className={className}
       onClick={() => {
         const data = new FormData();
         for (const [key, value] of Object.entries(fields)) data.set(key, value);
