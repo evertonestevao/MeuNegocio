@@ -34,7 +34,7 @@ function firstName(fullName: string | null): string | null {
 }
 
 /** O e-mail: saudação, quando o teste termina, incentivo a continuar e o botão para entrar. */
-export function trialEndingEmail(notice: Pick<TrialEndingNotice, "ownerName" | "trialEndsOn">, appUrl: string): Omit<EmailMessage, "to" | "replyTo"> {
+export function trialEndingEmail(notice: Pick<TrialEndingNotice, "ownerName" | "trialEndsOn">, appUrl: string): Omit<EmailMessage, "to"> {
   const base = appUrl.replace(/\/+$/, "");
   const loginUrl = `${base}/login`;
   const name = firstName(notice.ownerName);
@@ -43,9 +43,8 @@ export function trialEndingEmail(notice: Pick<TrialEndingNotice, "ownerName" | "
   const subject = `Seu teste grátis do ${brand.name} acaba em ${TRIAL_ENDING_DAYS} dias`;
   const intro = `Esperamos que você esteja gostando do ${brand.name}. Seu período de teste grátis termina em ${date}, daqui a ${TRIAL_ENDING_DAYS} dias.`;
   const keep = "Seus orçamentos, sua agenda e seu financeiro continuam do jeito que você deixou. É só seguir usando.";
-  const help = "Qualquer dúvida, é só responder este e-mail.";
 
-  const text = [greeting, intro, keep, `Entrar no ${brand.name}: ${loginUrl}`, help].join("\n\n");
+  const text = [greeting, intro, keep, `Entrar no ${brand.name}: ${loginUrl}`].join("\n\n");
   const html = renderEmailLayout({
     appUrl: base,
     title: `Seu teste grátis acaba em ${TRIAL_ENDING_DAYS} dias`,
@@ -56,7 +55,6 @@ export function trialEndingEmail(notice: Pick<TrialEndingNotice, "ownerName" | "
       emailParagraph(escapeHtml(keep)),
     ].join("\n"),
     button: { label: `Entrar no ${brand.name}`, url: loginUrl },
-    footnote: help,
   });
   return { subject, text, html };
 }
@@ -76,13 +74,10 @@ export function createTrialEndingService({
   repo,
   provider,
   appUrl,
-  replyTo,
 }: {
   repo: TrialEndingRepository;
   provider: EmailProvider;
   appUrl: string;
-  /** Endereço que recebe as respostas (suporte). */
-  replyTo?: string;
 }) {
   return {
     async run(): Promise<TrialEndingRun> {
@@ -97,7 +92,7 @@ export function createTrialEndingService({
         for (const owner of owners) if (!byEmail.has(owner.ownerEmail.toLowerCase())) byEmail.set(owner.ownerEmail.toLowerCase(), owner);
         const unique = [...byEmail.values()];
         const results = await Promise.allSettled(
-          unique.map((owner) => provider.send({ to: owner.ownerEmail, ...trialEndingEmail(owner, appUrl), ...(replyTo ? { replyTo } : {}) })),
+          unique.map((owner) => provider.send({ to: owner.ownerEmail, ...trialEndingEmail(owner, appUrl) })),
         );
         const delivered = results.filter((result) => result.status === "fulfilled").length;
         if (delivered === 0) {

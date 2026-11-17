@@ -1,6 +1,5 @@
 import "server-only";
 import { getEmailProvider } from "@/adapters/email";
-import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
 import { createSupabaseTrialEndingRepository } from "@/repositories/supabase/trialEndingRepository";
 import { createTrialEndingService } from "@/services/trialEndingService";
@@ -12,6 +11,5 @@ export function getTrialEndingService() {
     repo: createSupabaseTrialEndingRepository(getSupabaseAdminClient()),
     provider: getEmailProvider(),
     appUrl: getServerEnv().APP_URL,
-    replyTo: brand.legal.supportEmail,
   });
 }

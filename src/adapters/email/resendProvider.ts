@@ -30,7 +30,6 @@ export function createResendProvider(config: ResendProviderConfig): EmailProvide
           subject: message.subject,
           html: message.html,
           text: message.text,
-          ...(message.replyTo ? { reply_to: message.replyTo } : {}),
         }),
       });
       if (!res.ok) {

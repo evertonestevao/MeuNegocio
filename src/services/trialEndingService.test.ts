@@ -19,7 +19,7 @@ function setup(notices: TrialEndingNotice[], sendFails: (message: EmailMessage) 
       sent.push(message);
     }),
   };
-  return { repo, provider, sent, service: createTrialEndingService({ repo, provider, appUrl: APP, replyTo: "suporte@exemplo.com" }) };
+  return { repo, provider, sent, service: createTrialEndingService({ repo, provider, appUrl: APP }) };
 }
 
 describe("e-mail do fim do teste", () => {
@@ -35,7 +35,11 @@ describe("e-mail do fim do teste", () => {
       expect(body).toContain("https://app.exemplo.com.br/login");
     }
     expect(email.html).toContain(`Entrar no ${brand.name}`);
-    expect(email.html).toContain("responder este e-mail");
+  });
+
+  it("o remetente é de não responder: o e-mail não convida a responder", () => {
+    const { html, text } = trialEndingEmail(notice(), APP);
+    expect(`${html} ${text}`).not.toMatch(/respond/i);
   });
 
   it("não traz botão de cancelar nem fala de cobrança", () => {
@@ -52,11 +56,11 @@ describe("e-mail do fim do teste", () => {
 });
 
 describe("envio do aviso", () => {
-  it("envia para o proprietário, com resposta para o suporte, e marca a assinatura", async () => {
+  it("envia para o proprietário e marca a assinatura", async () => {
     const { service, repo, sent } = setup([notice()]);
     expect(await service.run()).toEqual({ subscriptions: 1, sent: 1, failed: 0, unmarked: 0 });
     expect(repo.listPending).toHaveBeenCalledWith(2);
-    expect(sent[0]).toMatchObject({ to: "maria@exemplo.com", replyTo: "suporte@exemplo.com" });
+    expect(sent[0]).toMatchObject({ to: "maria@exemplo.com" });
     expect(repo.markNotified).toHaveBeenCalledExactlyOnceWith("s1");
   });
 
