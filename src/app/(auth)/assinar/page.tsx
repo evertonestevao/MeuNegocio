@@ -119,6 +119,16 @@ export default async function SubscribePage() {
           </Link>
         ) : null}
 
+        {/* Direito aos próprios dados: quem ficou sem acesso baixa uma cópia, sem precisar assinar. */}
+        {ended && canSubscribe ? (
+          <p className="text-center text-sm text-muted-foreground">
+            Seus dados continuam guardados.{" "}
+            <a href="/api/export" className="font-medium text-primary hover:underline">
+              Baixar uma cópia dos meus dados
+            </a>
+          </p>
+        ) : null}
+
         {/* Fica no fim: no topo, disputaria espaço com as etapas do cadastro. */}
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t pt-5 text-sm text-muted-foreground">
           {companies.length > 1 ? <CompanySwitcher canCreate={false} /> : null}

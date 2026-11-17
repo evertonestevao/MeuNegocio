@@ -139,6 +139,13 @@ export function CancelSubscriptionButton({ accessUntil }: { accessUntil: string 
         />
         <p className="text-xs text-muted-foreground">Não escreva dados pessoais, senhas nem dados de cartão. Usamos só para melhorar o sistema.</p>
       </div>
+      <p className="text-sm text-muted-foreground">
+        Antes de cancelar, você pode{" "}
+        <a href="/api/export" className="font-medium text-foreground underline underline-offset-4">
+          baixar uma cópia dos seus dados
+        </a>{" "}
+        (clientes, orçamentos, financeiro e mais, em planilhas).
+      </p>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="confirm" value="1" required className="mt-1" />
         <span>Entendi que as cobranças param e que o acesso termina em {accessUntil}.</span>
