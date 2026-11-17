@@ -241,7 +241,7 @@ export default async function BillingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CancelSubscriptionButton />
+            <CancelSubscriptionButton accessUntil={subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR") : "o fim do período"} />
           </CardContent>
         </Card>
       ) : null}

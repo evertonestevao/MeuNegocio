@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getPaymentGateway } from "@/adapters/payment";
 import { getServerEnv } from "@/config/env";
@@ -213,6 +214,13 @@ export async function activateFakePlanAction(
   }
 }
 
+const CANCEL_REASON_VALUES = ["expensive", "not_using", "missing_feature", "difficult", "other_tool", "closing", "other", "no_answer"] as const;
+const cancelFormSchema = z.object({
+  confirm: z.literal("1"),
+  reason: z.enum(CANCEL_REASON_VALUES),
+  comment: z.string().trim().max(500).default(""),
+});
+
 export async function cancelSubscriptionAction(
   _prev: ActionState | undefined,
   formData: FormData,
@@ -220,6 +228,16 @@ export async function cancelSubscriptionAction(
   try {
     const companyId = String(formData.get("companyId") ?? "");
     await requireOwner(companyId);
+
+    // Confirmação e motivo conferidos no servidor: o diálogo do navegador não é a única barreira.
+    const parsed = cancelFormSchema.safeParse({
+      confirm: formData.get("confirm"),
+      reason: formData.get("reason"),
+      comment: formData.get("comment") ?? "",
+    });
+    if (!parsed.success) {
+      throw new AppError("validation_error", "Confirme o cancelamento e escolha um motivo.");
+    }
 
     // service_role: usuário não escreve em subscriptions; requireOwner já validou o ator.
     const repo = createSupabaseBillingRepository(getSupabaseAdminClient());
@@ -256,7 +274,11 @@ export async function cancelSubscriptionAction(
       action: "subscription.canceled",
       entityType: "subscription",
       entityId: subscription.id,
-      metadata: { plan_id: subscription.plan_id },
+      metadata: {
+        plan_id: subscription.plan_id,
+        reason: parsed.data.reason,
+        ...(parsed.data.comment ? { comment: parsed.data.comment } : {}),
+      },
     });
     revalidatePath("/dashboard/billing");
     return { success: "Assinatura cancelada" };
