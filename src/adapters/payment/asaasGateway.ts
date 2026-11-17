@@ -221,7 +221,14 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     });
     const json = (await res.json().catch(() => ({}))) as T;
     if (!res.ok) {
-      // Detalhe do provedor vai só para o log de servidor via `internal`.
+      // Detalhe do provedor vai só para o log de servidor via `internal`. O log
+      // do Next corta objetos aninhados ("[Object]"), então registramos código e
+      // descrição dos erros em texto (sem corpo, chave ou dado de cliente).
+      const providerErrors = (json as { errors?: { code?: string; description?: string }[] }).errors;
+      console.error(
+        `[asaas] ${method} ${path} -> ${res.status}:`,
+        Array.isArray(providerErrors) ? providerErrors.map((e) => `${e.code ?? "?"}: ${e.description ?? "?"}`).join(" | ") : "sem detalhe",
+      );
       throw new AppError("payment_error", "Falha na operação de pagamento", json);
     }
     return json;
