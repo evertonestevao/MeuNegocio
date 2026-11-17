@@ -47,6 +47,8 @@ const serverEnvSchema = z.object({
   COMPANY_REGISTRY: z.enum(["brasilapi", "fake"]).default("brasilapi"),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.email().optional(),
+  /** Segredo da rotina diária do Supabase (pg_cron) que chama /api/cron/*. Sem ele, a rota recusa tudo. */
+  CRON_SECRET: z.string().min(24).optional(),
   /** Cadastro público. Fechado por padrão: quem cria empresa é o super admin. */
   SIGNUP_ENABLED: z.enum(["true", "false"]).default("false"),
   /** Cadastros iniciados por endereço de rede a cada 10 minutos (anti envio repetido). */

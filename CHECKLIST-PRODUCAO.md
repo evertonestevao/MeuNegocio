@@ -45,6 +45,7 @@ Passos que **não** são código e precisam ser feitos (ou conferidos) na hora d
 - [ ] `EMAIL_PROVIDER=resend` com `RESEND_API_KEY` e `EMAIL_FROM` de domínio verificado (ou SMTP).
 - [ ] Texto real dos Termos e da Privacidade e dados legais da empresa (razão social, CNPJ) revisados.
 - [ ] Teste real de envio (convite, recuperação de senha) e um teste real de telefone/WhatsApp.
+- [ ] Aviso de fim do teste grátis (e-mail, todo dia às 10h de Brasília): `CRON_SECRET` (mín. 24 caracteres) no app e, no banco, `select vault.create_secret('https://SEU-APP', 'app_url');` e `select vault.create_secret('<mesmo CRON_SECRET>', 'cron_secret');`. Sem os dois e sem `EMAIL_PROVIDER=resend`, nenhum aviso sai.
 
 ## Hospedagem
 

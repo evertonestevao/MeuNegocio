@@ -9,6 +9,8 @@ export interface EmailMessage {
   subject: string;
   html: string;
   text?: string;
+  /** Para onde vai a resposta de quem recebe o e-mail (ex.: o suporte). */
+  replyTo?: string;
 }
 
 export interface EmailProvider {

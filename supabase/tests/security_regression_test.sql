@@ -1545,6 +1545,73 @@ end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Aviso de fim do teste grátis: só o teste que acaba em exatamente 2 dias, uma vez, e só o servidor
+-- lê a lista (traz e-mail de cliente).
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_sub uuid;
+  v_today constant date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_company constant uuid := '5ec0c000-0000-4000-8000-000000000001';
+
+  function_count integer;
+begin
+  select id into v_sub from public.subscriptions where company_id = v_company and deleted_at is null;
+
+  -- O Asaas grava a data da primeira cobrança como meia-noite UTC: essa é a data, sem deslocar um dia.
+  update public.subscriptions set status = 'trialing', cancel_at_period_end = false, trial_ending_notified_at = null,
+    current_period_end = (v_today + 2)::timestamp at time zone 'UTC' where id = v_sub;
+  select count(*) into function_count from public.trial_ending_notices(2) where subscription_id = v_sub;
+  if function_count <> 1 then raise exception 'FALHA aviso de teste: não listou o teste que acaba em 2 dias (meia-noite UTC)'; end if;
+  if (select owner_email from public.trial_ending_notices(2) where subscription_id = v_sub) <> 'sec-owner@test.local' then
+    raise exception 'FALHA aviso de teste: o aviso não foi para o proprietário';
+  end if;
+
+  -- Teste sem cartão termina em um instante qualquer: conta pela data de Brasília.
+  update public.subscriptions set current_period_end = ((v_today + 2) + time '15:30') at time zone 'America/Sao_Paulo' where id = v_sub;
+  select count(*) into function_count from public.trial_ending_notices(2) where subscription_id = v_sub;
+  if function_count <> 1 then raise exception 'FALHA aviso de teste: não listou o teste sem cartão que acaba em 2 dias'; end if;
+
+  -- Só 2 dias exatos: 1 e 3 dias não entram.
+  update public.subscriptions set current_period_end = (v_today + 3)::timestamp at time zone 'UTC' where id = v_sub;
+  if exists (select 1 from public.trial_ending_notices(2) where subscription_id = v_sub) then raise exception 'FALHA aviso de teste: avisou com 3 dias'; end if;
+  update public.subscriptions set current_period_end = (v_today + 1)::timestamp at time zone 'UTC' where id = v_sub;
+  if exists (select 1 from public.trial_ending_notices(2) where subscription_id = v_sub) then raise exception 'FALHA aviso de teste: avisou com 1 dia'; end if;
+
+  -- Quem já pagou, quem cancelou e quem já foi avisado ficam de fora.
+  update public.subscriptions set current_period_end = (v_today + 2)::timestamp at time zone 'UTC', status = 'active' where id = v_sub;
+  if exists (select 1 from public.trial_ending_notices(2) where subscription_id = v_sub) then raise exception 'FALHA aviso de teste: avisou assinatura que não está em teste'; end if;
+  update public.subscriptions set status = 'trialing', cancel_at_period_end = true where id = v_sub;
+  if exists (select 1 from public.trial_ending_notices(2) where subscription_id = v_sub) then raise exception 'FALHA aviso de teste: avisou assinatura cancelada'; end if;
+  update public.subscriptions set cancel_at_period_end = false where id = v_sub;
+
+  -- Marcar como avisada tira da lista, e não marca de novo.
+  perform public.mark_trial_ending_notified(v_sub);
+  if exists (select 1 from public.trial_ending_notices(2) where subscription_id = v_sub) then raise exception 'FALHA aviso de teste: avisou duas vezes'; end if;
+  if (select trial_ending_notified_at from public.subscriptions where id = v_sub) is null then raise exception 'FALHA aviso de teste: não gravou que avisou'; end if;
+
+  -- A rotina diária roda sem erro mesmo sem o app configurado no Vault (só registra um aviso).
+  update public.subscriptions set trial_ending_notified_at = null where id = v_sub;
+  perform public.run_trial_ending_notifier();
+
+  -- Só o servidor executa: a lista traz e-mail de cliente.
+  if has_function_privilege('anon', 'public.trial_ending_notices(integer)', 'execute')
+     or has_function_privilege('authenticated', 'public.trial_ending_notices(integer)', 'execute')
+     or has_function_privilege('anon', 'public.mark_trial_ending_notified(uuid)', 'execute')
+     or has_function_privilege('authenticated', 'public.mark_trial_ending_notified(uuid)', 'execute')
+     or has_function_privilege('anon', 'public.run_trial_ending_notifier()', 'execute')
+     or has_function_privilege('authenticated', 'public.run_trial_ending_notifier()', 'execute') then
+    raise exception 'FALHA aviso de teste: usuário comum executa as funções do aviso de fim do teste';
+  end if;
+  if not has_function_privilege('service_role', 'public.trial_ending_notices(integer)', 'execute') then
+    raise exception 'FALHA aviso de teste: o servidor não executa a lista do aviso';
+  end if;
+
+  -- Volta ao que os testes seguintes esperam.
+  update public.subscriptions set status = 'active', current_period_end = null, trial_ending_notified_at = null where id = v_sub;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$

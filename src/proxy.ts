@@ -133,7 +133,7 @@ function clearSessionCookies(request: NextRequest) {
 }
 
 export const config = {
-  // Tudo, exceto estáticos, o webhook de pagamento (autenticado por assinatura) e o
-  // link de afiliado (público e de alto tráfego: não precisa de sessão).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|manifest\\.webmanifest|api/webhooks|r/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  // Tudo, exceto estáticos, o webhook de pagamento (autenticado por assinatura), a rotina diária
+  // (autenticada por segredo) e o link de afiliado (público e de alto tráfego: não precisa de sessão).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|manifest\\.webmanifest|api/webhooks|api/cron|r/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };
