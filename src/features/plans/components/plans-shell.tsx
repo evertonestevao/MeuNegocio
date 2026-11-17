@@ -1,10 +1,11 @@
 "use client";
 
-import { Building2, CreditCard, Flag, UserPlus } from "lucide-react";
+import { Building2, CreditCard, Flag, LayoutDashboard, UserPlus } from "lucide-react";
 import { AppShell, type AppShellProps } from "@/components/app-shell/app-shell";
 import type { ShellNavItem } from "@/components/app-shell/nav-items";
 
 const NAV: ShellNavItem[] = [
+  { title: "Visão geral", href: "/admin/visao-geral", icon: LayoutDashboard },
   { title: "Empresas", href: "/admin/empresas", icon: Building2 },
   { title: "Cadastros", href: "/admin/cadastros", icon: UserPlus },
   { title: "Denúncias", href: "/admin/denuncias", icon: Flag },

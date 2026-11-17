@@ -1330,6 +1330,26 @@ select sec_test.must_pass('quem assina o plano privado continua vendo o próprio
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Visão geral do super admin: só o super admin lê os números da plataforma inteira.
+-- ---------------------------------------------------------------------------
+insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data) values
+  ('5ec00000-0000-4000-8000-000000000007', 'sec-superadmin@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}');
+insert into public.platform_admins (user_id) values ('5ec00000-0000-4000-8000-000000000007');
+
+set local role anon;
+select sec_test.must_fail('visitante lê a visão geral', $$select public.admin_overview()$$);
+
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local');
+select sec_test.must_fail('dono de empresa lê a visão geral da plataforma', $$select public.admin_overview()$$);
+select sec_test.login('5ec00000-0000-4000-8000-000000000004', 'sec-stranger@test.local');
+select sec_test.must_fail('usuário comum lê a visão geral da plataforma', $$select public.admin_overview()$$);
+select sec_test.login('5ec00000-0000-4000-8000-000000000007', 'sec-superadmin@test.local');
+select sec_test.must_pass('super admin lê a visão geral', $$select public.admin_overview()$$);
+
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -1373,6 +1393,9 @@ begin
   if v_list is not null then raise exception 'FALHA invariante: escrita aberta: %', v_list; end if;
 
   -- Criar empresa para outra pessoa é só do servidor.
+  if has_function_privilege('anon', 'public.admin_overview()', 'execute') then
+    raise exception 'FALHA invariante: visitante executa a visão geral do super admin';
+  end if;
   if has_function_privilege('authenticated', 'public.admin_set_plan_access(uuid, text[], boolean, uuid)', 'execute') then
     raise exception 'FALHA invariante: usuário comum altera a lista de acesso de plano privado';
   end if;

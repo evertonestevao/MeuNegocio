@@ -11,7 +11,7 @@ export default async function PlansAdminLayout({ children }: { children: React.R
     <PlansShell
       {...shell}
       areaLinks={[
-        ...areaLinks.filter((link) => link.href !== "/admin/planos" && link.href !== "/admin/empresas"),
+        ...areaLinks.filter((link) => link.href !== "/admin/visao-geral" && link.href !== "/admin/planos" && link.href !== "/admin/empresas"),
         { href: "/dashboard", label: "Área do cliente" },
       ]}
     >
