@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature, planOfferLines } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments } from "@/config/planFeatures";
 import { paymentMethodLabel } from "@/config/paymentMethods";
 import { PlanAccessEditor } from "@/features/plans/components/plan-access-editor";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
@@ -112,7 +112,7 @@ export default async function PlansPage() {
                   </div>
                 </div>
                 <CardDescription>
-                  Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {plan.billing_interval === "year" ? "ano" : "mês"}
+                  Código {plan.code} · {formatCents(plan.price_cents, plan.currency)} por {planCycleLabel(plan)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
@@ -125,6 +125,13 @@ export default async function PlansPage() {
                   {plan.extra_seat_price_cents > 0 ? (
                     <li>
                       <Badge variant="outline">Membro extra: {formatCents(plan.extra_seat_price_cents, plan.currency)}</Badge>
+                    </li>
+                  ) : null}
+                  {plan.billing_interval === "year" ? (
+                    <li>
+                      <Badge variant="outline">
+                        {planTermPayments(plan)}x de {formatCents(planMonthlyCents(plan), plan.currency)}, renova sozinho
+                      </Badge>
                     </li>
                   ) : null}
                   <li>

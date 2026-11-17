@@ -57,6 +57,17 @@ export function createSupabaseBillingRepository(client: SupabaseClient): Billing
       return unwrap(result);
     },
 
+    async findSubscriptionByEndedExternalId(externalId) {
+      const result = await client
+        .from("subscriptions")
+        .select("*")
+        .contains("ended_external_ids", [externalId])
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle<Subscription>();
+      return unwrap(result);
+    },
+
     async ownerHasSubscriptionHistory(companyId) {
       // Por dono: o teste vale uma vez por pessoa, não por empresa (criar empresa
       // não tem limite). A função no banco acha o dono e checa todas as empresas

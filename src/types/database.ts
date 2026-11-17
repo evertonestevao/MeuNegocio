@@ -98,6 +98,8 @@ export interface Plan {
   payment_methods: string[];
   /** Dias de teste grátis antes da 1ª cobrança. 0 = sem teste. Padrão 7. */
   trial_days: number;
+  /** Cobranças mensais do ciclo do plano anual (1 a 12; padrão 12). No mensal vale 12 e é ignorado. Não muda depois de criado. */
+  term_payments: number;
   /** Plano privado (false) só aparece para os e-mails liberados pelo super admin. */
   is_public: boolean;
   is_active: boolean;
@@ -437,6 +439,8 @@ export interface Subscription {
   gateway_provider: string | null;
   /** Token do cartão no gateway (creditCardToken no Asaas) para renovar sem nova entrada de cartão. */
   payment_method_token: string | null;
+  /** Ids dos termos já encerrados no gateway (renovados). Evento de termo encerrado é ignorado. */
+  ended_external_ids: string[];
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

@@ -35,8 +35,8 @@ import type { PaymentGateway } from "./PaymentGateway";
  *  - Portal: o Asaas não tem portal de autogestão — getPortalUrl devolve null.
  */
 
-/** Anual = 12 cobranças mensais (termo), depois renova. */
-const ANNUAL_TERM_MONTHS = 12;
+/** Ciclo do anual: por padrão 12 cobranças mensais (termo), depois renova. O plano pode ter menos parcelas. */
+const DEFAULT_TERM_PAYMENTS = 12;
 
 /** Expiração do checkout hospedado, em minutos (limite do Asaas: 10 a 1440). */
 const CHECKOUT_EXPIRES_MINUTES = 60;
@@ -421,14 +421,15 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
 
   /**
    * Checkout hospedado com assinatura (1ª cobrança em nextDueDate). Mensal: valor do
-   * plano, renovação infinita. Anual: valor por mês (total/12) com maxPayments=12
-   * (termo); ao fim das 12, o webhook renova criando o próximo termo com o cartão
-   * tokenizado. Anual é sempre no cartão (precisa tokenizar para renovar).
+   * plano, renovação infinita. Anual: valor por mês (total ÷ parcelas do plano, 12 por padrão)
+   * com maxPayments = parcelas (termo); ao fim do termo, o webhook renova criando o próximo
+   * termo com o cartão tokenizado. Anual é sempre no cartão (precisa tokenizar para renovar).
    */
   async function createSubscriptionCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
     const annual = params.plan.billingInterval === "year";
     const trialDays = annual ? 0 : (params.trialDays ?? 0);
-    const valueCents = annual ? Math.round(params.plan.priceCents / ANNUAL_TERM_MONTHS) : params.plan.priceCents;
+    const termPayments = params.plan.termPayments ?? DEFAULT_TERM_PAYMENTS;
+    const valueCents = annual ? Math.round(params.plan.priceCents / termPayments) : params.plan.priceCents;
     // Com teste ou anual, só cartão: PIX/boleto não guardam o meio para a cobrança futura.
     const billingTypes =
       annual || trialDays > 0 ? (["CREDIT_CARD"] as const) : checkoutBillingTypes(params.plan.paymentMethods);
@@ -455,7 +456,7 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje (sem teste/anual).
         nextDueDate: dueDateString(trialDays),
         // Anual: termo de 12 cobranças. Mensal: sem limite (renova sozinho).
-        ...(annual ? { maxPayments: ANNUAL_TERM_MONTHS } : {}),
+        ...(annual ? { maxPayments: termPayments } : {}),
       },
       // Sem customerData: a página do Asaas coleta nome, CPF, telefone e endereço do
       // comprador. Enviar customerData parcial é recusado (exige todos esses campos).
@@ -487,7 +488,7 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
         nextDueDate: params.nextDueDate,
         creditCardToken: params.paymentMethodToken,
         externalReference: params.externalReference,
-        description: "Renovação do plano anual (12x)",
+        description: `Renovação do plano (${params.maxPayments}x)`,
       });
       return {
         externalSubscriptionId: sub.id,

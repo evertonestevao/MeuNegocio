@@ -12,6 +12,8 @@ export interface CheckoutPlan {
   priceCents: number;
   currency: string;
   billingInterval: "month" | "year";
+  /** Parcelas do ciclo do plano anual (1 a 12). Ausente, vale 12. Só os gateways por valor (Asaas) usam. */
+  termPayments?: number;
   /** Id do preço no catálogo do gateway (PAYMENT_PRICE_<PLANO>), ou null. */
   externalPriceId: string | null;
   /** Meios aceitos no checkout (credit_card, pix, boleto). Define o billingType no gateway. */

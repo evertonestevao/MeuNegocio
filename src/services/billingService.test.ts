@@ -23,6 +23,7 @@ function makePlan(overrides: Partial<Plan>): Plan {
     payment_methods: ["credit_card"],
     trial_days: 7,
     is_public: true,
+    term_payments: 12,
     is_active: true,
     deleted_at: null,
     created_at: "",
@@ -47,6 +48,7 @@ function makeSubscription(overrides: Partial<Subscription>): Subscription {
     renews: true,
     gateway_provider: "asaas",
     payment_method_token: null,
+    ended_external_ids: [],
     deleted_at: null,
     created_at: "",
     updated_at: "",
@@ -85,6 +87,9 @@ function makeRepo(state: {
           (s) => s.external_subscription_id === externalId && !s.deleted_at,
         ) ?? null
       );
+    },
+    async findSubscriptionByEndedExternalId(externalId) {
+      return state.subscriptions.find((s) => s.ended_external_ids.includes(externalId) && !s.deleted_at) ?? null;
     },
     async insertSubscription(data) {
       const row = makeSubscription({ ...data, id: `sub-${state.subscriptions.length + 1}` });
@@ -693,5 +698,134 @@ describe("teste grátis", () => {
     });
     expect(state.subscriptions[0]).toMatchObject({ status: "trialing", renews: true });
     expect(isCardlessTrial(state.subscriptions[0])).toBe(false);
+  });
+});
+
+describe("ciclo do plano anual em parcelas (simulação)", () => {
+  const COMPANY = "company-1";
+  const annualPlan = makePlan({ id: "plan-annual", code: "anual_teste", billing_interval: "year", term_payments: 3, price_cents: 1500 });
+
+  /** Gateway de mentira que só guarda as renovações pedidas e devolve um id de termo novo a cada uma. */
+  function makeRenewalGateway(options: { failWith?: Error } = {}) {
+    const renewals: Array<{ externalReference: string; maxPayments: number; nextDueDate: string; paymentMethodToken: string }> = [];
+    return {
+      renewals,
+      gateway: {
+        async renewSubscription(params: (typeof renewals)[number]) {
+          if (options.failWith) throw options.failWith;
+          renewals.push(params);
+          return { externalSubscriptionId: `ext-termo-${renewals.length + 1}`, currentPeriodEnd: "2027-03-17T00:00:00.000Z" };
+        },
+      },
+    };
+  }
+
+  /** Cada parcela paga chega como um evento do termo; a última traz termRenewal, como o adapter monta. */
+  function parcel(termId: string, number: number, termPayments: number, overrides: Partial<NormalizedPaymentEvent> = {}): NormalizedPaymentEvent {
+    return {
+      type: "subscription.activated",
+      gateway: "asaas",
+      externalSubscriptionId: termId,
+      externalCustomerId: "cus-1",
+      companyId: COMPANY,
+      planId: annualPlan.id,
+      currentPeriodStart: `2026-1${number}-01T00:00:00.000Z`,
+      currentPeriodEnd: "2027-01-01T00:00:00.000Z",
+      cancelAtPeriodEnd: false,
+      payment: { externalId: `${termId}-pay-${number}`, grossAmountCents: 500 },
+      termRenewal:
+        number === termPayments
+          ? { externalCustomerId: "cus-1", paymentMethodToken: "tok-cartao", valueCents: 500, maxPayments: termPayments, nextDueDate: "2027-01-10" }
+          : undefined,
+      ...overrides,
+    };
+  }
+
+  function setup() {
+    const state = { plans: [annualPlan], subscriptions: [makeSubscription({ id: "sub-1", plan_id: annualPlan.id, external_subscription_id: "ext-termo-1", status: "active", contracted_price_cents: 1500 })] };
+    return { state, service: createBillingService(makeRepo(state)), ...makeRenewalGateway() };
+  }
+
+  async function run(service: ReturnType<typeof createBillingService>, gateway: Parameters<ReturnType<typeof createBillingService>["renewTerm"]>[1], event: NormalizedPaymentEvent) {
+    await service.applyPaymentEvent(event);
+    return service.renewTerm(event, gateway);
+  }
+
+  it("renova só na última parcela do termo, e não antes", async () => {
+    const { service, gateway, renewals, state } = setup();
+    expect(await run(service, gateway, parcel("ext-termo-1", 1, 3))).toBe(false);
+    expect(await run(service, gateway, parcel("ext-termo-1", 2, 3))).toBe(false);
+    expect(renewals).toHaveLength(0);
+    expect(state.subscriptions[0].external_subscription_id).toBe("ext-termo-1");
+    expect(await run(service, gateway, parcel("ext-termo-1", 3, 3))).toBe(true);
+    expect(renewals).toHaveLength(1);
+  });
+
+  it("a renovação usa o cartão guardado, o valor da parcela e liga o termo novo à empresa e ao plano", async () => {
+    const { service, gateway, renewals } = setup();
+    await run(service, gateway, parcel("ext-termo-1", 3, 3));
+    expect(renewals[0]).toMatchObject({ paymentMethodToken: "tok-cartao", maxPayments: 3, nextDueDate: "2027-01-10", externalReference: `${COMPANY}:${annualPlan.id}` });
+  });
+
+  it("a assinatura passa a apontar para o termo novo, continua ativa e renovável, e o período se estende", async () => {
+    const { service, gateway, state } = setup();
+    await run(service, gateway, parcel("ext-termo-1", 3, 3));
+    expect(state.subscriptions).toHaveLength(1);
+    expect(state.subscriptions[0]).toMatchObject({ external_subscription_id: "ext-termo-2", status: "active", renews: true, current_period_end: "2027-03-17T00:00:00.000Z" });
+  });
+
+  it("evento repetido da última parcela do termo velho (ex.: RECEIVED depois do CONFIRMED) não renova de novo", async () => {
+    const { service, gateway, renewals } = setup();
+    const last = parcel("ext-termo-1", 3, 3);
+    expect(await run(service, gateway, last)).toBe(true);
+    expect(await run(service, gateway, last)).toBe(false);
+    expect(await run(service, gateway, { ...last, payment: { externalId: "ext-termo-1-pay-3", grossAmountCents: 500 } })).toBe(false);
+    expect(renewals).toHaveLength(1);
+  });
+
+  it("o segundo ciclo corre igual: 3 parcelas do termo novo e outra renovação, sempre uma só por ciclo", async () => {
+    const { service, gateway, renewals, state } = setup();
+    for (const n of [1, 2, 3]) await run(service, gateway, parcel("ext-termo-1", n, 3));
+    for (const n of [1, 2]) expect(await run(service, gateway, parcel("ext-termo-2", n, 3))).toBe(false);
+    expect(await run(service, gateway, parcel("ext-termo-2", 3, 3))).toBe(true);
+    expect(renewals).toHaveLength(2);
+    expect(state.subscriptions[0].external_subscription_id).toBe("ext-termo-3");
+    // O termo velho (o primeiro) não mexe mais na assinatura.
+    expect(await run(service, gateway, parcel("ext-termo-1", 3, 3))).toBe(false);
+    expect(renewals).toHaveLength(2);
+  });
+
+  it("parcela atrasada marca em atraso, e o pagamento seguinte reativa sem renovar antes da hora", async () => {
+    const { service, gateway, renewals, state } = setup();
+    await run(service, gateway, parcel("ext-termo-1", 1, 3));
+    await service.applyPaymentEvent({ ...parcel("ext-termo-1", 2, 3), type: "payment.failed", payment: undefined, termRenewal: undefined });
+    expect(state.subscriptions[0].status).toBe("past_due");
+    await run(service, gateway, parcel("ext-termo-1", 2, 3));
+    expect(state.subscriptions[0].status).toBe("active");
+    expect(renewals).toHaveLength(0);
+  });
+
+  it("se o gateway falha ao criar o termo novo, a assinatura fica como estava e o erro sobe para o webhook registrar", async () => {
+    const state = { plans: [annualPlan], subscriptions: [makeSubscription({ id: "sub-1", plan_id: annualPlan.id, external_subscription_id: "ext-termo-1", status: "active" })] };
+    const service = createBillingService(makeRepo(state));
+    const { gateway } = makeRenewalGateway({ failWith: new Error("Asaas fora do ar") });
+    await expect(run(service, gateway, parcel("ext-termo-1", 3, 3))).rejects.toThrow("Asaas fora do ar");
+    expect(state.subscriptions[0]).toMatchObject({ external_subscription_id: "ext-termo-1", status: "active" });
+  });
+
+  it("evento sem termRenewal, ou de assinatura que não existe, nunca chama o gateway", async () => {
+    const { service, gateway, renewals } = setup();
+    expect(await service.renewTerm({ ...parcel("ext-termo-1", 1, 3) }, gateway)).toBe(false);
+    expect(await service.renewTerm(parcel("ext-desconhecido", 3, 3), gateway)).toBe(false);
+    expect(await service.renewTerm({ ...parcel("ext-termo-1", 3, 3), externalSubscriptionId: null }, gateway)).toBe(false);
+    expect(renewals).toHaveLength(0);
+  });
+
+  it("plano de 1 parcela: a primeira cobrança paga já fecha o termo e renova na hora (o teste de renovação sem espera)", async () => {
+    const { service, gateway, renewals, state } = setup();
+    expect(await run(service, gateway, parcel("ext-termo-1", 1, 1))).toBe(true);
+    expect(renewals).toHaveLength(1);
+    expect(renewals[0]).toMatchObject({ maxPayments: 1, paymentMethodToken: "tok-cartao" });
+    expect(state.subscriptions[0].external_subscription_id).toBe("ext-termo-2");
   });
 });

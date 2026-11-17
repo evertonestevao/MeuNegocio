@@ -42,19 +42,35 @@ export function planOfferLines(features: Record<string, unknown>): string[] {
   });
 }
 
-type PricedPlan = { price_cents: number; billing_interval: "month" | "year" };
+/** Parcelas do ciclo do plano anual quando o plano não diz outra coisa (12 cobranças mensais). */
+export const DEFAULT_TERM_PAYMENTS = 12;
 
-/** Quanto o plano custa por mês. O preço do anual vale pelo ano inteiro. */
-export function planMonthlyCents(plan: PricedPlan, cents: number = plan.price_cents): number {
-  return plan.billing_interval === "year" ? Math.round(cents / 12) : cents;
+type PricedPlan = { price_cents: number; billing_interval: "month" | "year"; term_payments?: number };
+
+/** Cobranças mensais que formam um ciclo do plano: 1 no mensal; no anual, as parcelas do plano (padrão 12). */
+export function planTermPayments(plan: Pick<PricedPlan, "billing_interval" | "term_payments">): number {
+  return plan.billing_interval === "year" ? (plan.term_payments ?? DEFAULT_TERM_PAYMENTS) : 1;
 }
 
-/** Economia do plano anual em um ano, comparada a pagar o mensal por 12 meses. */
+/** Quanto o plano custa por mês. O preço do anual vale pelo ciclo inteiro e se divide pelas parcelas. */
+export function planMonthlyCents(plan: PricedPlan, cents: number = plan.price_cents): number {
+  return Math.round(cents / planTermPayments(plan));
+}
+
+/** O período do preço, em texto: "mês", "ano" (ciclo padrão de 12) ou "ciclo de N meses". */
+export function planCycleLabel(plan: Pick<PricedPlan, "billing_interval" | "term_payments">): string {
+  if (plan.billing_interval === "month") return "mês";
+  const parcels = planTermPayments(plan);
+  if (parcels === DEFAULT_TERM_PAYMENTS) return "ano";
+  return `ciclo de ${parcels} ${parcels === 1 ? "mês" : "meses"}`;
+}
+
+/** Economia do plano anual no ciclo, comparada a pagar o mensal pelos mesmos meses. */
 export function annualSavingsCents(plans: PricedPlan[]): number {
   const annual = plans.find((plan) => plan.billing_interval === "year" && plan.price_cents > 0);
   const monthly = plans.find((plan) => plan.billing_interval === "month" && plan.price_cents > 0);
   if (!annual || !monthly) return 0;
-  return Math.max(0, monthly.price_cents * 12 - annual.price_cents);
+  return Math.max(0, monthly.price_cents * planTermPayments(annual) - annual.price_cents);
 }
 
 /** Planos à venda: sem o padrão gratuito e com o anual primeiro, que é o destaque da oferta. */

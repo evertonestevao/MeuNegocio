@@ -49,6 +49,8 @@ export function createSupabasePlanRepository(client: SupabaseClient): PlanReposi
         p_payment_methods: input.paymentMethods,
         p_trial_days: input.trialDays,
         p_is_public: input.isPublic,
+        p_billing_interval: input.billingInterval,
+        p_term_payments: input.termPayments,
         p_actor: actorId,
       });
       if (error) fail(error);

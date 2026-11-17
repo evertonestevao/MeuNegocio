@@ -137,6 +137,34 @@ describe("createCheckout", () => {
     expect(body.items[0].value).toBe(329.9); // 395880 centavos / 12 = 32990 -> R$329,90
   });
 
+  it("plano anual com parcelas próprias: o valor mensal é o total dividido pelas parcelas e maxPayments é o número delas", async () => {
+    const checkout = async (priceCents: number, termPayments?: number) => {
+      const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+      await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, billingInterval: "year", priceCents, termPayments } });
+      return calls[0].body as { billingTypes: string[]; subscription: { cycle: string; maxPayments: number }; items: Array<{ value: number }> };
+    };
+    const tres = await checkout(1500, 3);
+    expect(tres.subscription).toMatchObject({ cycle: "MONTHLY", maxPayments: 3 });
+    expect(tres.items[0].value).toBe(5);
+    expect(tres.billingTypes).toEqual(["CREDIT_CARD"]);
+    // 1 parcela: o termo fecha na primeira cobrança paga (o teste de renovação sem espera).
+    const uma = await checkout(500, 1);
+    expect(uma.subscription).toMatchObject({ maxPayments: 1 });
+    expect(uma.items[0].value).toBe(5);
+    // Sem número de parcelas, vale o padrão de 12.
+    const padrao = await checkout(395880);
+    expect(padrao.subscription).toMatchObject({ maxPayments: 12 });
+    expect(padrao.items[0].value).toBe(329.9);
+  });
+
+  it("mensal nunca leva maxPayments, mesmo que o plano traga um número de parcelas", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+    await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, billingInterval: "month", priceCents: 37990, termPayments: 3 } });
+    const body = calls[0].body as { subscription: Record<string, unknown>; items: Array<{ value: number }> };
+    expect(body.subscription).not.toHaveProperty("maxPayments");
+    expect(body.items[0].value).toBe(379.9);
+  });
+
   it("erro da API vira payment_error sem vazar o detalhe", async () => {
     const { gateway } = makeGateway();
     await expect(gateway.createCheckout(checkoutParams)).rejects.toMatchObject({
@@ -335,6 +363,49 @@ describe("handleWebhook", () => {
     );
     expect(event.termRenewal).toBeUndefined();
     expect(event.type).toBe("subscription.activated");
+  });
+
+  it("percorrendo o termo parcela a parcela: só a última pede renovação (12 de 12, 3 de 3 e 1 de 1)", async () => {
+    for (const term of [12, 3, 1]) {
+      for (let paid = 1; paid <= term; paid++) {
+        const { gateway } = makeGateway({
+          "GET /subscriptions/sub_a": () => ({ id: "sub_a", customer: "cus_a", maxPayments: term, value: 5, nextDueDate: "2027-01-15", creditCard: { creditCardToken: "tok_123" } }),
+          "GET /payments?subscription=sub_a&limit=100": () => ({ data: Array.from({ length: paid }, () => ({ status: "CONFIRMED" })) }),
+        });
+        const event = await gateway.handleWebhook(
+          webhook({ event: "PAYMENT_CONFIRMED", payment: { id: `pay_${paid}`, subscription: "sub_a", value: 5, dueDate: "2026-12-15" } }),
+        );
+        expect(Boolean(event.termRenewal), `termo de ${term}, parcela ${paid}`).toBe(paid === term);
+      }
+    }
+  });
+
+  it("parcela paga mas ainda não confirmada (PENDING) não conta para fechar o termo", async () => {
+    const { gateway } = makeGateway({
+      "GET /subscriptions/sub_a": () => ({ id: "sub_a", customer: "cus_a", maxPayments: 3, value: 5, creditCard: { creditCardToken: "tok_123" } }),
+      "GET /payments?subscription=sub_a&limit=100": () => ({ data: [{ status: "CONFIRMED" }, { status: "RECEIVED" }, { status: "PENDING" }] }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_2", subscription: "sub_a", value: 5, dueDate: "2026-12-15" } }),
+    );
+    expect(event.termRenewal).toBeUndefined();
+  });
+
+  it("sem o cartão guardado (sem token) não há renovação: o termo acaba em vez de cobrar às cegas", async () => {
+    const { gateway } = makeGateway({
+      "GET /subscriptions/sub_a": () => ({ id: "sub_a", customer: "cus_a", maxPayments: 1, value: 5 }),
+      "GET /payments?subscription=sub_a&limit=100": () => ({ data: [{ status: "CONFIRMED" }] }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", subscription: "sub_a", value: 5, dueDate: "2026-12-15" } }),
+    );
+    expect(event.termRenewal).toBeUndefined();
+  });
+
+  it("a renovação descreve o termo pelo número de parcelas", async () => {
+    const { gateway, calls } = makeGateway({ "POST /subscriptions": () => ({ id: "sub_novo" }) });
+    await gateway.renewSubscription({ externalCustomerId: "c", paymentMethodToken: "t", valueCents: 500, maxPayments: 3, nextDueDate: "2027-01-15", externalReference: "a:b" });
+    expect(calls[0].body).toMatchObject({ maxPayments: 3, description: "Renovação do plano (3x)" });
   });
 
   it("renewSubscription cria o próximo termo com o token (sem nova entrada de cartão)", async () => {

@@ -1430,6 +1430,63 @@ select sec_test.must_fail('usuário comum lê o uso dos planos', $$select * from
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- Parcelas do ciclo do plano anual: definidas na criação, imutáveis, de 1 a 12, e a receita mensal
+-- divide o total por elas (não por 12).
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_plan public.plans;
+begin
+  v_plan := public.admin_save_plan(null, 'sec_term3', 'Ciclo de 3', 3000, 0, '{}'::jsonb, null, array['credit_card'], 0, false, 'year', 3, '5ec00000-0000-4000-8000-000000000001');
+  if v_plan.billing_interval <> 'year' or v_plan.term_payments <> 3 then
+    raise exception 'FALHA: plano criado sem o tipo de cobrança ou as parcelas';
+  end if;
+
+  -- Na edição, o formulário pode mandar outro tipo e outras parcelas: o plano mantém os seus.
+  v_plan := public.admin_save_plan(v_plan.id, 'sec_term3', 'Ciclo de 3 (editado)', 3000, 0, '{}'::jsonb, null, array['credit_card'], 0, false, 'month', 12, '5ec00000-0000-4000-8000-000000000001');
+  if v_plan.billing_interval <> 'year' or v_plan.term_payments <> 3 then
+    raise exception 'FALHA: a edição mudou o tipo de cobrança ou as parcelas';
+  end if;
+  if v_plan.name <> 'Ciclo de 3 (editado)' then raise exception 'FALHA: a edição não gravou o nome'; end if;
+
+  -- Fora de 1 a 12, o banco recusa.
+  begin
+    perform public.admin_save_plan(null, 'sec_term0', 'Zero', 3000, 0, '{}'::jsonb, null, array['credit_card'], 0, true, 'year', 0, '5ec00000-0000-4000-8000-000000000001');
+    raise exception 'FALHA: aceitou 0 parcelas';
+  exception when check_violation then null;
+  end;
+  begin
+    perform public.admin_save_plan(null, 'sec_term13', 'Treze', 3000, 0, '{}'::jsonb, null, array['credit_card'], 0, true, 'year', 13, '5ec00000-0000-4000-8000-000000000001');
+    raise exception 'FALHA: aceitou 13 parcelas';
+  exception when check_violation then null;
+  end;
+end $$;
+
+-- Receita mensal: o ciclo de 3 parcelas e R$ 30,00 entra como R$ 10,00 por mês (e não 30,00/12).
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000007', 'sec-superadmin@test.local');
+select set_config('sec.mrr_before', public.admin_overview()->>'mrr_cents', true);
+reset role;
+
+insert into public.companies (id, name, slug, created_by) values
+  ('5ec0c000-0000-4000-8000-000000000004', 'Ciclo', 'sec-ciclo', '5ec00000-0000-4000-8000-000000000001');
+insert into public.subscriptions (company_id, plan_id, status, gateway_provider, current_period_end)
+  select '5ec0c000-0000-4000-8000-000000000004', id, 'active', 'asaas', now() + interval '20 days'
+  from public.plans where code = 'sec_term3';
+
+set local role authenticated;
+select sec_test.login('5ec00000-0000-4000-8000-000000000007', 'sec-superadmin@test.local');
+do $$
+declare
+  v_delta bigint := (public.admin_overview()->>'mrr_cents')::bigint - current_setting('sec.mrr_before')::bigint;
+begin
+  if v_delta <> 1000 then
+    raise exception 'FALHA: a receita mensal do ciclo de 3 parcelas devia somar 1000 centavos, somou %', v_delta;
+  end if;
+end $$;
+reset role;
+
+-- ---------------------------------------------------------------------------
 -- Invariantes: valem para o que for criado daqui para a frente.
 -- ---------------------------------------------------------------------------
 do $$
@@ -1478,6 +1535,10 @@ begin
      or has_function_privilege('anon', 'public.admin_plan_usage()', 'execute')
      or has_function_privilege('authenticated', 'public.admin_plan_usage()', 'execute') then
     raise exception 'FALHA invariante: usuário comum exclui plano ou lê o uso dos planos';
+  end if;
+  if has_function_privilege('anon', 'public.admin_save_plan(uuid, text, text, integer, integer, jsonb, text, text[], integer, boolean, text, integer, uuid)', 'execute')
+     or has_function_privilege('authenticated', 'public.admin_save_plan(uuid, text, text, integer, integer, jsonb, text, text[], integer, boolean, text, integer, uuid)', 'execute') then
+    raise exception 'FALHA invariante: usuário comum grava plano';
   end if;
   if has_function_privilege('anon', 'public.admin_overview()', 'execute') then
     raise exception 'FALHA invariante: visitante executa a visão geral do super admin';

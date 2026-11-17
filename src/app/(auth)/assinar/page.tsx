@@ -6,7 +6,7 @@ import { CompanySwitcher } from "@/components/app-shell/company-switcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
-import { annualSavingsCents, planMonthlyCents, planOfferLines, plansForSale } from "@/config/planFeatures";
+import { annualSavingsCents, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "@/config/planFeatures";
 import { SubscribePanel } from "@/features/billing/components/subscribe-panel";
 import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { formatDate } from "@/lib/dates";
@@ -57,6 +57,7 @@ export default async function SubscribePage() {
       interval: plan.billing_interval,
       priceCents: plan.price_cents,
       monthlyCents: planMonthlyCents(plan),
+      termPayments: planTermPayments(plan),
       trialDays: plan.trial_days,
       included: planOfferLines(plan.features),
       exclusive: !plan.is_public,

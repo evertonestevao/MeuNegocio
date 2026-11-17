@@ -75,6 +75,7 @@ export async function checkoutAction(
         priceCents: plan.price_cents,
         currency: plan.currency,
         billingInterval: plan.billing_interval,
+        termPayments: plan.term_payments,
         // Só gateways com catálogo usam (PAYMENT_PRICE_<CODE>) — ver src/server/billing.ts.
         externalPriceId: getExternalPriceId(plan.code),
         paymentMethods: plan.payment_methods,
@@ -139,6 +140,8 @@ export async function activateFakePlanAction(
     }
     await linkCompanyAtCheckout(companyId, planId);
     const annual = plan.billing_interval === "year";
+    // Ambiente de teste: o ciclo dura o ano (12 parcelas) ou o número de meses do plano.
+    const cycleDays = annual ? (plan.term_payments === 12 ? 365 : plan.term_payments * 30) : 30;
     // Teste com cartão simulado: em teste até o sétimo dia, quando o gateway cobraria.
     const trial = !annual && formData.get("trial") === "1" && (await getCompanyAccess(companyId)).trialAvailable ? trialEndsAt() : null;
     const event: NormalizedPaymentEvent = {
@@ -150,7 +153,7 @@ export async function activateFakePlanAction(
       companyId,
       planId,
       currentPeriodStart: new Date().toISOString(),
-      currentPeriodEnd: trial ?? new Date(Date.now() + (plan.billing_interval === "year" ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+      currentPeriodEnd: trial ?? new Date(Date.now() + cycleDays * 24 * 60 * 60 * 1000).toISOString(),
       cancelAtPeriodEnd: false,
       nonRenewing: annual,
       trialEndsAt: trial,

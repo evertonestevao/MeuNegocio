@@ -11,7 +11,7 @@ const FEATURES: PlanInput["features"] = {
   hours: false,
 };
 
-const INPUT: PlanInput = { customText: null, name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES, paymentMethods: ["credit_card"], trialDays: 7, isPublic: true };
+const INPUT: PlanInput = { customText: null, name: "Plus", priceCents: 5000, extraSeatPriceCents: 500, features: FEATURES, paymentMethods: ["credit_card"], trialDays: 7, isPublic: true, billingInterval: "month", termPayments: 12 };
 
 function makePlan(overrides: Partial<Plan> = {}): Plan {
   return {
@@ -27,6 +27,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     payment_methods: ["credit_card"],
     trial_days: 7,
     is_public: true,
+    term_payments: 12,
     is_active: true,
     deleted_at: null,
     created_at: "",
@@ -231,6 +232,54 @@ describe("planService", () => {
       expect(isSystemPlan("free")).toBe(true);
       expect(isSystemPlan("pro")).toBe(true);
       expect(isSystemPlan("anual")).toBe(false);
+    });
+  });
+
+  describe("tipo de cobrança e parcelas do ciclo", () => {
+    const annual = (overrides: Partial<PlanInput> = {}): PlanInput => ({ ...INPUT, priceCents: 395880, extraSeatPriceCents: 0, billingInterval: "year", termPayments: 12, ...overrides });
+
+    it("cria plano anual com o número de parcelas escolhido", async () => {
+      const repo = makeRepo(null);
+      await createPlanService(repo).create("anual_teste", annual({ priceCents: 1500, termPayments: 3 }), "a");
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ input: expect.objectContaining({ billingInterval: "year", termPayments: 3 }) }));
+    });
+
+    it("aceita de 1 a 12 parcelas e recusa fora disso", async () => {
+      const service = createPlanService(makeRepo(null));
+      await expect(service.create("a1", annual({ priceCents: 500, termPayments: 1 }), "a")).resolves.toBeDefined();
+      await expect(service.create("a12", annual(), "a")).resolves.toBeDefined();
+      for (const termPayments of [0, 13, -1, 2.5]) {
+        await expect(service.create("x", annual({ termPayments }), "a")).rejects.toMatchObject({ code: "validation_error", message: expect.stringContaining("1 a 12") });
+      }
+    });
+
+    it("cada parcela precisa ter pelo menos R$ 5,00, o mínimo do Asaas", async () => {
+      const service = createPlanService(makeRepo(null));
+      await expect(service.create("x", annual({ priceCents: 1490, termPayments: 3 }), "a")).rejects.toMatchObject({ message: expect.stringContaining("pelo menos R$") });
+      await expect(service.create("y", annual({ priceCents: 1500, termPayments: 3 }), "a")).resolves.toBeDefined();
+      await expect(service.create("z", annual({ priceCents: 499, termPayments: 1 }), "a")).rejects.toMatchObject({ code: "validation_error" });
+    });
+
+    it("anual não vende membro extra", async () => {
+      await expect(createPlanService(makeRepo(null)).create("x", annual({ extraSeatPriceCents: 500 }), "a")).rejects.toMatchObject({ message: expect.stringContaining("membro extra") });
+    });
+
+    it("tipo de cobrança inválido é recusado, e o plano padrão só pode ser mensal", async () => {
+      await expect(createPlanService(makeRepo(null)).create("x", { ...INPUT, billingInterval: "week" as never }, "a")).rejects.toMatchObject({ code: "validation_error" });
+      const free = createPlanService(makeRepo(makePlan({ code: "free" })));
+      await expect(free.update("p1", { ...INPUT, priceCents: 0, extraSeatPriceCents: 0 }, "a")).resolves.toBeDefined();
+      await expect(createPlanService(makeRepo(null)).create("free", { ...INPUT, priceCents: 0, extraSeatPriceCents: 0, billingInterval: "year" }, "a")).rejects.toMatchObject({ message: expect.stringContaining("mensal") });
+    });
+
+    it("editar não muda o tipo de cobrança nem as parcelas: valem os do plano", async () => {
+      const repo = makeRepo(makePlan({ billing_interval: "year", term_payments: 3, price_cents: 1500, extra_seat_price_cents: 0 }));
+      await createPlanService(repo).update("p1", annual({ priceCents: 3000, termPayments: 12, billingInterval: "month" }), "a");
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ planId: "p1", input: expect.objectContaining({ billingInterval: "year", termPayments: 3, priceCents: 3000 }) }));
+    });
+
+    it("editar o preço respeita o mínimo por parcela do plano que já existe", async () => {
+      const repo = makeRepo(makePlan({ billing_interval: "year", term_payments: 3, price_cents: 1500, extra_seat_price_cents: 0 }));
+      await expect(createPlanService(repo).update("p1", annual({ priceCents: 1000 }), "a")).rejects.toMatchObject({ message: expect.stringContaining("pelo menos R$") });
     });
   });
 });

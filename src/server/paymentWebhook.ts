@@ -31,23 +31,13 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
     // Depois do pagamento aplicado: falha de comissão vira pendência, não erro.
     await getCommissionService().processEvent(event);
 
-    // Renovação do termo anual (12x): a última parcela foi paga. Cria o próximo termo
-    // no gateway com o cartão tokenizado (sem o cliente pagar de novo) e aponta a
-    // assinatura para ele. Falha aqui não derruba o webhook: o acesso do termo atual
-    // segue até o fim; a renovação pode ser refeita.
-    if (event.termRenewal && event.externalSubscriptionId) {
-      try {
-        const row = await billingRepo.findSubscriptionByExternalId(event.externalSubscriptionId);
-        if (row) {
-          const renewed = await gateway.renewSubscription({
-            ...event.termRenewal,
-            externalReference: `${row.company_id}:${row.plan_id}`,
-          });
-          await billing.applyRenewal(event.externalSubscriptionId, renewed);
-        }
-      } catch (renewErr) {
-        await reportError(renewErr, { source: "route:/api/webhooks:renewal" });
-      }
+    // Renovação do termo anual: a última parcela foi paga. O serviço cria o próximo termo no gateway
+    // com o cartão guardado e aponta a assinatura para ele. Falha aqui não derruba o webhook: o acesso
+    // do termo atual segue até o fim; a renovação pode ser refeita.
+    try {
+      await billing.renewTerm(event, gateway);
+    } catch (renewErr) {
+      await reportError(renewErr, { source: "route:/api/webhooks:renewal" });
     }
 
     // Evento de sistema na trilha (user_id null): só quando conseguimos

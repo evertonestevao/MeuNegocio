@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PLAN_FEATURES } from "@/config/planFeatures";
 import { PAYMENT_METHODS, DEFAULT_TRIAL_DAYS } from "@/config/paymentMethods";
+import { DEFAULT_TERM_PAYMENTS } from "@/config/planFeatures";
 import { parseMoneyToCents } from "@/lib/money";
 
 /** Validação do formulário de planos: roda no navegador e de novo no servidor. */
@@ -65,6 +66,25 @@ export interface PlanFormValues {
   paymentMethods: string[];
   trialDays: number;
   isPublic: boolean;
+  billingInterval: "month" | "year";
+  termPayments: number;
+}
+
+/** Só o formulário de criação tem o campo; sem ele (edição) vale mensal e o serviço usa o tipo do plano. */
+function parseBillingInterval(formData: FormData): "month" | "year" {
+  return formData.get("billingInterval") === "year" ? "year" : "month";
+}
+
+/** Parcelas do ciclo: só importam no anual. Vazio vira 12; inteiro de 1 a 12. */
+function parseTermPayments(formData: FormData, interval: "month" | "year"): number {
+  if (interval !== "year") return DEFAULT_TERM_PAYMENTS;
+  const raw = formData.get("termPayments");
+  const text = typeof raw === "string" ? raw.trim() : "";
+  if (text === "") return DEFAULT_TERM_PAYMENTS;
+  if (!/^\d{1,2}$/.test(text) || Number(text) < 1 || Number(text) > 12) {
+    throw new z.ZodError([{ code: "custom", path: ["termPayments"], message: "Parcelas do ciclo: use um número de 1 a 12." }]);
+  }
+  return Number(text);
 }
 
 /** Dias de teste: vazio vira o padrão; inteiro de 0 a 90. */
@@ -89,7 +109,16 @@ export function parsePlanForm(formData: FormData): PlanFormValues {
   if (paymentMethods.length === 0) {
     throw new z.ZodError([{ code: "custom", path: ["paymentMethods"], message: "Escolha ao menos um meio de pagamento." }]);
   }
-  return { ...fields, features: parsePlanFeatures(formData), paymentMethods, trialDays: parseTrialDays(formData), isPublic: formData.get("isPrivate") !== "on" };
+  const billingInterval = parseBillingInterval(formData);
+  return {
+    ...fields,
+    features: parsePlanFeatures(formData),
+    paymentMethods,
+    trialDays: parseTrialDays(formData),
+    isPublic: formData.get("isPrivate") !== "on",
+    billingInterval,
+    termPayments: parseTermPayments(formData, billingInterval),
+  };
 }
 
 /** Primeira mensagem de um erro de validação, para mostrar no formulário. */

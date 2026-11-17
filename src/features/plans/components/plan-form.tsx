@@ -1,13 +1,13 @@
 "use client";
 
-import { startTransition, useActionState, useRef } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PLAN_FEATURES } from "@/config/planFeatures";
+import { DEFAULT_TERM_PAYMENTS, PLAN_FEATURES, planCycleLabel } from "@/config/planFeatures";
 import { PAYMENT_METHODS, DEFAULT_PAYMENT_METHODS, DEFAULT_TRIAL_DAYS } from "@/config/paymentMethods";
 import { firstValidationMessage, parsePlanForm, planCodeSchema } from "@/features/plans/schemas";
 import { centsToMoneyInput } from "@/lib/money";
@@ -16,10 +16,16 @@ import type { Plan } from "@/types/database";
 
 type FormAction = (prev: ActionState | undefined, formData: FormData) => Promise<ActionState>;
 
+const SELECT_CLASS =
+  "border-input h-11 rounded-lg md:h-9 border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+
 /** Sem `plan` cria um plano novo. Valida aqui antes de enviar; o servidor valida de novo. `onSaved` roda depois de salvar. */
 export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; action: FormAction; submitLabel: string; onSaved?: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const idPrefix = plan?.id ?? "novo";
+  // O tipo de cobrança e as parcelas só se escolhem na criação; na edição valem os do plano.
+  const [interval, setInterval] = useState<"month" | "year">(plan?.billing_interval ?? "month");
+  const annual = interval === "year";
   const [state, dispatch, pending] = useActionState(
     async (prev: ActionState | undefined, data: FormData) => {
       try {
@@ -63,7 +69,38 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
         <Field id={`${idPrefix}-name`} label="Nome">
           <Input id={`${idPrefix}-name`} name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
-        <Field id={`${idPrefix}-price`} label={plan?.billing_interval === "year" ? "Preço por ano" : "Preço por mês"}>
+        {plan ? null : (
+          <Field
+            id={`${idPrefix}-interval`}
+            label="Cobrança"
+            hint="Não muda depois de criado. O anual é parcelado no cartão e renova sozinho ao fim do ciclo."
+          >
+            <select
+              id={`${idPrefix}-interval`}
+              name="billingInterval"
+              value={interval}
+              onChange={(event) => setInterval(event.target.value === "year" ? "year" : "month")}
+              className={SELECT_CLASS}
+            >
+              <option value="month">Mensal</option>
+              <option value="year">Anual (parcelado no cartão)</option>
+            </select>
+          </Field>
+        )}
+        {annual && !plan ? (
+          <Field
+            id={`${idPrefix}-term`}
+            label="Parcelas do ciclo"
+            hint={`De 1 a 12 cobranças mensais (padrão ${DEFAULT_TERM_PAYMENTS}). Ao pagar a última, o sistema renova sozinho com o cartão guardado. Não muda depois de criado.`}
+          >
+            <Input id={`${idPrefix}-term`} name="termPayments" inputMode="numeric" defaultValue={String(DEFAULT_TERM_PAYMENTS)} />
+          </Field>
+        ) : null}
+        <Field
+          id={`${idPrefix}-price`}
+          label={annual ? "Preço do ciclo (total)" : "Preço por mês"}
+          hint={annual ? "Cada parcela é o total dividido pelas parcelas, com no mínimo R$ 5,00." : undefined}
+        >
           <MaskedInput mask="money"
             id={`${idPrefix}-price`}
             name="price"
@@ -71,15 +108,27 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
             required
           />
         </Field>
-        <Field id={`${idPrefix}-extra`} label={plan?.billing_interval === "year" ? "Membro extra por ano" : "Membro extra"} hint="Use 0 se o plano não vende membro extra.">
-          <MaskedInput mask="money"
-            id={`${idPrefix}-extra`}
-            name="extraSeatPrice"
-            defaultValue={plan ? centsToMoneyInput(plan.extra_seat_price_cents) : "0"}
-            required
-          />
-        </Field>
+        {annual ? (
+          // O anual não vende membro extra: o campo some e vai zerado.
+          <input type="hidden" name="extraSeatPrice" value="0,00" />
+        ) : (
+          <Field id={`${idPrefix}-extra`} label="Membro extra" hint="Use 0 se o plano não vende membro extra.">
+            <MaskedInput mask="money"
+              id={`${idPrefix}-extra`}
+              name="extraSeatPrice"
+              defaultValue={plan ? centsToMoneyInput(plan.extra_seat_price_cents) : "0"}
+              required
+            />
+          </Field>
+        )}
       </div>
+
+      {plan && annual ? (
+        <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+          Plano anual em {plan.term_payments} {plan.term_payments === 1 ? "parcela" : "parcelas"} mensais no cartão (por {planCycleLabel(plan)}).
+          O tipo de cobrança e as parcelas não mudam depois de criados.
+        </p>
+      ) : null}
 
       <Field
         id={`${idPrefix}-custom-text`}

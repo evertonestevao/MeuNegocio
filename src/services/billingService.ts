@@ -14,6 +14,8 @@ export interface BillingRepository {
   /** Assinatura não soft-deletada da empresa (única, por índice parcial). */
   getActiveSubscription(companyId: string): Promise<Subscription | null>;
   findSubscriptionByExternalId(externalId: string): Promise<Subscription | null>;
+  /** Assinatura cujo termo (renovado) tinha este id: evento dele é de um termo que já acabou. */
+  findSubscriptionByEndedExternalId(externalId: string): Promise<Subscription | null>;
   insertSubscription(data: Partial<Subscription>): Promise<Subscription>;
   updateSubscription(id: string, data: Partial<Subscription>): Promise<Subscription>;
   /** Membros ativos (deleted_at null) — cada um ocupa um seat. */
@@ -160,6 +162,9 @@ export function createBillingService(repo: BillingRepository) {
 
     if (!existing) {
       if (event.type !== "subscription.activated") return {}; // evento órfão: nada a atualizar
+      // Evento repetido ou atrasado de um termo que já foi renovado (o id agora é o do termo novo):
+      // não é assinatura nova, e tratá-lo assim duplicaria a linha e a renovação.
+      if (await repo.findSubscriptionByEndedExternalId(event.externalSubscriptionId)) return {};
       if (!event.companyId || !event.planId) {
         // Ativação que não dá para atribuir a uma empresa/plano: ignora em vez de falhar.
         // Falhar aqui travaria a fila sequencial do gateway e seguraria os próximos eventos.
@@ -347,7 +352,7 @@ export function createBillingService(repo: BillingRepository) {
   }
 
   /**
-   * Renovação de termo (anual em 12x): aponta a assinatura para o novo termo criado
+   * Renovação de termo (anual em N parcelas): aponta a assinatura para o novo termo criado
    * no gateway, estendendo o período. Mesma linha (mantém company/plan/preço
    * contratado e o token); o termo antigo no gateway se encerra sozinho. Um evento
    * duplicado do termo antigo não acha mais esta linha (id já trocado), então não
@@ -362,10 +367,36 @@ export function createBillingService(repo: BillingRepository) {
     await repo.updateSubscription(existing.id, {
       status: "active",
       external_subscription_id: renewed.externalSubscriptionId,
+      // O termo que acabou entra na lista: evento dele, daqui em diante, é ignorado.
+      ended_external_ids: [...(existing.ended_external_ids ?? []), oldExternalSubscriptionId],
       current_period_start: new Date().toISOString(),
       current_period_end: renewed.currentPeriodEnd ?? existing.current_period_end,
       renews: true,
     });
+  }
+
+  /**
+   * Renovação do termo (anual em N parcelas): quando o evento traz `termRenewal`, a última parcela do
+   * termo foi paga. Cria o próximo termo no gateway com o cartão guardado (sem o cliente pagar ou
+   * digitar nada) e aponta a assinatura para ele. Devolve se renovou.
+   *
+   * O id do evento é o do termo que ACABOU. Depois de renovar, a linha passa a apontar para o termo
+   * novo, então um evento repetido do termo velho (ex.: PAYMENT_RECEIVED depois do CONFIRMED) não
+   * acha a linha e não renova de novo: sem isso o cliente seria cobrado em dobro.
+   */
+  async function renewTerm(
+    event: NormalizedPaymentEvent,
+    gateway: Pick<PaymentGateway, "renewSubscription">,
+  ): Promise<boolean> {
+    if (!event.termRenewal || !event.externalSubscriptionId) return false;
+    const row = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
+    if (!row) return false;
+    const renewed = await gateway.renewSubscription({
+      ...event.termRenewal,
+      externalReference: `${row.company_id}:${row.plan_id}`,
+    });
+    await applyRenewal(event.externalSubscriptionId, renewed);
+    return true;
   }
 
   return {
@@ -376,6 +407,7 @@ export function createBillingService(repo: BillingRepository) {
     getFeatureLimit,
     applyPaymentEvent,
     applyRenewal,
+    renewTerm,
     getSeatUsage,
     syncSeatsWithGateway,
   };

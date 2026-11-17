@@ -1,4 +1,5 @@
 import { PLAN_FEATURES } from "@/config/planFeatures";
+import { formatCents } from "@/lib/money";
 import { PAYMENT_METHOD_KEYS } from "@/config/paymentMethods";
 import { AppError } from "@/lib/errors";
 import type { Plan, PlanAccessEntry, PlanAuditEntry, PlanUsage } from "@/types/database";
@@ -19,7 +20,14 @@ export interface PlanInput {
   trialDays: number;
   /** false = plano privado, visível só para os e-mails liberados. */
   isPublic: boolean;
+  /** Mensal ou anual. Definido na criação; na edição vale o do plano. */
+  billingInterval: "month" | "year";
+  /** Parcelas do ciclo do anual (1 a 12). Definido na criação; na edição vale o do plano. */
+  termPayments: number;
 }
+
+/** Menor valor de uma cobrança no cartão do Asaas. */
+export const MIN_INSTALLMENT_CENTS = 500;
 
 /** Limite de e-mails por pedido: evita colar uma lista enorme sem querer. */
 export const MAX_ACCESS_EMAILS_PER_REQUEST = 200;
@@ -116,6 +124,26 @@ export function createPlanService(repo: PlanRepository) {
     if (code === DEFAULT_PLAN_CODE && !input.isPublic) {
       throw new AppError("validation_error", "O plano padrão, sem assinatura, não pode ser privado");
     }
+    if (input.billingInterval !== "month" && input.billingInterval !== "year") {
+      throw new AppError("validation_error", "Escolha a cobrança do plano: mensal ou anual");
+    }
+    if (!Number.isInteger(input.termPayments) || input.termPayments < 1 || input.termPayments > 12) {
+      throw new AppError("validation_error", "Parcelas do ciclo: use um número de 1 a 12");
+    }
+    if (code === DEFAULT_PLAN_CODE && input.billingInterval !== "month") {
+      throw new AppError("validation_error", "O plano padrão, sem assinatura, precisa ser mensal");
+    }
+    if (input.billingInterval === "year") {
+      if (input.extraSeatPriceCents !== 0) {
+        throw new AppError("validation_error", "O plano anual não vende membro extra: deixe o valor em 0");
+      }
+      if (input.priceCents > 0 && Math.round(input.priceCents / input.termPayments) < MIN_INSTALLMENT_CENTS) {
+        throw new AppError(
+          "validation_error",
+          `Cada parcela precisa ter pelo menos ${formatCents(MIN_INSTALLMENT_CENTS)} (mínimo do Asaas). Aumente o preço ou reduza as parcelas`,
+        );
+      }
+    }
     if (!Number.isInteger(input.trialDays) || input.trialDays < 0 || input.trialDays > 90) {
       throw new AppError("validation_error", "Dias de teste: use um número de 0 a 90");
     }
@@ -143,8 +171,10 @@ export function createPlanService(repo: PlanRepository) {
     async update(planId: string, input: PlanInput, actorId: string): Promise<Plan> {
       const plan = await repo.getById(planId);
       if (!plan) throw new AppError("not_found", "Plano não encontrado");
-      validate(plan.code, input);
-      return repo.save({ planId, code: plan.code, input, actorId });
+      // Código, tipo de cobrança e parcelas não mudam depois de criados: valem os do plano, não os do formulário.
+      const effective: PlanInput = { ...input, billingInterval: plan.billing_interval, termPayments: plan.term_payments };
+      validate(plan.code, effective);
+      return repo.save({ planId, code: plan.code, input: effective, actorId });
     },
 
     /** Libera e-mails para ver um plano privado. Devolve os que foram adicionados agora. */

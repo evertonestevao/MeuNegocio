@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annualSavingsCents, planMonthlyCents, planOfferLines, plansForSale } from "./planFeatures";
+import { annualSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "./planFeatures";
 
 describe("oferta do plano", () => {
   it("mostra limites e omite recurso que o plano não tem", () => {
@@ -32,5 +32,37 @@ describe("preços do anual e do mensal", () => {
 
   it("vende só os pagos, com o anual primeiro", () => {
     expect(plansForSale([free, monthly, annual])).toEqual([annual, monthly]);
+  });
+});
+
+describe("parcelas do ciclo do plano", () => {
+  const ciclo = (price_cents: number, term_payments?: number) => ({ price_cents, billing_interval: "year" as const, term_payments });
+  const mensal = { price_cents: 37990, billing_interval: "month" as const };
+
+  it("mensal tem 1 cobrança por ciclo; anual usa as parcelas do plano, e 12 quando não diz", () => {
+    expect(planTermPayments(mensal)).toBe(1);
+    expect(planTermPayments(ciclo(395880))).toBe(12);
+    expect(planTermPayments(ciclo(1500, 3))).toBe(3);
+    expect(planTermPayments(ciclo(500, 1))).toBe(1);
+  });
+
+  it("o valor por mês é o total do ciclo dividido pelas parcelas", () => {
+    expect(planMonthlyCents(ciclo(395880))).toBe(32990);
+    expect(planMonthlyCents(ciclo(1500, 3))).toBe(500);
+    expect(planMonthlyCents(ciclo(500, 1))).toBe(500);
+    expect(planMonthlyCents(mensal)).toBe(37990);
+  });
+
+  it("o texto do período: mês, ano e ciclo de N meses", () => {
+    expect(planCycleLabel(mensal)).toBe("mês");
+    expect(planCycleLabel(ciclo(395880))).toBe("ano");
+    expect(planCycleLabel(ciclo(1500, 3))).toBe("ciclo de 3 meses");
+    expect(planCycleLabel(ciclo(500, 1))).toBe("ciclo de 1 mês");
+  });
+
+  it("a economia compara com o mensal pelos mesmos meses do ciclo", () => {
+    expect(annualSavingsCents([mensal, ciclo(395880)])).toBe(60000);
+    // 6 meses de mensal = 227.940; ciclo de 6 por 200.000 economiza 27.940
+    expect(annualSavingsCents([mensal, ciclo(200000, 6)])).toBe(27940);
   });
 });

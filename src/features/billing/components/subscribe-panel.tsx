@@ -16,6 +16,8 @@ export interface SubscribePlan {
   interval: "month" | "year";
   priceCents: number;
   monthlyCents: number;
+  /** Parcelas mensais do ciclo (1 no mensal; no anual, as do plano, 12 por padrão). */
+  termPayments: number;
   /** Dias de teste grátis do plano (0 = cobra na hora). */
   trialDays: number;
   /** O que o plano inclui, em texto de oferta. */
@@ -107,7 +109,9 @@ export function SubscribePanel({
                 <span className="text-sm font-medium text-muted-foreground">/mês</span>
               </span>
               <span className="text-xs text-muted-foreground">
-                {option.interval === "year" ? `12x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho.` : "Cobrança todo mês. Cancele quando quiser."}
+                {option.interval === "year"
+                  ? `${option.termPayments}x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho${option.termPayments === 12 ? "" : ` a cada ${option.termPayments} ${option.termPayments === 1 ? "mês" : "meses"}`}.`
+                  : "Cobrança todo mês. Cancele quando quiser."}
               </span>
             </button>
           );
@@ -147,7 +151,7 @@ export function SubscribePanel({
           {withTrial
             ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
             : plan.interval === "year"
-              ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante 12 meses, renovando automaticamente a cada ano. A primeira é agora.`
+              ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente a cada ${plan.termPayments === 12 ? "ano" : "ciclo"}. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}
         </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">

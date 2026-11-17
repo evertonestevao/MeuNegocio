@@ -5,7 +5,7 @@ import { Check, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, plansForSale } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, planTermPayments, plansForSale } from "@/config/planFeatures";
 import {
   CancelSubscriptionButton,
   SubscribeButton,
@@ -164,7 +164,7 @@ export default async function BillingPage() {
                   {formatPrice(plan)}
                   {plan.billing_interval === "year" ? (
                     <span className="block text-sm font-normal text-muted-foreground">
-                      12x no cartão, total de {formatCents(plan.price_cents, plan.currency)}. Vale por 12 meses, sem renovação automática.
+                      {planTermPayments(plan)}x no cartão, total de {formatCents(plan.price_cents, plan.currency)} no ciclo. Renova sozinho ao fim do ciclo; cancele quando quiser.
                     </span>
                   ) : null}
                 </CardDescription>
