@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addMonthsKeepDay, buildInstallments, cardFeeCents, defaultPaymentPlan, paymentPlanText, receivableStatus, splitCents, summarizeOpen } from "./installments";
+import { addMonthsKeepDay, anticipationCents, buildInstallments, cardFeeCents, defaultPaymentPlan, expectedCents, paymentPlanText, receivableStatus, splitCents, summarizeOpen } from "./installments";
 
 const TODAY = "2026-11-04";
 const plan = (overrides: Partial<ReturnType<typeof defaultPaymentPlan>>) => ({ ...defaultPaymentPlan(TODAY), ...overrides });
@@ -101,6 +101,14 @@ describe("condições de pagamento do orçamento", () => {
     expect(cardFeeCents(100_000, "credit", fees)).toBe(3_490);
     expect(cardFeeCents(100_000, "debit", fees)).toBe(990);
     expect(cardFeeCents(100_000, "pix", fees)).toBe(0);
+  });
+
+  it("antecipação do banco: % da parcela arredondado, e o esperado desconta taxa e antecipação", () => {
+    // R$ 10.000,00 com 3% = R$ 300,00; 2,5% de R$ 1.234,56 arredonda para R$ 30,86.
+    expect(anticipationCents(1_000_000, 300)).toBe(30_000);
+    expect(anticipationCents(123_456, 250)).toBe(3_086);
+    expect(expectedCents({ amount_cents: 1_000_000, fee_cents: 0, anticipation_cents: 30_000 })).toBe(970_000);
+    expect(expectedCents({ amount_cents: 1_000_000, fee_cents: 3_490 })).toBe(996_510);
     expect(summarizeOpen([{ received_on: null, due_date: TODAY, amount_cents: 100_000, fee_cents: 3_490 }], TODAY).openCents).toBe(96_510);
   });
 });

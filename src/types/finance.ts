@@ -144,6 +144,8 @@ export interface Receivable {
   amount_cents: number;
   /** Taxa da maquininha: custo do serviço; o caixa recebe amount − fee. */
   fee_cents?: number;
+  /** Antecipação cobrada pelo banco do cliente, informada na baixa: custo do serviço. */
+  anticipation_cents?: number;
   due_date: string;
   method: PaymentMethod | null;
   received_on: string | null;

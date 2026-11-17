@@ -40,6 +40,8 @@ export async function receiveInstallmentAction(_prev: ActionState | undefined, f
       receivedCents: field(formData, "receivedAmount"),
       method: field(formData, "method"),
       restDueDate: field(formData, "restDueDate"),
+      anticipationMode: field(formData, "anticipationMode"),
+      anticipationValue: field(formData, "anticipationValue"),
     });
     const { timezone } = await (await getCompanyProfileService()).get(actor.companyId);
     await (await getReceivableService()).receive(actor, input, todayInTimezone(timezone));
@@ -48,7 +50,12 @@ export async function receiveInstallmentAction(_prev: ActionState | undefined, f
       action: "receivable.received",
       entityType: "receivable",
       entityId: input.id,
-      metadata: { received_cents: input.receivedCents, received_on: input.receivedOn },
+      metadata: {
+        received_cents: input.receivedCents,
+        received_on: input.receivedOn,
+        ...(input.anticipationBps !== null ? { anticipation_bps: input.anticipationBps } : {}),
+        ...(input.anticipationCents !== null ? { anticipation_cents: input.anticipationCents } : {}),
+      },
     });
     refresh(quoteIdFrom(formData));
     return { success: "Recebimento registrado" };

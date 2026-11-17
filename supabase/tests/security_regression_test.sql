@@ -846,6 +846,50 @@ begin
   exception when raise_exception then null;
   end;
 end $$;
+-- Antecipação feita no banco do cliente: opcional, em % ou em reais, vira custo e sai do esperado.
+do $$
+declare
+  v_quote constant uuid := (select id from sec_auto_quote);
+  v_open uuid;
+  v_amount integer;
+  v_today constant date := public.company_today('5ec0c000-0000-4000-8000-000000000001');
+begin
+  select id, amount_cents into v_open, v_amount from public.receivables where quote_id = v_quote and received_on is null order by amount_cents limit 1;
+  begin
+    perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open, v_today, 1000, null, null, 500, 300);
+    raise exception 'FALHA antecipação: aceitou porcentagem e reais ao mesmo tempo' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  begin
+    perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open, v_today, 1000, null, null, v_amount, null);
+    raise exception 'FALHA antecipação: aceitou antecipação igual ao valor da parcela' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  begin
+    perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open, v_today, 1000, null, null, null, 5001);
+    raise exception 'FALHA antecipação: aceitou taxa acima de 50 por cento' using errcode = 'P0002';
+  exception when raise_exception then null;
+  end;
+  -- 3% da parcela, recebendo o que sobra: sem parcela nova, custo gravado e esperado descontado.
+  perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open, v_today, v_amount - round(v_amount * 300 / 10000.0)::integer, null, null, null, 300);
+  if (select anticipation_cents from public.receivables where id = v_open) <> round(v_amount * 300 / 10000.0)::integer
+     or (select received_cents from public.receivables where id = v_open) <> v_amount - round(v_amount * 300 / 10000.0)::integer
+     or (select fee_cents from public.receivables where id = v_open) <> 0
+     or (select count(*) from public.receivables where quote_id = v_quote and received_on is null) <> (select count(*) from public.receivables where quote_id = v_quote and received_on is null and id <> v_open) then
+    raise exception 'FALHA antecipação: a baixa com antecipação em porcentagem não gravou o custo';
+  end if;
+  -- Desfazer a baixa desfaz a antecipação.
+  perform public.undo_receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open);
+  if (select anticipation_cents from public.receivables where id = v_open) <> 0 then
+    raise exception 'FALHA antecipação: desfazer a baixa deixou a antecipação';
+  end if;
+  -- Em reais: R$ 10,00 de antecipação.
+  perform public.receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open, v_today, v_amount - 1000, null, null, 1000, null);
+  if (select anticipation_cents from public.receivables where id = v_open) <> 1000 then
+    raise exception 'FALHA antecipação: a baixa com antecipação em reais não gravou o custo';
+  end if;
+  perform public.undo_receive_installment('5ec0c000-0000-4000-8000-000000000001', v_open);
+end $$;
 -- Membro não lê nem dá baixa.
 select sec_test.login('5ec00000-0000-4000-8000-0000000000c1', 'sec-cost-member@test.local');
 do $$

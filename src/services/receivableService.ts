@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { parseMoneyToCents } from "@/lib/money";
+import { parseTaxRate } from "@/lib/tax";
 import type { ActorContext } from "@/server/actor";
 import type { PaymentMethod, Receivable, ReceiptData } from "@/types/finance";
 import { permissionService } from "./permissionService";
@@ -21,20 +22,47 @@ const optionalDate = z
   .transform((value) => value || null);
 
 /** Baixa: data, valor (em reais na tela) e forma. Menos que o valor deixa o restante a receber. */
-export const receiveInstallmentSchema = z.object({
-  id: z.uuid({ error: "Parcela inválida." }),
-  receivedOn: z.iso.date({ error: "Informe a data em que recebeu." }),
-  receivedCents: z.string().transform((value, context) => {
-    const cents = parseMoneyToCents(value);
-    if (cents === null || cents <= 0) {
-      context.addIssue({ code: "custom", message: "Informe o valor recebido." });
-      return z.NEVER;
+export const receiveInstallmentSchema = z
+  .object({
+    id: z.uuid({ error: "Parcela inválida." }),
+    receivedOn: z.iso.date({ error: "Informe a data em que recebeu." }),
+    receivedCents: z.string().transform((value, context) => {
+      const cents = parseMoneyToCents(value);
+      if (cents === null || cents <= 0) {
+        context.addIssue({ code: "custom", message: "Informe o valor recebido." });
+        return z.NEVER;
+      }
+      return cents;
+    }),
+    method,
+    restDueDate: optionalDate,
+    /** Antecipação feita no banco do cliente, opcional: em % da parcela ou em reais. */
+    anticipationMode: z.enum(["", "percent", "amount"]).default(""),
+    anticipationValue: z.string().default(""),
+  })
+  .transform(({ anticipationMode, anticipationValue, ...rest }, context) => {
+    let anticipationBps: number | null = null;
+    let anticipationCents: number | null = null;
+    // Modo escolhido e campo vazio: o dono desistiu da antecipação, a baixa segue normal.
+    if (anticipationMode && anticipationValue.trim()) {
+      if (anticipationMode === "percent") {
+        const bps = parseTaxRate(anticipationValue);
+        if (bps === null || bps < 1 || bps > 5000) {
+          context.addIssue({ code: "custom", message: "Informe a taxa de antecipação de 0,01% a 50%." });
+          return z.NEVER;
+        }
+        anticipationBps = bps;
+      } else {
+        const cents = parseMoneyToCents(anticipationValue);
+        if (cents === null || cents <= 0) {
+          context.addIssue({ code: "custom", message: "Informe o valor da antecipação." });
+          return z.NEVER;
+        }
+        anticipationCents = cents;
+      }
     }
-    return cents;
-  }),
-  method,
-  restDueDate: optionalDate,
-});
+    return { ...rest, anticipationBps, anticipationCents };
+  });
 
 export const rescheduleInstallmentSchema = z.object({
   id: z.uuid({ error: "Parcela inválida." }),

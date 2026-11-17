@@ -50,6 +50,16 @@ describe("resultado do serviço", () => {
     expect(cost.categories.map((category) => category.name)).toContain("Taxa do cartão");
   });
 
+  it("a antecipação do banco sai do resultado e da margem, como linha própria", () => {
+    const cost = buildServiceCost({ revenueCents: 100_000, plannedCostCents: null, expenses: [expense(40_000)], labor: [], rates: [], targetMarginPercent: 20, anticipationCents: 3_000 });
+    expect(cost).toMatchObject({ anticipationCents: 3_000, resultCents: 57_000, marginPercent: 57, totalCostCents: 40_000 });
+    expect(cost.categories).toContainEqual({ categoryId: "anticipation", name: "Antecipação (banco)", totalCents: 3_000 });
+    // Sem antecipação, nada muda e a linha nem aparece.
+    const without = buildServiceCost({ revenueCents: 100_000, plannedCostCents: null, expenses: [expense(40_000)], labor: [], rates: [], targetMarginPercent: 20 });
+    expect(without).toMatchObject({ anticipationCents: 0, resultCents: 60_000 });
+    expect(without.categories.some((category) => category.categoryId === "anticipation")).toBe(false);
+  });
+
   it("o imposto pode levar a margem para baixo da meta", () => {
     const cost = buildServiceCost({ revenueCents: 10_000, plannedCostCents: null, expenses: [expense(7_500)], labor: [], rates: [], targetMarginPercent: 20, companyTaxRateBps: 600 });
     expect(cost.resultCents).toBe(1_900);
@@ -93,7 +103,7 @@ describe("serviço de custos", () => {
       listTaxRates: vi.fn(async () => [{ quote_id: "q2", tax_rate_bps: 1_000 }]),
       getCompanyTaxRate: vi.fn(async (): Promise<number | null> => 600),
       setTaxRate: vi.fn(async () => undefined),
-      listCardFees: vi.fn(async () => [{ quote_id: "q1", fee_cents: 35 }]),
+      listCardFees: vi.fn(async () => [{ quote_id: "q1", fee_cents: 35, anticipation_cents: 20 }, { quote_id: "q1", fee_cents: 0, anticipation_cents: 10 }]),
     };
     return { repo, service: createServiceCostService(repo) };
   }
@@ -119,6 +129,8 @@ describe("serviço de custos", () => {
     const { service } = setup();
     const results = await service.getForQuotes(OWNER, [{ id: "q1", totalCents: 1_000, plannedCostCents: null }, { id: "q2", totalCents: 1_000, plannedCostCents: null }], 20);
     expect(results.get("q1")?.cardFeeCents).toBe(35);
+    expect(results.get("q1")?.anticipationCents).toBe(30);
+    expect(results.get("q2")?.anticipationCents).toBe(0);
     expect(results.get("q2")?.cardFeeCents).toBe(0);
   });
 

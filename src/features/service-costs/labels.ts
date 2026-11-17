@@ -1,13 +1,13 @@
 import type { ServiceCost } from "@/services/serviceCostService";
 
-/** Tudo o que sai do valor cobrado: gastos, horas, imposto estimado e taxa do cartão. */
+/** Tudo o que sai do valor cobrado: gastos, horas, imposto estimado, taxa do cartão e antecipação. */
 export function allCostsCents(cost: ServiceCost): number {
-  return cost.totalCostCents + cost.taxCents + cost.cardFeeCents;
+  return cost.totalCostCents + cost.taxCents + cost.cardFeeCents + cost.anticipationCents;
 }
 
 /** Rótulo do cartão de custos, conforme o que entrou na conta. */
 export function costsLabel(cost: ServiceCost): string {
-  if (cost.cardFeeCents > 0) return cost.taxCents > 0 ? "Custos, imposto e taxas" : "Gastos e taxas";
+  if (cost.cardFeeCents > 0 || cost.anticipationCents > 0) return cost.taxCents > 0 ? "Custos, imposto e taxas" : "Gastos e taxas";
   return cost.taxCents > 0 ? "Custos e imposto" : "Gastos até agora";
 }
 

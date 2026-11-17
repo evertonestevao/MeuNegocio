@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CalendarClock, Check, FileText, HandCoins, MessageCircle, Undo2 } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import { formatQuoteNumber } from "@/features/quotes/status";
 import { addDays, formatDate } from "@/lib/dates";
-import { expectedCents, receivableStatus } from "@/lib/installments";
+import { anticipationCents, expectedCents, receivableStatus } from "@/lib/installments";
+import { parseTaxRate } from "@/lib/tax";
 import { whatsappUrl } from "@/features/quotes/pdf";
 import { reminderText } from "../reminder";
-import { centsToMoneyInput, formatCents } from "@/lib/money";
+import { centsToMoneyInput, formatCents, parseMoneyToCents } from "@/lib/money";
 import { getReceiptAction, receiveInstallmentAction, rescheduleInstallmentAction, undoReceiveInstallmentAction } from "@/server/actions/receivables";
 import { shareReceiptPdf } from "../receipt-pdf";
 import type { PaymentMethod, Receivable } from "@/types/finance";
@@ -118,7 +119,91 @@ function ReceiptButton({ item }: { item: Receivable }) {
   );
 }
 
-/** Recebeu outro valor, em outra data ou de outra forma: o formulário completo, com baixa parcial. */
+type AnticipationMode = "" | "percent" | "amount";
+
+/**
+ * Valor recebido e, se houve, a antecipação feita no banco do cliente (fora do app). O dono informa o
+ * que o banco cobrou, em % da parcela ou em reais; o valor recebido passa a ser o que sobra e a taxa
+ * vira custo do serviço. Sem preencher nada, é a baixa de sempre.
+ */
+function ReceiveAmountFields({ item }: { item: Receivable }) {
+  const [mode, setMode] = useState<AnticipationMode>("");
+  const [value, setValue] = useState("");
+  const fee = item.fee_cents ?? 0;
+
+  let cents = 0;
+  if (mode === "percent") {
+    const bps = parseTaxRate(value);
+    cents = bps !== null && bps >= 1 && bps <= 5000 ? anticipationCents(item.amount_cents, bps) : 0;
+  } else if (mode === "amount") {
+    cents = parseMoneyToCents(value) ?? 0;
+  }
+  const anticipating = mode !== "" && cents > 0;
+  const tooBig = anticipating && cents >= item.amount_cents - fee;
+  const net = item.amount_cents - fee - cents;
+
+  return (
+    <>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`receive-amount-${item.id}`}>Valor recebido (R$)</Label>
+        {anticipating && !tooBig ? (
+          <>
+            <Input id={`receive-amount-${item.id}`} readOnly value={formatCents(net)} aria-describedby={`receive-antic-${item.id}`} />
+            <input type="hidden" name="receivedAmount" value={centsToMoneyInput(net)} />
+          </>
+        ) : (
+          <MaskedInput mask="money" id={`receive-amount-${item.id}`} name="receivedAmount" defaultValue={centsToMoneyInput(expectedCents(item))} />
+        )}
+      </div>
+      <fieldset className="flex flex-col gap-2 rounded-lg border p-3 sm:col-span-2">
+        <legend className="px-1 text-sm font-medium">Antecipou no banco? (opcional)</legend>
+        <p className="text-xs text-muted-foreground">
+          Se o banco do cliente cobrou para antecipar esta parcela, informe quanto. Entra como custo do serviço e sai da margem; o faturado não muda.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`receive-antic-mode-${item.id}`}>O banco cobrou</Label>
+            <select
+              id={`receive-antic-mode-${item.id}`}
+              name="anticipationMode"
+              value={mode}
+              onChange={(event) => {
+                setMode(event.target.value as AnticipationMode);
+                setValue("");
+              }}
+              className={SELECT_CLASS}
+            >
+              <option value="">Não antecipei</option>
+              <option value="percent">Uma taxa em %</option>
+              <option value="amount">Um valor em R$</option>
+            </select>
+          </div>
+          {mode === "percent" ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`receive-antic-value-${item.id}`}>Taxa (% da parcela)</Label>
+              <Input id={`receive-antic-value-${item.id}`} name="anticipationValue" inputMode="decimal" placeholder="Ex.: 3,5" autoComplete="off" value={value} onChange={(event) => setValue(event.target.value)} />
+            </div>
+          ) : null}
+          {mode === "amount" ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`receive-antic-value-${item.id}`}>Valor cobrado (R$)</Label>
+              <MaskedInput mask="money" id={`receive-antic-value-${item.id}`} name="anticipationValue" value={value} onChange={(event) => setValue(event.target.value)} />
+            </div>
+          ) : null}
+        </div>
+        {anticipating ? (
+          <p id={`receive-antic-${item.id}`} role="status" className={`text-sm ${tooBig ? "text-destructive" : "text-muted-foreground"}`}>
+            {tooBig
+              ? `A antecipação precisa ser menor que ${formatCents(item.amount_cents - fee)}.`
+              : `Taxa de antecipação ${formatCents(cents)} · entra ${formatCents(net)} no caixa.`}
+          </p>
+        ) : null}
+      </fieldset>
+    </>
+  );
+}
+
+/** Recebeu outro valor, em outra data ou de outra forma: o formulário completo, com baixa parcial e antecipação. */
 function ReceiveDifferentButton({ item, today }: { item: Receivable; today: string }) {
   return (
     <DialogForm
@@ -139,10 +224,7 @@ function ReceiveDifferentButton({ item, today }: { item: Receivable; today: stri
           <Label htmlFor={`receive-date-${item.id}`}>Recebido em</Label>
           <Input id={`receive-date-${item.id}`} name="receivedOn" type="date" max={today} defaultValue={today} />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`receive-amount-${item.id}`}>Valor recebido (R$)</Label>
-          <MaskedInput mask="money" id={`receive-amount-${item.id}`} name="receivedAmount" defaultValue={centsToMoneyInput(expectedCents(item))} />
-        </div>
+        <ReceiveAmountFields item={item} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`receive-method-${item.id}`}>Forma</Label>
@@ -212,6 +294,7 @@ export function ReceivableList({
           showQuote ? item.client_name : null,
           item.method ? PAYMENT_METHOD_LABEL[item.method] : null,
           item.fee_cents && !item.received_on ? `taxa ${formatCents(item.fee_cents)}, entra ${formatCents(expectedCents(item))}` : null,
+          item.anticipation_cents ? `antecipação do banco ${formatCents(item.anticipation_cents)}` : null,
           // A situação já diz o vencimento; na atrasada, a data ajuda a cobrar.
           receivableStatus(item, today) === "overdue" ? `venceu em ${formatDate(item.due_date)}` : null,
         ].filter(Boolean);

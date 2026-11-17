@@ -65,7 +65,7 @@ export function ServiceCostSection({
           tone="warning"
           label={costsLabel(cost)}
           value={formatCents(allCostsCents(cost))}
-          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}${cost.taxCents > 0 ? ` · imposto ${formatCents(cost.taxCents)}` : ""}${cost.cardFeeCents > 0 ? ` · taxa do cartão ${formatCents(cost.cardFeeCents)}` : ""}`}
+          hint={`Gastos ${formatCents(cost.expenseCents)} · horas ${formatCents(cost.laborCents)}${cost.taxCents > 0 ? ` · imposto ${formatCents(cost.taxCents)}` : ""}${cost.cardFeeCents > 0 ? ` · taxa do cartão ${formatCents(cost.cardFeeCents)}` : ""}${cost.anticipationCents > 0 ? ` · antecipação ${formatCents(cost.anticipationCents)}` : ""}`}
         />
         <div className="col-span-2 sm:col-span-1">
           <MetricCard
@@ -122,7 +122,7 @@ export function ServiceCostSection({
                     </div>
                     <span className="h-2.5 overflow-hidden rounded-full bg-muted">
                       <span
-                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : category.categoryId === "tax" || category.categoryId === "card_fee" ? "bg-chart-3" : "bg-chart-2"}`}
+                        className={`block h-full rounded-full ${category.categoryId === "labor" ? "bg-chart-1" : category.categoryId === "tax" || category.categoryId === "card_fee" || category.categoryId === "anticipation" ? "bg-chart-3" : "bg-chart-2"}`}
                         style={{ width: `${largest ? Math.round((category.totalCents / largest) * 100) : 0}%` }}
                       />
                     </span>

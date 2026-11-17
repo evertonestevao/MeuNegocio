@@ -80,8 +80,8 @@ export interface ServiceCostRepository {
   /** Alíquota padrão da empresa; null sem regime informado. */
   getCompanyTaxRate(companyId: string): Promise<number | null>;
   setTaxRate(companyId: string, quoteId: string, rateBps: number): Promise<void>;
-  /** Taxa da maquininha das parcelas de cada serviço. */
-  listCardFees(companyId: string, quoteIds: string[]): Promise<{ quote_id: string; fee_cents: number }[]>;
+  /** Taxa da maquininha e antecipação das parcelas de cada serviço. */
+  listCardFees(companyId: string, quoteIds: string[]): Promise<{ quote_id: string; fee_cents: number; anticipation_cents?: number }[]>;
 }
 
 export type MarginStatus = "good" | "low" | "loss" | "none";
@@ -108,6 +108,8 @@ export interface ServiceCost {
   taxSource: TaxSource;
   /** Taxa da maquininha das parcelas no cartão. */
   cardFeeCents: number;
+  /** Antecipação cobrada pelo banco do cliente nas parcelas recebidas antes do prazo. */
+  anticipationCents: number;
   resultCents: number;
   marginPercent: number | null;
   status: MarginStatus;
@@ -147,6 +149,7 @@ export function buildServiceCost(input: {
   serviceTaxRateBps?: number | null;
   companyTaxRateBps?: number | null;
   cardFeeCents?: number;
+  anticipationCents?: number;
 }): ServiceCost {
   const rates = new Map(input.rates.map((rate) => [rate.employee_id, rate]));
   const byPerson = new Map<string, LaborLine>();
@@ -174,12 +177,14 @@ export function buildServiceCost(input: {
   const taxRateBps = serviceRate ?? companyRate ?? 0;
   const tax = taxCents(input.revenueCents, taxRateBps);
   const cardFeeCents = Math.max(0, input.cardFeeCents ?? 0);
-  const resultCents = input.revenueCents - totalCostCents - tax - cardFeeCents;
-  const margin = marginPercent(input.revenueCents, totalCostCents + tax + cardFeeCents);
+  const anticipationCents = Math.max(0, input.anticipationCents ?? 0);
+  const resultCents = input.revenueCents - totalCostCents - tax - cardFeeCents - anticipationCents;
+  const margin = marginPercent(input.revenueCents, totalCostCents + tax + cardFeeCents + anticipationCents);
   const categories = totalsByCategory(input.expenses);
   if (laborCents > 0) categories.push({ categoryId: "labor", name: "Mão de obra (horas)", totalCents: laborCents });
   if (tax > 0) categories.push({ categoryId: "tax", name: "Imposto (estimado)", totalCents: tax });
   if (cardFeeCents > 0) categories.push({ categoryId: "card_fee", name: "Taxa do cartão", totalCents: cardFeeCents });
+  if (anticipationCents > 0) categories.push({ categoryId: "anticipation", name: "Antecipação (banco)", totalCents: anticipationCents });
   categories.sort((a, b) => b.totalCents - a.totalCents);
 
   return {
@@ -191,6 +196,7 @@ export function buildServiceCost(input: {
     taxCents: tax,
     taxSource,
     cardFeeCents,
+    anticipationCents,
     resultCents,
     marginPercent: margin,
     status: marginStatus(resultCents, margin, input.targetMarginPercent),
@@ -270,6 +276,7 @@ export function createServiceCostService(repo: ServiceCostRepository) {
           serviceTaxRateBps: TAX_UI_ENABLED ? serviceTaxRates.get(quote.id) ?? null : null,
           companyTaxRateBps: TAX_UI_ENABLED ? companyTaxRateBps : null,
           cardFeeCents: cardFees.filter((fee) => fee.quote_id === quote.id).reduce((sum, fee) => sum + fee.fee_cents, 0),
+          anticipationCents: cardFees.filter((fee) => fee.quote_id === quote.id).reduce((sum, fee) => sum + (fee.anticipation_cents ?? 0), 0),
         }),
       ]),
     );

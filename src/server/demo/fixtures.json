@@ -2789,11 +2789,12 @@
 "due_date": "2026-08-16",
 "method": "boleto",
 "received_on": "2026-08-16",
-"received_cents": 300000,
+"received_cents": 291000,
 "deleted_at": null,
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
-"fee_cents": 0
+"fee_cents": 0,
+"anticipation_cents": 9000
 },
 {
 "id": "1dfb1e54-fc73-55df-863e-2d918613ea8f",

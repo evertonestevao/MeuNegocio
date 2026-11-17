@@ -106,6 +106,20 @@ test("orçamento vai do rascunho ao faturamento pelo link de aprovação", async
   await receipts.getByRole("button", { name: "Recibo" }).first().click();
   expect((await receiptDownload).suggestedFilename()).toMatch(/^recibo-0001-\d\.pdf$/);
 
+  // Antecipação feita no banco do cliente: em %, vira custo do serviço e o caixa recebe o líquido. Depois desfaz.
+  await receipts.getByRole("button", { name: /Recebeu outro valor/ }).click();
+  const anticipationDialog = page.getByRole("dialog");
+  await anticipationDialog.getByLabel("O banco cobrou").selectOption("percent");
+  await anticipationDialog.getByLabel("Taxa (% da parcela)").fill("3");
+  await expect(anticipationDialog.getByText("Taxa de antecipação R$ 26,85 · entra R$ 868,15 no caixa")).toBeVisible();
+  await anticipationDialog.getByRole("button", { name: "Registrar" }).click();
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(3);
+  await expect(receipts.getByText("antecipação do banco R$ 26,85")).toBeVisible();
+  await expect(page.getByText("Antecipação (banco)")).toBeVisible();
+  await receipts.getByRole("button", { name: /Desfazer o recebimento de R\$ 868,15/ }).click();
+  await expect(receipts.getByText(/^Recebida em/)).toHaveCount(2);
+  await expect(page.getByText("Antecipação (banco)")).toBeHidden();
+
   // Custos do serviço: o gasto lançado aqui entra no resultado e também no caixa do mês.
   await expect(page.getByRole("heading", { name: "Custos e resultado do serviço" })).toBeVisible();
   await page.getByRole("button", { name: "Lançar gasto" }).click();

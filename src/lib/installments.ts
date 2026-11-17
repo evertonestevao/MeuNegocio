@@ -139,9 +139,14 @@ export function receivableStatus(item: Pick<Receivable, "received_on" | "due_dat
   return item.due_date === today ? "due_today" : "open";
 }
 
-/** O que deve entrar no caixa pela parcela: o valor menos a taxa da maquininha. */
-export function expectedCents(item: Pick<Receivable, "amount_cents" | "fee_cents">): number {
-  return item.amount_cents - (item.fee_cents ?? 0);
+/** Antecipação cobrada pelo banco, em % da parcela (centésimos de ponto). Mesma conta de public.receive_installment. */
+export function anticipationCents(amountCents: number, bps: number): number {
+  return Math.round((amountCents * bps) / 10_000);
+}
+
+/** O que deve entrar no caixa pela parcela: o valor menos a taxa da maquininha e a antecipação. */
+export function expectedCents(item: Pick<Receivable, "amount_cents" | "fee_cents" | "anticipation_cents">): number {
+  return item.amount_cents - (item.fee_cents ?? 0) - (item.anticipation_cents ?? 0);
 }
 
 /** Totais do que falta receber (já sem a taxa): em aberto, atrasado e o que vence nos próximos dias. */

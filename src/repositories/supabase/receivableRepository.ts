@@ -4,7 +4,7 @@ import type { ReceivableRepository } from "@/services/receivableService";
 import type { Receivable } from "@/types/finance";
 
 const COLUMNS =
-  "id, quote_id, amount_cents, fee_cents, due_date, method, received_on, received_cents, quote:quotes(number, title, client_id, client:clients(name, contacts:client_contacts(name, phone, is_primary, deleted_at)))";
+  "id, quote_id, amount_cents, fee_cents, anticipation_cents, due_date, method, received_on, received_cents, quote:quotes(number, title, client_id, client:clients(name, contacts:client_contacts(name, phone, is_primary, deleted_at)))";
 
 type Contact = { name: string; phone: string | null; is_primary: boolean; deleted_at: string | null };
 type Row = Omit<Receivable, "quote_number" | "quote_title" | "client_name" | "client_id" | "contact_name" | "contact_phone"> & {
@@ -87,6 +87,8 @@ export function createSupabaseReceivableRepository(
         p_received_cents: input.receivedCents,
         p_method: input.method,
         p_rest_due_date: input.restDueDate,
+        p_anticipation_cents: input.anticipationCents,
+        p_anticipation_bps: input.anticipationBps,
       });
       if (error) fail(error);
     },

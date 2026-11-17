@@ -164,13 +164,12 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
     async listCardFees(companyId, quoteIds) {
       const { data, error } = await client
         .from("receivables")
-        .select("quote_id, fee_cents")
+        .select("quote_id, fee_cents, anticipation_cents")
         .eq("company_id", companyId)
         .in("quote_id", quoteIds)
-        .is("deleted_at", null)
-        .gt("fee_cents", 0);
+        .is("deleted_at", null);
       if (error) fail(error);
-      return (data ?? []) as { quote_id: string; fee_cents: number }[];
+      return (data ?? []) as { quote_id: string; fee_cents: number; anticipation_cents: number }[];
     },
 
     async getCompanyTaxRate(companyId) {
