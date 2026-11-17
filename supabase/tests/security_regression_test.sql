@@ -8,6 +8,20 @@
 
 begin;
 
+-- Planos do seed de que os testes dependem. O super admin pode EXCLUIR "enterprise" e "anual" pela tela
+-- de planos, então os testes garantem os seus aqui, dentro da transação (desfeita no fim): se o plano
+-- existe, não mexe; se foi excluído, recria igual ao do seed. ("free" e "pro" são do sistema e não se excluem.)
+insert into public.plans (code, name, price_cents, extra_seat_price_cents, features, payment_methods, trial_days, billing_interval, term_payments)
+select 'enterprise', 'Empresarial', 59900, 2990,
+       '{"hours": true, "max_clients": null, "max_members": 50, "work_orders": true, "public_approval": true, "max_quotes_month": null}'::jsonb,
+       array['credit_card'], 7, 'month', 12
+where not exists (select 1 from public.plans where code = 'enterprise' and deleted_at is null);
+insert into public.plans (code, name, price_cents, extra_seat_price_cents, features, payment_methods, trial_days, billing_interval, term_payments)
+select 'anual', 'Anual', 395880, 0,
+       '{"hours": true, "max_clients": null, "max_members": 10, "work_orders": true, "public_approval": true, "max_quotes_month": null}'::jsonb,
+       array['credit_card'], 0, 'year', 12
+where not exists (select 1 from public.plans where code = 'anual' and deleted_at is null);
+
 insert into auth.users (id, email, aud, role, instance_id, raw_user_meta_data) values
   ('5ec00000-0000-4000-8000-000000000001', 'sec-owner@test.local',    'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'),
   ('5ec00000-0000-4000-8000-000000000002', 'sec-admin@test.local',    'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'),
