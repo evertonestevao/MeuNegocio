@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annualSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "./planFeatures";
+import { CYCLE_CHOICES, cycleSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale, termCycleLabel, termRenewalLabel } from "./planFeatures";
 
 describe("oferta do plano", () => {
   it("mostra limites e omite recurso que o plano não tem", () => {
@@ -25,9 +25,9 @@ describe("preços do anual e do mensal", () => {
   });
 
   it("calcula a economia em um ano", () => {
-    expect(annualSavingsCents([monthly, annual, free])).toBe(60000);
-    expect(annualSavingsCents([monthly, free])).toBe(0);
-    expect(annualSavingsCents([{ price_cents: 30000, billing_interval: "month" }, annual])).toBe(0);
+    expect(cycleSavingsCents(annual, [monthly, annual, free])).toBe(60000);
+    expect(cycleSavingsCents(monthly, [monthly, free])).toBe(0);
+    expect(cycleSavingsCents(annual, [{ price_cents: 30000, billing_interval: "month" }, annual])).toBe(0);
   });
 
   it("vende só os pagos, com o anual primeiro", () => {
@@ -56,13 +56,42 @@ describe("parcelas do ciclo do plano", () => {
   it("o texto do período: mês, ano e ciclo de N meses", () => {
     expect(planCycleLabel(mensal)).toBe("mês");
     expect(planCycleLabel(ciclo(395880))).toBe("ano");
-    expect(planCycleLabel(ciclo(1500, 3))).toBe("ciclo de 3 meses");
-    expect(planCycleLabel(ciclo(500, 1))).toBe("ciclo de 1 mês");
+    expect(planCycleLabel(ciclo(1500, 3))).toBe("trimestre");
+    expect(planCycleLabel(ciclo(3000, 6))).toBe("semestre");
+    expect(planCycleLabel(ciclo(2500, 5))).toBe("ciclo de 5 meses");
+    expect(planCycleLabel(ciclo(500, 1))).toBe("mês");
   });
 
   it("a economia compara com o mensal pelos mesmos meses do ciclo", () => {
-    expect(annualSavingsCents([mensal, ciclo(395880)])).toBe(60000);
+    expect(cycleSavingsCents(ciclo(395880), [mensal, ciclo(395880)])).toBe(60000);
     // 6 meses de mensal = 227.940; ciclo de 6 por 200.000 economiza 27.940
-    expect(annualSavingsCents([mensal, ciclo(200000, 6)])).toBe(27940);
+    expect(cycleSavingsCents(ciclo(200000, 6), [mensal, ciclo(200000, 6)])).toBe(27940);
+  });
+});
+
+describe("ciclos prontos e economia por plano", () => {
+  const mensal = (price_cents: number) => ({ price_cents, billing_interval: "month" as const });
+  const ciclo = (price_cents: number, term_payments: number) => ({ price_cents, billing_interval: "year" as const, term_payments });
+
+  it("nomes do ciclo e de quando renova", () => {
+    expect([1, 3, 6, 12, 5].map(termCycleLabel)).toEqual(["mês", "trimestre", "semestre", "ano", "ciclo de 5 meses"]);
+    expect([1, 3, 6, 12, 5].map(termRenewalLabel)).toEqual(["todo mês", "a cada trimestre", "a cada semestre", "a cada ano", "a cada 5 meses"]);
+  });
+
+  it("a economia é de cada plano e a referência é o mensal pago mais barato", () => {
+    const planos = [mensal(98768), mensal(37990), ciclo(100000, 3), ciclo(395880, 12)];
+    // trimestral: 3 x 379,90 = 1.139,70 - 1.000,00 = 139,70 (e não 3 x 987,68)
+    expect(cycleSavingsCents(planos[2], planos)).toBe(13970);
+    expect(cycleSavingsCents(planos[3], planos)).toBe(60000);
+    expect(cycleSavingsCents(planos[0], planos)).toBe(0);
+  });
+
+  it("sem mensal para comparar, ou mais caro que o mensal, não há economia", () => {
+    expect(cycleSavingsCents(ciclo(1500, 3), [ciclo(1500, 3)])).toBe(0);
+    expect(cycleSavingsCents(ciclo(200000, 3), [mensal(37990), ciclo(200000, 3)])).toBe(0);
+  });
+
+  it("as opções do formulário: mensal, trimestral, semestral, anual e personalizado", () => {
+    expect(CYCLE_CHOICES.map((choice) => [choice.value, choice.termPayments])).toEqual([["month", null], ["quarter", 3], ["semester", 6], ["year", 12], ["custom", null]]);
   });
 });

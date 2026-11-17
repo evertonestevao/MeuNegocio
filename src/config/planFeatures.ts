@@ -57,21 +57,48 @@ export function planMonthlyCents(plan: PricedPlan, cents: number = plan.price_ce
   return Math.round(cents / planTermPayments(plan));
 }
 
-/** O período do preço, em texto: "mês", "ano" (ciclo padrão de 12) ou "ciclo de N meses". */
-export function planCycleLabel(plan: Pick<PricedPlan, "billing_interval" | "term_payments">): string {
-  if (plan.billing_interval === "month") return "mês";
-  const parcels = planTermPayments(plan);
-  if (parcels === DEFAULT_TERM_PAYMENTS) return "ano";
-  return `ciclo de ${parcels} ${parcels === 1 ? "mês" : "meses"}`;
+/** Nome do ciclo de N parcelas mensais: "mês", "trimestre", "semestre", "ano" ou "ciclo de N meses". */
+export function termCycleLabel(termPayments: number): string {
+  if (termPayments === 1) return "mês";
+  if (termPayments === 3) return "trimestre";
+  if (termPayments === 6) return "semestre";
+  if (termPayments === DEFAULT_TERM_PAYMENTS) return "ano";
+  return `ciclo de ${termPayments} meses`;
 }
 
-/** Economia do plano anual no ciclo, comparada a pagar o mensal pelos mesmos meses. */
-export function annualSavingsCents(plans: PricedPlan[]): number {
-  const annual = plans.find((plan) => plan.billing_interval === "year" && plan.price_cents > 0);
-  const monthly = plans.find((plan) => plan.billing_interval === "month" && plan.price_cents > 0);
-  if (!annual || !monthly) return 0;
-  return Math.max(0, monthly.price_cents * planTermPayments(annual) - annual.price_cents);
+/** Quando o plano renova: "a cada trimestre", "a cada 5 meses"... (1 parcela = todo mês). */
+export function termRenewalLabel(termPayments: number): string {
+  if (termPayments === 1) return "todo mês";
+  const label = termCycleLabel(termPayments);
+  return label.startsWith("ciclo de ") ? `a cada ${termPayments} meses` : `a cada ${label}`;
 }
+
+/** O período do preço, em texto: "mês", "trimestre", "semestre", "ano" ou "ciclo de N meses". */
+export function planCycleLabel(plan: Pick<PricedPlan, "billing_interval" | "term_payments">): string {
+  return plan.billing_interval === "month" ? "mês" : termCycleLabel(planTermPayments(plan));
+}
+
+/**
+ * Economia de um plano em ciclo, comparada a pagar o mensal pelos mesmos meses. A referência é o
+ * mensal pago mais barato da lista: comparar com um mensal mais caro e de outro porte daria um número
+ * enganoso. Plano mensal, ou sem mensal para comparar, não tem economia.
+ */
+export function cycleSavingsCents(plan: PricedPlan, plans: PricedPlan[]): number {
+  if (plan.billing_interval !== "year" || plan.price_cents <= 0) return 0;
+  const monthlyPrices = plans.filter((other) => other.billing_interval === "month" && other.price_cents > 0).map((other) => other.price_cents);
+  if (monthlyPrices.length === 0) return 0;
+  return Math.max(0, Math.min(...monthlyPrices) * planTermPayments(plan) - plan.price_cents);
+}
+
+/** Opções de cobrança do formulário de novo plano: o mensal e ciclos prontos de parcelas mensais no cartão. */
+export type CycleChoice = "month" | "quarter" | "semester" | "year" | "custom";
+export const CYCLE_CHOICES: { value: CycleChoice; label: string; termPayments: number | null }[] = [
+  { value: "month", label: "Mensal", termPayments: null },
+  { value: "quarter", label: "Trimestral (3 parcelas mensais)", termPayments: 3 },
+  { value: "semester", label: "Semestral (6 parcelas mensais)", termPayments: 6 },
+  { value: "year", label: "Anual (12 parcelas mensais)", termPayments: 12 },
+  { value: "custom", label: "Personalizado (de 1 a 12 parcelas)", termPayments: null },
+];
 
 /** Planos à venda: sem o padrão gratuito e com o anual primeiro, que é o destaque da oferta. */
 export function plansForSale<T extends PricedPlan>(plans: T[]): T[] {

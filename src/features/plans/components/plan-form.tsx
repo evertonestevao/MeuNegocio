@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEFAULT_TERM_PAYMENTS, PLAN_FEATURES, planCycleLabel } from "@/config/planFeatures";
+import { CYCLE_CHOICES, DEFAULT_TERM_PAYMENTS, PLAN_FEATURES, termRenewalLabel, type CycleChoice } from "@/config/planFeatures";
 import { PAYMENT_METHODS, DEFAULT_PAYMENT_METHODS, DEFAULT_TRIAL_DAYS } from "@/config/paymentMethods";
 import { firstValidationMessage, parsePlanForm, planCodeSchema } from "@/features/plans/schemas";
 import { centsToMoneyInput } from "@/lib/money";
@@ -23,9 +23,10 @@ const SELECT_CLASS =
 export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; action: FormAction; submitLabel: string; onSaved?: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const idPrefix = plan?.id ?? "novo";
-  // O tipo de cobrança e as parcelas só se escolhem na criação; na edição valem os do plano.
-  const [interval, setInterval] = useState<"month" | "year">(plan?.billing_interval ?? "month");
-  const annual = interval === "year";
+  // A cobrança e as parcelas só se escolhem na criação; na edição valem as do plano.
+  const [cycle, setCycle] = useState<CycleChoice>("month");
+  const annual = plan ? plan.billing_interval === "year" : cycle !== "month";
+  const presetTerm = CYCLE_CHOICES.find((choice) => choice.value === cycle)?.termPayments ?? null;
   const [state, dispatch, pending] = useActionState(
     async (prev: ActionState | undefined, data: FormData) => {
       try {
@@ -70,36 +71,48 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
           <Input id={`${idPrefix}-name`} name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
         {plan ? null : (
-          <Field
-            id={`${idPrefix}-interval`}
-            label="Cobrança"
-            hint="Não muda depois de criado. O anual é parcelado no cartão e renova sozinho ao fim do ciclo."
-          >
-            <select
+          <>
+            <Field
               id={`${idPrefix}-interval`}
-              name="billingInterval"
-              value={interval}
-              onChange={(event) => setInterval(event.target.value === "year" ? "year" : "month")}
-              className={SELECT_CLASS}
+              label="Cobrança"
+              hint="Não muda depois de criado. Os ciclos são cobrados em parcelas mensais no cartão e renovam sozinhos ao fim."
             >
-              <option value="month">Mensal</option>
-              <option value="year">Anual (parcelado no cartão)</option>
-            </select>
-          </Field>
+              <select
+                id={`${idPrefix}-interval`}
+                name="cycle"
+                value={cycle}
+                onChange={(event) => setCycle(event.target.value as CycleChoice)}
+                className={SELECT_CLASS}
+              >
+                {CYCLE_CHOICES.map((choice) => (
+                  <option key={choice.value} value={choice.value}>
+                    {choice.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {/* O servidor lê estes dois campos; a lista acima só os preenche. */}
+            <input type="hidden" name="billingInterval" value={annual ? "year" : "month"} />
+            {annual && cycle !== "custom" && presetTerm !== null ? <input type="hidden" name="termPayments" value={presetTerm} /> : null}
+            {cycle === "custom" ? (
+              <Field
+                id={`${idPrefix}-term`}
+                label="Parcelas do ciclo"
+                hint="De 1 a 12 cobranças mensais. Ao pagar a última, o sistema renova sozinho com o cartão guardado. Com 1 parcela, o ciclo fecha na primeira cobrança paga (serve para testar a renovação)."
+              >
+                <Input id={`${idPrefix}-term`} name="termPayments" inputMode="numeric" defaultValue={String(DEFAULT_TERM_PAYMENTS)} />
+              </Field>
+            ) : null}
+          </>
         )}
-        {annual && !plan ? (
-          <Field
-            id={`${idPrefix}-term`}
-            label="Parcelas do ciclo"
-            hint={`De 1 a 12 cobranças mensais (padrão ${DEFAULT_TERM_PAYMENTS}). Ao pagar a última, o sistema renova sozinho com o cartão guardado. Não muda depois de criado.`}
-          >
-            <Input id={`${idPrefix}-term`} name="termPayments" inputMode="numeric" defaultValue={String(DEFAULT_TERM_PAYMENTS)} />
-          </Field>
-        ) : null}
         <Field
           id={`${idPrefix}-price`}
           label={annual ? "Preço do ciclo (total)" : "Preço por mês"}
-          hint={annual ? "Cada parcela é o total dividido pelas parcelas, com no mínimo R$ 5,00." : undefined}
+          hint={
+            annual
+              ? `Total do ciclo: o cliente paga${presetTerm ? ` em ${presetTerm} parcelas mensais` : " em parcelas mensais"} (total ÷ parcelas, no mínimo R$ 5,00 cada)${presetTerm ? ` e renova ${termRenewalLabel(presetTerm)}` : ""}.`
+              : undefined
+          }
         >
           <MaskedInput mask="money"
             id={`${idPrefix}-price`}
@@ -125,8 +138,8 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
 
       {plan && annual ? (
         <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-          Plano anual em {plan.term_payments} {plan.term_payments === 1 ? "parcela" : "parcelas"} mensais no cartão (por {planCycleLabel(plan)}).
-          O tipo de cobrança e as parcelas não mudam depois de criados.
+          Plano em ciclo de {plan.term_payments} {plan.term_payments === 1 ? "parcela mensal" : "parcelas mensais"} no cartão (renova{" "}
+          {termRenewalLabel(plan.term_payments)}). A cobrança e as parcelas não mudam depois de criadas.
         </p>
       ) : null}
 
@@ -162,7 +175,7 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
             <div className="flex min-w-0 flex-col gap-1.5">
               <Label>Dias de teste grátis</Label>
               <input type="hidden" name="trialDays" value="0" />
-              <p className="text-xs text-muted-foreground">O plano anual não tem teste grátis: a 1ª parcela é cobrada na hora.</p>
+              <p className="text-xs text-muted-foreground">Plano em ciclo não tem teste grátis: a 1ª parcela é cobrada na hora.</p>
             </div>
           ) : (
             <Field id={`${idPrefix}-trial`} label="Dias de teste grátis" hint="Cobra só depois desse prazo. 0 = cobra na hora.">

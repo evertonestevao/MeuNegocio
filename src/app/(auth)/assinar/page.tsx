@@ -6,7 +6,7 @@ import { CompanySwitcher } from "@/components/app-shell/company-switcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
-import { annualSavingsCents, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "@/config/planFeatures";
+import { cycleSavingsCents, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "@/config/planFeatures";
 import { SubscribePanel } from "@/features/billing/components/subscribe-panel";
 import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { formatDate } from "@/lib/dates";
@@ -58,6 +58,8 @@ export default async function SubscribePage() {
       priceCents: plan.price_cents,
       monthlyCents: planMonthlyCents(plan),
       termPayments: planTermPayments(plan),
+      // Economia de cada plano em ciclo, contra o mensal público mais barato.
+      savingsCents: cycleSavingsCents(plan, publicForSale),
       trialDays: plan.trial_days,
       included: planOfferLines(plan.features),
       exclusive: !plan.is_public,
@@ -92,7 +94,6 @@ export default async function SubscribePage() {
           <SubscribePanel
             companyId={active.id}
             plans={plans}
-            savingsCents={annualSavingsCents(publicForSale)}
             trialAvailable={access.trialAvailable}
             cardTrial={gateway.supportsTrial}
             cardlessTrial={CARDLESS_TRIAL_OFFERED}

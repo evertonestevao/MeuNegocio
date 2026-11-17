@@ -6,6 +6,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
+import { termRenewalLabel } from "@/config/planFeatures";
 import { formatCents } from "@/lib/money";
 import { activateFakePlanAction, checkoutAction, startTrialAction } from "@/server/actions/billing";
 import type { ActionState } from "@/server/actions/action-state";
@@ -18,6 +19,8 @@ export interface SubscribePlan {
   monthlyCents: number;
   /** Parcelas mensais do ciclo (1 no mensal; no anual, as do plano, 12 por padrão). */
   termPayments: number;
+  /** Quanto o plano em ciclo economiza contra o mensal, no ciclo inteiro (0 = não mostra o selo). */
+  savingsCents: number;
   /** Dias de teste grátis do plano (0 = cobra na hora). */
   trialDays: number;
   /** O que o plano inclui, em texto de oferta. */
@@ -41,7 +44,6 @@ function firstChargeDate(trialDays: number): string {
 export function SubscribePanel({
   companyId,
   plans,
-  savingsCents,
   trialAvailable,
   cardTrial,
   cardlessTrial,
@@ -51,7 +53,6 @@ export function SubscribePanel({
 }: {
   companyId: string;
   plans: SubscribePlan[];
-  savingsCents: number;
   /** A empresa ainda não usou o teste grátis. */
   trialAvailable: boolean;
   /** O meio de pagamento guarda o cartão e só cobra depois do teste. */
@@ -100,8 +101,8 @@ export function SubscribePanel({
                 <span className="font-heading text-lg font-bold">{option.name}</span>
                 {option.exclusive ? (
                   <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Exclusivo para você</span>
-                ) : option.interval === "year" && savingsCents > 0 ? (
-                  <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">Economize {formatCents(savingsCents)}</span>
+                ) : option.interval === "year" && option.savingsCents > 0 ? (
+                  <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">Economize {formatCents(option.savingsCents)}</span>
                 ) : null}
               </span>
               <span className="font-heading text-2xl font-extrabold tabular-nums">
@@ -110,7 +111,7 @@ export function SubscribePanel({
               </span>
               <span className="text-xs text-muted-foreground">
                 {option.interval === "year"
-                  ? `${option.termPayments}x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho${option.termPayments === 12 ? "" : ` a cada ${option.termPayments} ${option.termPayments === 1 ? "mês" : "meses"}`}.`
+                  ? `${option.termPayments}x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho${option.termPayments === 12 ? "" : ` ${termRenewalLabel(option.termPayments)}`}.`
                   : "Cobrança todo mês. Cancele quando quiser."}
               </span>
             </button>
@@ -151,7 +152,7 @@ export function SubscribePanel({
           {withTrial
             ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
             : plan.interval === "year"
-              ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente a cada ${plan.termPayments === 12 ? "ano" : "ciclo"}. A primeira é agora.`
+              ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente ${termRenewalLabel(plan.termPayments)}. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}
         </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
