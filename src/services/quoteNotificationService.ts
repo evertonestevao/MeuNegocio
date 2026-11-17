@@ -1,5 +1,6 @@
 import type { EmailMessage, EmailProvider } from "@/adapters/email/EmailProvider";
 import { formatQuoteNumber } from "@/features/quotes/status";
+import { emailParagraph, renderEmailLayout } from "@/lib/emailLayout";
 import { escapeHtml } from "@/lib/html";
 import { formatCents } from "@/lib/money";
 
@@ -32,7 +33,7 @@ export interface QuoteResponse {
 }
 
 /** Conteúdo do aviso: assunto direto, o que o cliente escreveu e o link para o orçamento. */
-export function quoteResponseEmail(summary: QuoteResponseSummary, response: QuoteResponse, quoteUrl: string): Omit<EmailMessage, "to"> {
+export function quoteResponseEmail(summary: QuoteResponseSummary, response: QuoteResponse, quoteUrl: string, appUrl: string): Omit<EmailMessage, "to"> {
   const approved = response.decision === "approved";
   const number = formatQuoteNumber(summary.quoteNumber);
   const who = summary.clientName ?? response.name;
@@ -51,15 +52,20 @@ export function quoteResponseEmail(summary: QuoteResponseSummary, response: Quot
     .filter(Boolean)
     .join("\n\n");
 
-  const html = [
-    `<p><strong>${escapeHtml(response.name)}</strong> ${approved ? "aprovou e assinou" : "recusou"} o orçamento Nº ${number}${escapeHtml(service)}, de <strong>${total}</strong>, pelo link.</p>`,
-    comment ? `<p>${approved ? "Observação" : "Motivo"}: ${escapeHtml(comment)}</p>` : "",
-    `<p>${next}</p>`,
-    `<p><a href="${quoteUrl}">Abrir o orçamento</a></p>`,
-    `<p style="color:#6b7280;font-size:12px">Aviso automático do ${escapeHtml(summary.companyName)} no sistema.</p>`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const html = renderEmailLayout({
+    appUrl,
+    title: `${approved ? "Orçamento aprovado" : "Orçamento recusado"}: Nº ${number}`,
+    preheader: subject,
+    bodyHtml: [
+      emailParagraph(`<strong>${escapeHtml(response.name)}</strong> ${approved ? "aprovou e assinou" : "recusou"} o orçamento Nº ${number}${escapeHtml(service)}, de <strong>${total}</strong>, pelo link.`),
+      comment ? emailParagraph(`${approved ? "Observação" : "Motivo"}: ${escapeHtml(comment)}`) : "",
+      emailParagraph(next),
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    button: { label: "Abrir o orçamento", url: quoteUrl },
+    footnote: `Aviso automático do ${summary.companyName} no sistema.`,
+  });
 
   return { subject, text, html };
 }
@@ -74,7 +80,7 @@ export function createQuoteNotificationService({ readers, provider, appUrl }: { 
         readers.listManagerEmails(response.companyId),
       ]);
       if (!summary || recipients.length === 0) return 0;
-      const message = quoteResponseEmail(summary, response, `${base}/dashboard/quotes/${response.quoteId}`);
+      const message = quoteResponseEmail(summary, response, `${base}/dashboard/quotes/${response.quoteId}`, base);
       // Um e-mail por pessoa: ninguém vê o endereço dos outros.
       const results = await Promise.allSettled([...new Set(recipients)].map((to) => provider.send({ to, ...message })));
       const failed = results.filter((result) => result.status === "rejected");

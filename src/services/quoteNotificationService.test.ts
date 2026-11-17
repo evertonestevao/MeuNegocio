@@ -7,7 +7,7 @@ const nbsp = (text: string) => text.replace(/ /g, " ");
 
 describe("aviso de resposta do orçamento", () => {
   it("assunto direto, quem respondeu, o valor, a observação e o link", () => {
-    const email = quoteResponseEmail(SUMMARY, APPROVED, "https://app/dashboard/quotes/q1");
+    const email = quoteResponseEmail(SUMMARY, APPROVED, "https://app/dashboard/quotes/q1", "https://app");
     expect(email.subject).toBe("Cerâmica Vale Verde aprovou o orçamento Nº 0012");
     expect(nbsp(email.text!)).toContain("Marina Souza aprovou e assinou o orçamento Nº 0012 (Troca de compressor), de R$ 1.500,00, pelo link.");
     expect(email.text).toContain("Observação: Pode ser na terça.");
@@ -15,13 +15,13 @@ describe("aviso de resposta do orçamento", () => {
   });
 
   it("na recusa, mostra o motivo", () => {
-    const email = quoteResponseEmail(SUMMARY, { ...APPROVED, decision: "refused", comment: "Ficou caro." }, "x");
+    const email = quoteResponseEmail(SUMMARY, { ...APPROVED, decision: "refused", comment: "Ficou caro." }, "x", "https://app");
     expect(email.subject).toBe("Cerâmica Vale Verde recusou o orçamento Nº 0012");
     expect(email.text).toContain("Motivo: Ficou caro.");
   });
 
   it("o que o cliente digita não vira HTML no e-mail", () => {
-    const email = quoteResponseEmail(SUMMARY, { ...APPROVED, name: "<b>Ana</b>", comment: '<a href="https://golpe">clique</a>' }, "https://app/dashboard/quotes/q1");
+    const email = quoteResponseEmail(SUMMARY, { ...APPROVED, name: "<b>Ana</b>", comment: '<a href="https://golpe">clique</a>' }, "https://app/dashboard/quotes/q1", "https://app");
     expect(email.html).not.toContain("<b>Ana</b>");
     expect(email.html).toContain("&lt;b&gt;Ana&lt;/b&gt;");
     expect(email.html).not.toContain('<a href="https://golpe">');

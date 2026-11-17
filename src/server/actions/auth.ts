@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getEmailProvider } from "@/adapters/email";
 import { getServerEnv } from "@/config/env";
 import { resolvePostLoginPath } from "@/modules/resellers/areaAccess";
 import { createSupabaseAuthRepository } from "@/repositories/supabase/authRepository";
@@ -28,6 +29,7 @@ async function getAuthService() {
     repo: createSupabaseAuthRepository(client, getSupabaseAdminClient()),
     rateLimiter: loginLimiter,
     appUrl: getServerEnv().APP_URL,
+    emailProvider: getEmailProvider(),
   });
 }
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { getEmailProvider } from "@/adapters/email";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -95,6 +96,7 @@ export async function createAccountAction(_prev: ActionState | undefined, formDa
       repo: createSupabaseAuthRepository(client, getSupabaseAdminClient()),
       rateLimiter: signupAuthLimiter,
       appUrl: getServerEnv().APP_URL,
+      emailProvider: getEmailProvider(),
     })
       .signUp({ fullName: lead.full_name, email: lead.email, password: password.data })
       .catch((err: unknown) => {

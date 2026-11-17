@@ -11,6 +11,7 @@ import { getPublicQuoteRepository } from "@/server/quotes";
 import { getRequestEvidence } from "@/server/terms";
 import { DEMO_QUOTE_TOKEN } from "@/config/demo";
 import { AppError } from "@/lib/errors";
+import { emailParagraph, renderEmailLayout } from "@/lib/emailLayout";
 import { escapeHtml } from "@/lib/html";
 import { toActionError, type ActionState } from "./action-state";
 
@@ -42,7 +43,16 @@ export async function reportAbuseAction(_prev: ActionState | undefined, formData
           to: brand.legal.supportEmail,
           subject: `Denúncia de uso indevido: ${company}`,
           text: `Motivo: ${reason}\nEmpresa: ${company}\nVeja em ${getServerEnv().APP_URL}/admin/denuncias`,
-          html: `<p><strong>Motivo:</strong> ${escapeHtml(reason)}<br><strong>Empresa:</strong> ${escapeHtml(company)}</p><p><a href="${getServerEnv().APP_URL}/admin/denuncias">Ver as denúncias</a></p>`,
+          html: renderEmailLayout({
+            appUrl: getServerEnv().APP_URL,
+            title: "Nova denúncia de uso indevido",
+            preheader: `Denúncia sobre ${company}.`,
+            bodyHtml: [
+              emailParagraph(`<strong>Motivo:</strong> ${escapeHtml(reason)}`),
+              emailParagraph(`<strong>Empresa:</strong> ${escapeHtml(company)}`),
+            ].join("\n"),
+            button: { label: "Ver as denúncias", url: `${getServerEnv().APP_URL}/admin/denuncias` },
+          }),
         })
         .catch((err) => void reportError(err, { source: "action" }));
     }

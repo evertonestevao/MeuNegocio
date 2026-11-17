@@ -1,7 +1,9 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { getEmailProvider } from "@/adapters/email";
+import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
+import { emailParagraph, renderEmailLayout } from "@/lib/emailLayout";
 import { AppError } from "@/lib/errors";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { slugify } from "@/services/tenantService";
@@ -51,11 +53,14 @@ export async function sendResellerInviteEmail(email: string, url: string, hasPas
     to: email,
     subject: "Você foi cadastrado como vendedor",
     text: `Você foi cadastrado como vendedor. ${action}: ${url}`,
-    html: [
-      "<p>Você foi cadastrado como vendedor.</p>",
-      `<p><a href="${url}">${action}</a></p>`,
-      "<p>Se você não esperava este e-mail, ignore-o.</p>",
-    ].join("\n"),
+    html: renderEmailLayout({
+      appUrl: getServerEnv().APP_URL,
+      title: "Você foi cadastrado como vendedor",
+      preheader: `${action} para começar a usar o ${brand.name}.`,
+      bodyHtml: emailParagraph(`Você foi cadastrado como vendedor no ${brand.name}. ${hasPassword ? "Entre com a sua conta para ver os seus clientes e comissões." : "Defina a sua senha para entrar."}`),
+      button: { label: action, url },
+      footnote: "Se você não esperava este e-mail, ignore-o.",
+    }),
   });
 }
 

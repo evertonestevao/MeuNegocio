@@ -7,7 +7,10 @@ const RESEND_API = "https://api.resend.com/emails";
 
 interface ResendProviderConfig {
   apiKey: string;
+  /** Endereço remetente (EMAIL_FROM). */
   from: string;
+  /** Nome que aparece na caixa de entrada, ao lado do endereço. */
+  fromName?: string;
 }
 
 export function createResendProvider(config: ResendProviderConfig): EmailProvider {
@@ -22,7 +25,7 @@ export function createResendProvider(config: ResendProviderConfig): EmailProvide
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: config.from,
+          from: config.fromName ? `${config.fromName} <${config.from}>` : config.from,
           to: [message.to],
           subject: message.subject,
           html: message.html,

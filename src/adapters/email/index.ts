@@ -1,4 +1,5 @@
 import "server-only";
+import { brand } from "@/config/brand";
 import { getServerEnv, requireServerEnv } from "@/config/env";
 import { createConsoleProvider } from "./consoleProvider";
 import type { EmailProvider } from "./EmailProvider";
@@ -13,6 +14,7 @@ export function getEmailProvider(): EmailProvider {
       return createResendProvider({
         apiKey: requireServerEnv("RESEND_API_KEY"),
         from: requireServerEnv("EMAIL_FROM"),
+        fromName: brand.name,
       });
     case "console":
       return createConsoleProvider();

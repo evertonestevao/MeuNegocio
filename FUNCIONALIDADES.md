@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-16 (planos privados: plano com preço especial, visível só para e-mails liberados)
+**Última atualização:** 2026-11-17 (e-mails do sistema com layout único e logo; recuperação de senha enviada pelo próprio sistema)
 
 ## Sumário
 
@@ -88,7 +88,7 @@ mas não outros admins nem o owner.
 | **Cadastro por convite** (`/signup?next=/invites/accept…`) | Nome completo, e-mail e senha, para quem recebeu convite. Sem convite, `/signup` leva a `/comecar` (aberto) ou ao login (fechado). | Rate limit por email. |
 | **Login** (`/login`) | Email e senha. Respeita `?next=` para voltar à página de origem. | 10 tentativas por minuto por email. O `?next=` só aceita caminho do próprio site (`src/lib/safeRedirect.ts`): endereço de outro site, `//`, barra invertida ou caractere de controle levam ao destino padrão. Vale também para o cadastro por convite e para `/auth/confirm`. |
 | **Logout** | Menu do usuário, no topo do painel. | Encerra só a sessão deste aparelho: o celular continua logado quando se sai no computador, e vice-versa. Aparelho com sessão encerrada no servidor (conta excluída, sessão revogada) cai no login, que limpa os cookies dessa sessão. |
-| **Esqueci a senha** (`/forgot-password`) | Envia um link de redefinição por email. | Sempre responde "se o email existir…", para não revelar quais emails têm conta. Rate limit por email. |
+| **Esqueci a senha** (`/forgot-password`) | Envia por e-mail um link de redefinição, com o logo, o botão "Criar nova senha" e o endereço em texto. O sistema mesmo gera o código e monta o link com o endereço público do app (`APP_URL`), e envia pelo `EmailProvider` (Resend): não depende do modelo nem da "Site URL" do painel do Supabase. O link abre `/auth/confirm`, que leva à tela de nova senha, e só vale uma vez. | Sempre responde "se o email existir…", para não revelar quais emails têm conta. Rate limit por email. |
 | **Redefinir senha** (`/reset-password`) | Abre pelo link do email (fluxo PKCE via `/auth/confirm`). | Só aceita redirects para domínios permitidos. |
 
 Rotas do painel exigem login. Usuário logado que abre `/login`, `/signup` ou `/comecar` é redirecionado.
@@ -354,8 +354,7 @@ significa escrever um adapter novo, sem mexer em regra de negócio.
 | `ErrorReporter` | Sentry, console | `ERROR_REPORTER` |
 | Rate limiter | memória, Upstash Redis | `RATE_LIMIT_STORE` |
 
-Os emails de autenticação (confirmação e recuperação de senha) saem pelo Supabase Auth. O
-`EmailProvider` cobre os emails transacionais do app, como convites.
+Todos os e-mails do sistema saem pelo `EmailProvider`: recuperação de senha, convite de equipe, convite de vendedor, aviso de resposta do orçamento e aviso de denúncia ao suporte. Eles usam um layout único (`src/lib/emailLayout.ts`): faixa escura com o logo e o nome do produto, cartão com o conteúdo, botão de ação, o mesmo endereço em texto e rodapé com o contato de suporte. O remetente aparece como "NegocioApp <endereço de EMAIL_FROM>". O logo vem de `/icons/icon-192.png`, do próprio app. O Supabase Auth não envia e-mail do produto: as contas são criadas já confirmadas, pelo servidor.
 
 ## 15. Revendedores (em construção)
 
