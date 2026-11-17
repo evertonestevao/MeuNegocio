@@ -44,6 +44,8 @@ export interface SeatUsage {
 export interface PaymentEventResult {
   /** Assinatura encerrada por estorno, para o chamador registrar e encerrar vínculos. */
   endedSubscription?: Subscription;
+  /** Nada foi aplicado (evento de termo já encerrado, ou sem assinatura correspondente): não vai para a auditoria. */
+  ignored?: boolean;
 }
 
 /** Plano usado quando a empresa não tem assinatura ativa. */
@@ -161,15 +163,16 @@ export function createBillingService(repo: BillingRepository) {
     const existing = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
 
     if (!existing) {
-      if (event.type !== "subscription.activated") return {}; // evento órfão: nada a atualizar
-      // Evento repetido ou atrasado de um termo que já foi renovado (o id agora é o do termo novo):
-      // não é assinatura nova, e tratá-lo assim duplicaria a linha e a renovação.
-      if (await repo.findSubscriptionByEndedExternalId(event.externalSubscriptionId)) return {};
+      // Evento de um termo que já foi renovado (o id agora é o do termo novo): repetido, atrasado ou o
+      // aviso de que o termo antigo foi encerrado. Não é assinatura nova (tratá-lo assim duplicaria a
+      // linha e a renovação) nem cancelamento do cliente: não muda nada e não entra na auditoria.
+      if (await repo.findSubscriptionByEndedExternalId(event.externalSubscriptionId)) return { ignored: true };
+      if (event.type !== "subscription.activated") return { ignored: true }; // evento órfão: nada a atualizar
       if (!event.companyId || !event.planId) {
         // Ativação que não dá para atribuir a uma empresa/plano: ignora em vez de falhar.
         // Falhar aqui travaria a fila sequencial do gateway e seguraria os próximos eventos.
         console.warn(`[billing] ativação ignorada sem company_id/plan_id (gateway=${event.gateway}, sub=${event.externalSubscriptionId ?? "-"})`);
-        return {};
+        return { ignored: true };
       }
       // Reassinatura: a assinatura anterior (ex.: cancelada) ainda ocupa o índice
       // único por empresa. Vai para o histórico para a nova poder entrar.

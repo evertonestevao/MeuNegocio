@@ -780,6 +780,18 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
     expect(state.subscriptions[0]).toMatchObject({ external_subscription_id: "ext-termo-2", status: "active", renews: true, current_period_end: "2027-03-17T00:00:00.000Z" });
   });
 
+  it("evento de termo já encerrado não muda nada e não conta como cancelamento: nem o aviso de que o termo antigo foi removido", async () => {
+    const { service, gateway, state } = setup();
+    await run(service, gateway, parcel("ext-termo-1", 3, 3));
+    const before = JSON.stringify(state.subscriptions);
+    for (const type of ["subscription.activated", "subscription.updated", "subscription.canceled", "payment.failed"] as const) {
+      const result = await service.applyPaymentEvent({ ...parcel("ext-termo-1", 3, 3), type, termRenewal: undefined });
+      expect(result, type).toEqual({ ignored: true });
+    }
+    expect(JSON.stringify(state.subscriptions)).toBe(before);
+    expect(state.subscriptions[0].status).toBe("active");
+  });
+
   it("evento repetido da última parcela do termo velho (ex.: RECEIVED depois do CONFIRMED) não renova de novo", async () => {
     const { service, gateway, renewals } = setup();
     const last = parcel("ext-termo-1", 3, 3);

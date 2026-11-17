@@ -26,7 +26,7 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
     const admin = getSupabaseAdminClient();
     const billingRepo = createSupabaseBillingRepository(admin);
     const billing = createBillingService(billingRepo);
-    const { endedSubscription } = await billing.applyPaymentEvent(event, gateway);
+    const { endedSubscription, ignored } = await billing.applyPaymentEvent(event, gateway);
 
     // Depois do pagamento aplicado: falha de comissão vira pendência, não erro.
     await getCommissionService().processEvent(event);
@@ -42,7 +42,7 @@ export async function handlePaymentWebhook(request: Request): Promise<Response> 
 
     // Evento de sistema na trilha (user_id null): só quando conseguimos
     // atribuir a empresa; eventos "ignored" não sujam a auditoria.
-    if (event.type !== "ignored" && event.companyId) {
+    if (event.type !== "ignored" && event.companyId && !ignored) {
       await createAuditService(createSupabaseAuditRepository(admin)).record({
         companyId: event.companyId,
         userId: null,
