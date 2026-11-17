@@ -157,6 +157,29 @@ describe("createCheckout", () => {
     expect(padrao.items[0].value).toBe(329.9);
   });
 
+  it("plano em ciclo com teste grátis: a 1ª parcela é adiada, o ciclo mantém as parcelas e só aceita cartão", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+    await gateway.createCheckout({
+      ...checkoutParams,
+      trialDays: 7,
+      plan: { ...checkoutParams.plan, billingInterval: "year", priceCents: 1500, termPayments: 3, paymentMethods: ["credit_card", "pix"] },
+    });
+    const body = calls[0].body as { billingTypes: string[]; subscription: { nextDueDate: string; maxPayments: number }; items: Array<{ value: number }> };
+    const due = new Date(`${body.subscription.nextDueDate}T00:00:00`);
+    const days = Math.round((due.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+    expect(days).toBe(7);
+    expect(body.subscription.maxPayments).toBe(3);
+    expect(body.items[0].value).toBe(5); // a parcela, não o total
+    expect(body.billingTypes).toEqual(["CREDIT_CARD"]);
+  });
+
+  it("plano em ciclo sem teste cobra a 1ª parcela hoje", async () => {
+    const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
+    await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, billingInterval: "year", priceCents: 1500, termPayments: 3 } });
+    const body = calls[0].body as { subscription: { nextDueDate: string } };
+    expect(body.subscription.nextDueDate).toBe(new Date().toISOString().slice(0, 10));
+  });
+
   it("mensal nunca leva maxPayments, mesmo que o plano traga um número de parcelas", async () => {
     const { gateway, calls } = makeGateway({ "POST /checkouts": () => ({ id: "c", link: "u" }) });
     await gateway.createCheckout({ ...checkoutParams, plan: { ...checkoutParams.plan, billingInterval: "month", priceCents: 37990, termPayments: 3 } });

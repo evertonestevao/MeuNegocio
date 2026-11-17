@@ -427,10 +427,10 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
    */
   async function createSubscriptionCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
     const annual = params.plan.billingInterval === "year";
-    const trialDays = annual ? 0 : (params.trialDays ?? 0);
+    const trialDays = params.trialDays ?? 0;
     const termPayments = params.plan.termPayments ?? DEFAULT_TERM_PAYMENTS;
     const valueCents = annual ? Math.round(params.plan.priceCents / termPayments) : params.plan.priceCents;
-    // Com teste ou anual, só cartão: PIX/boleto não guardam o meio para a cobrança futura.
+    // Com teste ou em ciclo (anual), só cartão: PIX/boleto não guardam o meio para a cobrança futura.
     const billingTypes =
       annual || trialDays > 0 ? (["CREDIT_CARD"] as const) : checkoutBillingTypes(params.plan.paymentMethods);
     const checkout = await asaasRequest<{ id: string; link: string }>("/checkouts", "POST", {
@@ -453,7 +453,8 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       ],
       subscription: {
         cycle: "MONTHLY",
-        // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje (sem teste/anual).
+        // Primeira cobrança: hoje + dias de teste. 0 dias = cobra hoje. Vale também no plano em ciclo:
+        // a 1ª parcela é que fica para depois do teste.
         nextDueDate: dueDateString(trialDays),
         // Anual: termo de 12 cobranças. Mensal: sem limite (renova sozinho).
         ...(annual ? { maxPayments: termPayments } : {}),

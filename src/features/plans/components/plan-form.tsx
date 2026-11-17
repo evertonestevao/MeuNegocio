@@ -170,24 +170,25 @@ export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 text-sm font-medium">Cobrança</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          {annual ? (
-            // O anual não tem teste grátis (o checkout cobra a 1ª parcela na hora): o campo some e vai zerado.
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Label>Dias de teste grátis</Label>
-              <input type="hidden" name="trialDays" value="0" />
-              <p className="text-xs text-muted-foreground">Plano em ciclo não tem teste grátis: a 1ª parcela é cobrada na hora.</p>
-            </div>
-          ) : (
-            <Field id={`${idPrefix}-trial`} label="Dias de teste grátis" hint="Cobra só depois desse prazo. 0 = cobra na hora.">
-              <Input
-                id={`${idPrefix}-trial`}
-                name="trialDays"
-                inputMode="numeric"
-                defaultValue={String(plan?.trial_days ?? DEFAULT_TRIAL_DAYS)}
-                placeholder={String(DEFAULT_TRIAL_DAYS)}
-              />
-            </Field>
-          )}
+          {/* key: ao trocar entre mensal e ciclo, o campo reinicia com o padrão de cada um. */}
+          <Field
+            key={annual ? "ciclo" : "mensal"}
+            id={`${idPrefix}-trial`}
+            label="Dias de teste grátis"
+            hint={
+              annual
+                ? "Cobra a 1ª parcela só depois desse prazo. 0 = cobra na hora. No plano em ciclo o padrão é 0: o teste só vale se você ligar."
+                : "Cobra só depois desse prazo. 0 = cobra na hora."
+            }
+          >
+            <Input
+              id={`${idPrefix}-trial`}
+              name="trialDays"
+              inputMode="numeric"
+              defaultValue={String(plan?.trial_days ?? (annual ? 0 : DEFAULT_TRIAL_DAYS))}
+              placeholder={String(annual ? 0 : DEFAULT_TRIAL_DAYS)}
+            />
+          </Field>
           <div className="flex min-w-0 flex-col gap-1.5">
             <Label>Meios de pagamento</Label>
             <div className="flex flex-col gap-2 pt-1">

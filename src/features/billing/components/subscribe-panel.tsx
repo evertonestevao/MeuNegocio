@@ -69,9 +69,9 @@ export function SubscribePanel({
   const monthly = plans.find((plan) => plan.interval === "month");
   const [selected, setSelected] = useState(monthly?.id ?? plans[0]?.id ?? "");
   const plan = plans.find((candidate) => candidate.id === selected) ?? plans[0];
-  // Teste é do mensal e só quando o plano oferece dias de teste. Os dias são por plano.
+  // Teste só quando o plano oferece dias de teste (em qualquer cobrança). Os dias são por plano.
   const trialDays = plan?.trialDays ?? 0;
-  const withTrial = trialAvailable && cardTrial && plan?.interval === "month" && trialDays > 0;
+  const withTrial = trialAvailable && cardTrial && trialDays > 0;
 
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
     const result = await (isFakeGateway ? activateFakePlanAction : checkoutAction)(prev, data);
@@ -150,7 +150,7 @@ export function SubscribePanel({
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {withTrial
-            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.priceCents)} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
+            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.monthlyCents)}${plan.interval === "year" ? ` (1ª de ${plan.termPayments} ${plan.termPayments === 1 ? "parcela" : "parcelas"})` : ""} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
             : plan.interval === "year"
               ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente ${termRenewalLabel(plan.termPayments)}. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}

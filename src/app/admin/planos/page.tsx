@@ -135,7 +135,7 @@ export default async function PlansPage() {
                     </li>
                   ) : null}
                   <li>
-                    <Badge variant="outline">{plan.billing_interval === "month" && plan.trial_days > 0 ? `Teste grátis: ${plan.trial_days} dias` : "Sem teste grátis"}</Badge>
+                    <Badge variant="outline">{plan.trial_days > 0 ? `Teste grátis: ${plan.trial_days} dias` : "Sem teste grátis"}</Badge>
                   </li>
                   <li>
                     <Badge variant="outline">Pagamento: {plan.payment_methods.map(paymentMethodLabel).join(", ")}</Badge>

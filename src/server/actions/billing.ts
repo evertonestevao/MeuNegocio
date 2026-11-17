@@ -85,9 +85,9 @@ export async function checkoutAction(
       // direto no painel, que redireciona para /assinar enquanto a assinatura não está ativa).
       successUrl: `${appUrl}/assinar/confirmando`,
       cancelUrl: `${appUrl}/assinar`,
-      // Teste só no mensal e só se o plano oferece dias de teste (> 0).
+      // Teste só se o plano oferece dias de teste (> 0), em qualquer cobrança.
       trialDays:
-        trialEligible && plan.billing_interval === "month" && plan.trial_days > 0 ? plan.trial_days : undefined,
+        trialEligible && plan.trial_days > 0 ? plan.trial_days : undefined,
     });
     checkoutUrl = session.url;
     await recordAudit({
@@ -143,7 +143,7 @@ export async function activateFakePlanAction(
     // Ambiente de teste: o ciclo dura o ano (12 parcelas) ou o número de meses do plano.
     const cycleDays = annual ? (plan.term_payments === 12 ? 365 : plan.term_payments * 30) : 30;
     // Teste com cartão simulado: em teste até o sétimo dia, quando o gateway cobraria.
-    const trial = !annual && formData.get("trial") === "1" && (await getCompanyAccess(companyId)).trialAvailable ? trialEndsAt() : null;
+    const trial = formData.get("trial") === "1" && (await getCompanyAccess(companyId)).trialAvailable ? trialEndsAt() : null;
     const event: NormalizedPaymentEvent = {
       type: "subscription.activated",
       gateway: "fake",
