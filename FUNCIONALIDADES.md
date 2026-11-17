@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-17 (Visão geral do super admin: indicadores e lista de atenção)
+**Última atualização:** 2026-11-17 (tela de planos: botão "Novo plano" no topo abre o formulário acima da lista)
 
 ## Sumário
 
@@ -214,7 +214,7 @@ a quem tenta usar a API sem assinatura. O Empresarial foi desativado.
 
 - Cria planos e edita nome, preço, membro extra, limites, recursos e um texto livre de até 2000
   caracteres, exibido na oferta do plano em `/dashboard/billing`. A página inicial não mostra planos nem preços por enquanto. Ativa e desativa.
-- A tela separa criar de editar: os planos existentes aparecem como cartões-resumo (preço, limites, recursos, dias de teste e meios de pagamento em etiquetas), com a edição recolhida atrás de "Editar plano"; "Criar um novo plano" é um cartão destacado à parte.
+- A tela abre só com os planos existentes, como cartões-resumo (preço, limites, recursos, dias de teste e meios de pagamento em etiquetas), com a edição recolhida atrás de "Editar plano". O botão **"Novo plano"**, no topo, abre o formulário de criação acima da lista (e vira "Cancelar"); ao criar, o formulário fecha sozinho e o plano aparece na lista. O plano novo já nasce **ativo** (aparece na oferta, a menos que seja privado); para guardá-lo sem vender, é só desativar depois.
 - **Meios de pagamento** aceitos por plano (cartão, PIX, boleto; **padrão só cartão**). No Asaas Mensal (checkout com assinatura), valem **cartão e PIX**: boleto não entra em assinatura recorrente, e no teste com cartão o checkout fica só no cartão (para guardar o meio da cobrança futura). O plano Anual é sempre no cartão (12 cobranças mensais que renovam; precisa tokenizar o cartão).
 - **Dias de teste grátis** por plano (0 a 90; **padrão 7**). Guardado no plano e **usado de fato** na 1ª cobrança: no Asaas (checkout hospedado) e no Stripe, a primeira cobrança do Mensal é adiada em `trial_days` dias; com 0 dias, cobra na hora.
 - O código do plano não muda depois de criado. Planos não são excluídos, só desativados: somem da

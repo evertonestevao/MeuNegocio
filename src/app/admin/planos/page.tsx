@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Plus, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { paymentMethodLabel } from "@/config/paymentMethods";
 import { PlanAccessEditor } from "@/features/plans/components/plan-access-editor";
 import { PlanActiveButton } from "@/features/plans/components/plan-active-button";
 import { PlanForm } from "@/features/plans/components/plan-form";
+import { PlansHeader } from "@/features/plans/components/plans-header";
 import { formatCents } from "@/lib/money";
 import { createPlanAction, updatePlanAction } from "@/server/actions/plans";
 import { getPlanAdminService, getPlatformAdminId } from "@/server/plans";
@@ -69,13 +70,7 @@ export default async function PlansPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-extrabold tracking-tight">Planos</h1>
-        <p className="text-sm text-muted-foreground">
-          Limites e recursos valem na hora para as empresas do plano. Desativar tira o plano da oferta, e quem já
-          assina continua nele. Plano privado só aparece para os e-mails liberados no cartão dele.
-        </p>
-      </div>
+      <PlansHeader createAction={createPlanAction} />
 
       {usesPriceCatalog ? (
         <Alert>
@@ -142,30 +137,6 @@ export default async function PlansPage() {
           ))}
         </div>
       </section>
-
-      <Card className="border-2 border-dashed border-primary/40 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Plus className="size-4" />
-            </span>
-            Criar um novo plano
-          </CardTitle>
-          <CardDescription>Um plano novo começa desativado até você liberá-lo na oferta.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <details className="group">
-            <summary className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
-              <Plus className="size-4" />
-              <span className="group-open:hidden">Novo plano</span>
-              <span className="hidden group-open:inline">Cancelar</span>
-            </summary>
-            <div className="pt-4">
-              <PlanForm action={createPlanAction} submitLabel="Criar plano" />
-            </div>
-          </details>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

@@ -16,8 +16,8 @@ import type { Plan } from "@/types/database";
 
 type FormAction = (prev: ActionState | undefined, formData: FormData) => Promise<ActionState>;
 
-/** Sem `plan` cria um plano novo. Valida aqui antes de enviar; o servidor valida de novo. */
-export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: FormAction; submitLabel: string }) {
+/** Sem `plan` cria um plano novo. Valida aqui antes de enviar; o servidor valida de novo. `onSaved` roda depois de salvar. */
+export function PlanForm({ plan, action, submitLabel, onSaved }: { plan?: Plan; action: FormAction; submitLabel: string; onSaved?: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const idPrefix = plan?.id ?? "novo";
   const [state, dispatch, pending] = useActionState(
@@ -32,6 +32,7 @@ export function PlanForm({ plan, action, submitLabel }: { plan?: Plan; action: F
       if (result.success) {
         toast.success(result.success);
         if (!plan) formRef.current?.reset();
+        onSaved?.();
       }
       return result;
     },
