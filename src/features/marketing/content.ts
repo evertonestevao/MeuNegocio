@@ -256,7 +256,7 @@ export const faq = [
   },
   {
     question: "Dá para testar antes de assinar?",
-    answer: "Sim. No plano mensal há um período de teste grátis, com tudo liberado: você cadastra o cartão e a primeira cobrança só acontece no fim do teste. Cancele antes e não paga nada.",
+    answer: "Sim. No plano mensal há um período de teste grátis, com tudo liberado: você cadastra o cartão e a primeira cobrança só acontece no fim do teste. Cancele antes e não pague nada.",
   },
   {
     question: "Como funciona o pagamento e o cancelamento?",

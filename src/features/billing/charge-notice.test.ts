@@ -6,7 +6,7 @@ const text = (value: string | null) => value?.replace(/ /g, " ") ?? null;
 
 describe("próxima cobrança", () => {
   it("no teste com cartão, diz quando e quanto será a primeira cobrança", () => {
-    expect(text(nextChargeNotice(base))).toBe("Teste grátis até 13/11/2026. A primeira cobrança, de R$ 379,90, será nessa data. Cancele antes e não paga nada.");
+    expect(text(nextChargeNotice(base))).toBe("Teste grátis até 13/11/2026. A primeira cobrança, de R$ 379,90, será nessa data. Cancele antes e não pague nada.");
   });
 
   it("assinatura ativa mostra a data da próxima cobrança", () => {

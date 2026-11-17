@@ -12,7 +12,7 @@ export function nextChargeNotice(subscription: Pick<Subscription, "status" | "re
   if (!subscription?.renews || !subscription.current_period_end || subscription.cancel_at_period_end) return null;
   const date = day(subscription.current_period_end);
   if (subscription.status === "trialing") {
-    return `Teste grátis até ${date}. A primeira cobrança, de ${formatCents(subscription.contracted_price_cents)}, será nessa data. Cancele antes e não paga nada.`;
+    return `Teste grátis até ${date}. A primeira cobrança, de ${formatCents(subscription.contracted_price_cents)}, será nessa data. Cancele antes e não pague nada.`;
   }
   if (subscription.status === "active") return `Próxima cobrança em ${date}.`;
   return null;

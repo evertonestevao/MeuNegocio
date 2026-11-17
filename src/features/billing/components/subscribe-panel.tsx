@@ -150,7 +150,7 @@ export function SubscribePanel({
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {withTrial
-            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.monthlyCents)}${plan.interval === "year" ? ` (1ª de ${plan.termPayments} ${plan.termPayments === 1 ? "parcela" : "parcelas"})` : ""} será em ${firstChargeDate(trialDays)}. Cancele antes e não paga nada.`
+            ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.monthlyCents)}${plan.interval === "year" ? ` (1ª de ${plan.termPayments} ${plan.termPayments === 1 ? "parcela" : "parcelas"})` : ""} será em ${firstChargeDate(trialDays)}. Cancele antes e não pague nada.`
             : plan.interval === "year"
               ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente ${termRenewalLabel(plan.termPayments)}. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}
