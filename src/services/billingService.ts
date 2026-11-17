@@ -386,16 +386,25 @@ export function createBillingService(repo: BillingRepository) {
    */
   async function renewTerm(
     event: NormalizedPaymentEvent,
-    gateway: Pick<PaymentGateway, "renewSubscription">,
+    gateway: Pick<PaymentGateway, "renewSubscription" | "cancelSubscription">,
   ): Promise<boolean> {
     if (!event.termRenewal || !event.externalSubscriptionId) return false;
-    const row = await repo.findSubscriptionByExternalId(event.externalSubscriptionId);
+    const oldTermId = event.externalSubscriptionId;
+    const row = await repo.findSubscriptionByExternalId(oldTermId);
     if (!row) return false;
     const renewed = await gateway.renewSubscription({
       ...event.termRenewal,
       externalReference: `${row.company_id}:${row.plan_id}`,
     });
-    await applyRenewal(event.externalSubscriptionId, renewed);
+    await applyRenewal(oldTermId, renewed);
+    // O termo antigo já cumpriu as parcelas. O Asaas o deixa "ativo" até depois da data, e se ele ainda
+    // gerasse uma cobrança, o cliente pagaria o termo velho e o novo. Encerra-o por garantia (o que já
+    // foi pago continua registrado). Falhar aqui não desfaz a renovação: só é registrado.
+    try {
+      await gateway.cancelSubscription(oldTermId);
+    } catch (err) {
+      console.error(`[billing] termo antigo não encerrado no gateway (sub=${oldTermId}):`, err instanceof Error ? err.message : "erro desconhecido");
+    }
     return true;
   }
 

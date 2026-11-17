@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ExtraSeatsUpdate, NormalizedPaymentEvent } from "@/types/billing";
 import type { Plan, Subscription } from "@/types/database";
 import {
@@ -706,11 +706,17 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
   const annualPlan = makePlan({ id: "plan-annual", code: "anual_teste", billing_interval: "year", term_payments: 3, price_cents: 1500 });
 
   /** Gateway de mentira que só guarda as renovações pedidas e devolve um id de termo novo a cada uma. */
-  function makeRenewalGateway(options: { failWith?: Error } = {}) {
+  function makeRenewalGateway(options: { failWith?: Error; cancelFailsWith?: Error } = {}) {
     const renewals: Array<{ externalReference: string; maxPayments: number; nextDueDate: string; paymentMethodToken: string }> = [];
+    const canceled: string[] = [];
     return {
       renewals,
+      canceled,
       gateway: {
+        async cancelSubscription(externalSubscriptionId: string) {
+          if (options.cancelFailsWith) throw options.cancelFailsWith;
+          canceled.push(externalSubscriptionId);
+        },
         async renewSubscription(params: (typeof renewals)[number]) {
           if (options.failWith) throw options.failWith;
           renewals.push(params);
@@ -827,5 +833,34 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
     expect(renewals).toHaveLength(1);
     expect(renewals[0]).toMatchObject({ maxPayments: 1, paymentMethodToken: "tok-cartao" });
     expect(state.subscriptions[0].external_subscription_id).toBe("ext-termo-2");
+  });
+
+  it("depois de renovar, encerra o termo antigo no gateway (uma vez só) para ele não gerar cobrança além do termo novo", async () => {
+    const { service, gateway, canceled } = setup();
+    await run(service, gateway, parcel("ext-termo-1", 3, 3));
+    expect(canceled).toEqual(["ext-termo-1"]);
+    // Evento repetido do termo velho não renova de novo e não manda encerrar outra vez.
+    await run(service, gateway, parcel("ext-termo-1", 3, 3));
+    expect(canceled).toEqual(["ext-termo-1"]);
+  });
+
+  it("se encerrar o termo antigo falhar, a renovação continua valendo e o erro só é registrado", async () => {
+    const state = { plans: [annualPlan], subscriptions: [makeSubscription({ id: "sub-1", plan_id: annualPlan.id, external_subscription_id: "ext-termo-1", status: "active" })] };
+    const service = createBillingService(makeRepo(state));
+    const { gateway, renewals } = makeRenewalGateway({ cancelFailsWith: new Error("Asaas fora do ar") });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(run(service, gateway, parcel("ext-termo-1", 3, 3))).resolves.toBe(true);
+    expect(renewals).toHaveLength(1);
+    expect(state.subscriptions[0].external_subscription_id).toBe("ext-termo-2");
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it("se criar o termo novo falhar, o antigo NÃO é encerrado: o cliente não fica sem nenhum", async () => {
+    const state = { plans: [annualPlan], subscriptions: [makeSubscription({ id: "sub-1", plan_id: annualPlan.id, external_subscription_id: "ext-termo-1", status: "active" })] };
+    const service = createBillingService(makeRepo(state));
+    const { gateway, canceled } = makeRenewalGateway({ failWith: new Error("Asaas fora do ar") });
+    await expect(run(service, gateway, parcel("ext-termo-1", 3, 3))).rejects.toThrow();
+    expect(canceled).toHaveLength(0);
   });
 });
