@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell, SIDEBAR_COOKIE } from "@/components/app-shell/app-shell";
+import { NEW_COMPANY_MENU_ENABLED } from "@/config/features";
 import { createSupabaseInviteRepository } from "@/repositories/supabase/inviteRepository";
 import { createSupabaseUserRepository } from "@/repositories/supabase/userRepository";
 import { createMemoryRateLimiter } from "@/server/rateLimit";
@@ -69,7 +70,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (access && !access.hasAccess) redirect("/assinar");
   // Cadastro em etapas: depois de assinar (ou começar o teste), o proprietário completa os dados da empresa.
   if (!demoProfile && permissionService.canEditCompany(active.role) && (await isOnboardingPending(active.id))) redirect("/onboarding");
-  const canCreateCompany = isSignupOpen() || areaLinks.some((link) => link.href === "/admin/planos");
+  const canCreateCompany = NEW_COMPANY_MENU_ENABLED && (isSignupOpen() || areaLinks.some((link) => link.href === "/admin/planos"));
   const cookieStore = await cookies();
   const initialCollapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === "true";
 

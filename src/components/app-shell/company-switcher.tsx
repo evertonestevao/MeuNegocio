@@ -74,12 +74,14 @@ export function CompanySwitcher({ canCreate }: { canCreate: boolean }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
           {canCreate ? (
-            <DropdownMenuItem onClick={() => setCreating(true)}>
-              <Plus className="size-4" />
-              Nova empresa
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCreating(true)}>
+                <Plus className="size-4" />
+                Nova empresa
+              </DropdownMenuItem>
+            </>
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>

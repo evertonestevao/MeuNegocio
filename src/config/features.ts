@@ -13,3 +13,12 @@
  * A taxa da maquininha é outra coisa e continua ativa.
  */
 export const TAX_UI_ENABLED = false;
+
+/**
+ * "Nova empresa" no seletor de empresas do painel (cria outra empresa para o próprio usuário).
+ *
+ * Desligado por enquanto: o item some do menu. A criação de empresa pelo super admin
+ * (`/admin/empresas`) e o cadastro em etapas (`/comecar`) continuam funcionando. Religar é só
+ * trocar para `true`.
+ */
+export const NEW_COMPANY_MENU_ENABLED = false;
