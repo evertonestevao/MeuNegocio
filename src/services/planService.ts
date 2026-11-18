@@ -124,6 +124,19 @@ export function createPlanService(repo: PlanRepository) {
     if (code === DEFAULT_PLAN_CODE && !input.isPublic) {
       throw new AppError("validation_error", "O plano padrão, sem assinatura, não pode ser privado");
     }
+    // Preço 0 fora do plano padrão é o plano piloto: só privado (liberado por e-mail), mensal e sem membro
+    // extra. Um plano de graça aberto a todos acabaria com a oferta.
+    if (code !== DEFAULT_PLAN_CODE && input.priceCents === 0) {
+      if (input.isPublic) {
+        throw new AppError("validation_error", "Plano de preço zero precisa ser privado: libere por e-mail quem pode usar");
+      }
+      if (input.billingInterval !== "month") {
+        throw new AppError("validation_error", "Plano de preço zero precisa ser mensal");
+      }
+      if (input.extraSeatPriceCents !== 0) {
+        throw new AppError("validation_error", "Plano de preço zero não vende membro extra: deixe o valor em 0");
+      }
+    }
     if (input.billingInterval !== "month" && input.billingInterval !== "year") {
       throw new AppError("validation_error", "Escolha a cobrança do plano: mensal ou anual");
     }

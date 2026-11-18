@@ -77,6 +77,31 @@ export function createSupabaseBillingRepository(client: SupabaseClient): Billing
       return Boolean(data);
     },
 
+    async activatePilot({ companyId, planId, userId }) {
+      const { data, error } = await client
+        .rpc("activate_pilot_plan", { p_company_id: companyId, p_plan_id: planId, p_user_id: userId })
+        .single<Subscription>();
+      if (error) {
+        if (error.code === "P0002") throw new AppError("not_found", "Plano não encontrado", error);
+        if (error.code === "42501") throw new AppError("forbidden", "Só o proprietário ativa o plano", error);
+        if (error.message === "already_subscribed") {
+          throw new AppError("conflict", "A empresa já tem uma assinatura com acesso.", error);
+        }
+        throw new AppError("internal_error", "Falha ao ativar o plano piloto", error);
+      }
+      return data;
+    },
+
+    async endPilot({ companyId, actorId }) {
+      const { data, error } = await client.rpc("end_pilot_plan", { p_company_id: companyId, p_actor: actorId });
+      if (error) {
+        if (error.code === "P0002") throw new AppError("not_found", "Esta empresa não está no plano piloto", error);
+        throw new AppError("internal_error", "Falha ao encerrar o plano piloto", error);
+      }
+      const result = data as { subscription_id: string; plan_id: string; removed_emails: string[] };
+      return { subscriptionId: result.subscription_id, planId: result.plan_id, removedEmails: result.removed_emails };
+    },
+
     async insertSubscription(data) {
       const result = await client
         .from("subscriptions")

@@ -139,6 +139,15 @@ describe("planService", () => {
     });
   });
 
+  it("plano de preço zero (piloto) só pode ser privado, mensal e sem membro extra", async () => {
+    const pilot: PlanInput = { ...INPUT, priceCents: 0, extraSeatPriceCents: 0, isPublic: false };
+    const service = createPlanService(makeRepo(null));
+    await expect(service.create("piloto", pilot, "a")).resolves.toBeDefined();
+    await expect(service.create("gratis", { ...pilot, isPublic: true }, "a")).rejects.toMatchObject({ code: "validation_error", message: expect.stringContaining("privado") });
+    await expect(service.create("piloto2", { ...pilot, billingInterval: "year" }, "a")).rejects.toMatchObject({ code: "validation_error", message: expect.stringContaining("mensal") });
+    await expect(service.create("piloto3", { ...pilot, extraSeatPriceCents: 500 }, "a")).rejects.toMatchObject({ code: "validation_error", message: expect.stringContaining("membro extra") });
+  });
+
   it("libera e-mails só em plano privado, normalizados e sem repetir", async () => {
     const repo = makeRepo(makePlan({ is_public: false }));
     await createPlanService(repo).grantAccess("p1", "Amigo@Exemplo.com, amigo@exemplo.com\noutro@exemplo.com", "admin-1");

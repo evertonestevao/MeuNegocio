@@ -9,6 +9,8 @@ import { getCompanyTrustService } from "@/server/companyTrust";
 import { requirePlatformAdmin } from "@/server/plans";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
+import { createSupabaseBillingRepository } from "@/repositories/supabase/billingRepository";
+import { createBillingService } from "@/services/billingService";
 import { createCompanyProvisioningService, provisionCompanySchema } from "@/services/companyProvisioningService";
 import { toActionError, type ActionState } from "./action-state";
 
@@ -45,6 +47,32 @@ export async function setCompanySuspensionAction(_prev: ActionState | undefined,
     revalidatePath(`/admin/empresas/${companyId}`);
     revalidatePath("/admin/empresas");
     return { success: suspend ? "Empresa suspensa" : "Empresa reativada" };
+  } catch (err) {
+    if (err instanceof z.ZodError) return { error: "Empresa inválida." };
+    return toActionError(err);
+  }
+}
+
+/**
+ * Encerra o plano piloto da empresa. Nada dela é apagado: a assinatura vai para o histórico, o e-mail do
+ * proprietário sai da lista do plano e, no próximo acesso, a empresa cai em /assinar com os dados guardados.
+ */
+export async function endPilotAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const adminId = await requirePlatformAdmin();
+    const companyId = z.uuid().parse(formData.get("companyId"));
+    if (formData.get("confirm") !== "on") return { error: "Marque a confirmação para encerrar o piloto." };
+    const ended = await createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient())).endPilot(companyId, adminId);
+    await recordAudit({
+      companyId,
+      action: "subscription.pilot_ended",
+      entityType: "subscription",
+      entityId: ended.subscriptionId,
+      metadata: { plan_id: ended.planId, removed_emails: ended.removedEmails },
+    });
+    revalidatePath(`/admin/empresas/${companyId}`);
+    revalidatePath("/admin/empresas");
+    return { success: "Piloto encerrado. No próximo acesso, a empresa escolhe o plano." };
   } catch (err) {
     if (err instanceof z.ZodError) return { error: "Empresa inválida." };
     return toActionError(err);

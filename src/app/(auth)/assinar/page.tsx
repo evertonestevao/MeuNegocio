@@ -6,7 +6,7 @@ import { CompanySwitcher } from "@/components/app-shell/company-switcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { brand } from "@/config/brand";
 import { getServerEnv } from "@/config/env";
-import { cycleSavingsCents, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "@/config/planFeatures";
+import { cycleSavingsCents, isNoChargePlan, planMonthlyCents, planOfferLines, planTermPayments, plansForSale } from "@/config/planFeatures";
 import { SubscribePanel } from "@/features/billing/components/subscribe-panel";
 import { SignupSteps } from "@/features/signup/components/signup-steps";
 import { formatDate } from "@/lib/dates";
@@ -63,6 +63,7 @@ export default async function SubscribePage() {
       trialDays: plan.trial_days,
       included: planOfferLines(plan.features),
       exclusive: !plan.is_public,
+      noCharge: isNoChargePlan(plan),
     }))
     .toSorted((a, b) => Number(a.interval === "year") - Number(b.interval === "year") || Number(b.exclusive) - Number(a.exclusive));
 

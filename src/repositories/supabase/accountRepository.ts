@@ -57,15 +57,15 @@ export function createSupabaseAccountRepository(client: SupabaseClient): Account
           if (role === "owner") {
             const { data: subscription, error: subError } = await client
               .from("subscriptions")
-              .select("status, renews")
+              .select("status, renews, external_subscription_id")
               .eq("company_id", companyId)
               .is("deleted_at", null)
-              .maybeSingle<{ status: SubscriptionStatus; renews: boolean }>();
+              .maybeSingle<{ status: SubscriptionStatus; renews: boolean; external_subscription_id: string | null }>();
             if (subError) {
               throw new AppError("internal_error", "Falha ao checar assinatura", subError);
             }
-            // Compra parcelada não tem o que cancelar: não impede excluir a conta.
-            subscriptionStatus = subscription?.renews ? subscription.status : null;
+            // Compra parcelada e plano piloto (sem gateway) não têm o que cancelar: não impedem excluir a conta.
+            subscriptionStatus = subscription?.renews && subscription.external_subscription_id ? subscription.status : null;
           }
 
           return {

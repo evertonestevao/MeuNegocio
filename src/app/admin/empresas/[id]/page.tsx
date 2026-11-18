@@ -4,11 +4,14 @@ import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ABUSE_REASONS } from "@/features/company/declaration";
+import { EndPilotForm } from "@/features/platform-companies/components/end-pilot-form";
 import { CompanySuspensionForm } from "@/features/platform-companies/components/company-suspension-form";
 import { CNPJ_RESULT_LABEL, partnersLabel } from "@/features/platform-companies/labels";
 import { formatDate, formatDateTimeSeconds } from "@/lib/dates";
 import { formatDocument } from "@/lib/masks";
+import { isPilotSubscription } from "@/services/billingService";
 import { getCompanyEvidenceReader } from "@/server/companyTrust";
+import type { Subscription } from "@/types/database";
 import { getPlatformAdminId } from "@/server/plans";
 import { getSupabaseAdminClient } from "@/server/supabase-admin";
 
@@ -33,14 +36,17 @@ export default async function CompanyEvidencePage({ params }: { params: Promise<
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
 
   const admin = getSupabaseAdminClient();
-  const [{ data: company }, { data: profile }, evidence] = await Promise.all([
+  const [{ data: company }, { data: profile }, evidence, { data: subscription }] = await Promise.all([
     admin.from("companies").select("id, name, created_at, deleted_at, suspended_at, suspension_reason").eq("id", id).maybeSingle<{
       id: string; name: string; created_at: string; deleted_at: string | null; suspended_at: string | null; suspension_reason: string | null;
     }>(),
     admin.from("company_profiles").select("cnpj, phone, email, address").eq("company_id", id).maybeSingle<{ cnpj: string | null; phone: string | null; email: string | null; address: string | null }>(),
     (await getCompanyEvidenceReader()).getEvidence(id),
+    admin.from("subscriptions").select("*").eq("company_id", id).is("deleted_at", null).maybeSingle<Subscription>(),
   ]);
   if (!company) notFound();
+  const pilot = isPilotSubscription(subscription ?? null) ? subscription : null;
+  const pilotPlanName = pilot ? ((await admin.from("plans").select("name").eq("id", pilot.plan_id).maybeSingle<{ name: string }>()).data?.name ?? "Piloto") : "";
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,6 +78,20 @@ export default async function CompanyEvidencePage({ params }: { params: Promise<
           </dl>
         </CardContent>
       </Card>
+
+      {pilot ? (
+        <Card className="print:hidden">
+          <CardHeader>
+            <CardTitle>Plano piloto</CardTitle>
+            <CardDescription>
+              {`Plano ${pilotPlanName}, ativo desde ${formatDate(pilot.created_at)}, sem cobrança e sem data para acabar.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EndPilotForm companyId={company.id} planName={pilotPlanName} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="print:hidden">
         <CardHeader>

@@ -45,7 +45,15 @@ export function planOfferLines(features: Record<string, unknown>): string[] {
 /** Parcelas do ciclo do plano anual quando o plano não diz outra coisa (12 cobranças mensais). */
 export const DEFAULT_TERM_PAYMENTS = 12;
 
-type PricedPlan = { price_cents: number; billing_interval: "month" | "year"; term_payments?: number };
+type PricedPlan = { price_cents: number; billing_interval: "month" | "year"; term_payments?: number; code?: string; is_public?: boolean };
+
+/**
+ * Plano piloto: preço 0, privado e diferente do plano padrão (`free`). Não é cobrado nem passa pelo
+ * gateway: o proprietário liberado o ativa em /assinar, e o super admin o encerra quando quiser.
+ */
+export function isNoChargePlan(plan: Pick<PricedPlan, "price_cents" | "code" | "is_public">): boolean {
+  return plan.price_cents === 0 && plan.is_public === false && plan.code !== undefined && plan.code !== "free";
+}
 
 /** Cobranças mensais que formam um ciclo do plano: 1 no mensal; no anual, as parcelas do plano (padrão 12). */
 export function planTermPayments(plan: Pick<PricedPlan, "billing_interval" | "term_payments">): number {
@@ -100,10 +108,10 @@ export const CYCLE_CHOICES: { value: CycleChoice; label: string; termPayments: n
   { value: "custom", label: "Personalizado (de 1 a 12 parcelas)", termPayments: null },
 ];
 
-/** Planos à venda: sem o padrão gratuito e com o anual primeiro, que é o destaque da oferta. */
+/** Planos à venda: sem o padrão gratuito e com o anual primeiro, que é o destaque da oferta. O piloto (privado, sem cobrança) também entra. */
 export function plansForSale<T extends PricedPlan>(plans: T[]): T[] {
   return plans
-    .filter((plan) => plan.price_cents > 0)
+    .filter((plan) => plan.price_cents > 0 || isNoChargePlan(plan))
     .toSorted((a, b) => Number(b.billing_interval === "year") - Number(a.billing_interval === "year"));
 }
 

@@ -2,7 +2,7 @@ import { AppError } from "@/lib/errors";
 import type { PaymentGateway } from "@/adapters/payment/PaymentGateway";
 import type { NormalizedPaymentEvent, RenewedSubscription } from "@/types/billing";
 import type { Plan, Subscription } from "@/types/database";
-import { isBetterPlanForOwner, planMonthlyCents, planTermPayments } from "@/config/planFeatures";
+import { isBetterPlanForOwner, isNoChargePlan, planMonthlyCents, planTermPayments } from "@/config/planFeatures";
 
 /**
  * Regras de negócio de billing. Sem I/O direto: o repositório é injetado,
@@ -26,6 +26,17 @@ export interface BillingRepository {
   /** A empresa já teve alguma assinatura, inclusive teste ou histórico apagado? Teste grátis é um só. */
   /** Por dono: o dono da empresa já testou ou assinou em alguma empresa dele? */
   ownerHasSubscriptionHistory(companyId: string): Promise<boolean>;
+  /** Ativa o plano piloto da empresa (função do banco, que reconfere plano, proprietário e e-mail liberado). */
+  activatePilot(params: { companyId: string; planId: string; userId: string }): Promise<Subscription>;
+  /** Encerra o piloto: a assinatura vai para o histórico e o e-mail dos proprietários sai da lista do plano. */
+  endPilot(params: { companyId: string; actorId: string }): Promise<EndedPilot>;
+}
+
+/** O que o encerramento do piloto fez, para a auditoria. */
+export interface EndedPilot {
+  subscriptionId: string;
+  planId: string;
+  removedEmails: string[];
 }
 
 /** Fotografia do uso de seats de uma empresa. */
@@ -78,6 +89,20 @@ export interface AccessState {
 
 export function trialEndsAt(now: Date = new Date()): string {
   return new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
+
+/**
+ * Assinatura do plano piloto: ativa, sem gateway e sem data de fim. Dá acesso enquanto existir, e só o
+ * super admin a encerra. Não é paga: fica fora da receita, da troca de plano e do cancelamento.
+ */
+export function isPilotSubscription(subscription: Subscription | null): boolean {
+  return (
+    subscription !== null &&
+    subscription.status === "active" &&
+    subscription.renews &&
+    !subscription.external_subscription_id &&
+    subscription.current_period_end === null
+  );
 }
 
 /** Status de assinatura que dão acesso às features do plano. */
@@ -339,6 +364,22 @@ export function createBillingService(repo: BillingRepository) {
   }
 
   /**
+   * Ativa o plano piloto: sem gateway, sem cobrança e sem prazo. O banco reconfere tudo (plano privado de
+   * preço 0, ator proprietário, e-mail na lista do plano); aqui só se barra o que não é piloto antes.
+   */
+  async function activatePilot(companyId: string, plan: Plan | null, userId: string): Promise<Subscription> {
+    if (!plan || !plan.is_active || plan.billing_interval !== "month" || !isNoChargePlan(plan)) {
+      throw new AppError("not_found", "Plano não encontrado");
+    }
+    return repo.activatePilot({ companyId, planId: plan.id, userId });
+  }
+
+  /** Encerra o piloto da empresa. Os dados dela ficam como estão; sem assinatura válida, ela cai em /assinar. */
+  async function endPilot(companyId: string, actorId: string): Promise<EndedPilot> {
+    return repo.endPilot({ companyId, actorId });
+  }
+
+  /**
    * Teste de 7 dias sem cartão, com o plano completo. Um por DONO (não por empresa:
    * criar empresa não tem limite). Grava com service_role: quem chama já conferiu
    * que o ator é o proprietário.
@@ -494,6 +535,8 @@ export function createBillingService(repo: BillingRepository) {
     scheduleSwitch,
     getAccessState,
     startCardlessTrial,
+    activatePilot,
+    endPilot,
     getEffectivePlan,
     canAccessFeature,
     getFeatureLimit,

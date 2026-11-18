@@ -5,7 +5,7 @@ import { Check, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/config/env";
-import { PLAN_FEATURES, describePlanFeature, planMonthlyCents, planTermPayments, plansForSale, switchablePlans } from "@/config/planFeatures";
+import { PLAN_FEATURES, describePlanFeature, isNoChargePlan, planMonthlyCents, planTermPayments, plansForSale, switchablePlans } from "@/config/planFeatures";
 import {
   CancelSubscriptionButton,
   SubscribeButton,
@@ -17,7 +17,7 @@ import { getSupabaseServerClient } from "@/server/supabase-server";
 import { formatCents } from "@/lib/money";
 import { nextChargeNotice } from "@/features/billing/charge-notice";
 import { getActiveTenant } from "@/server/tenant";
-import { createBillingService, hasPlanAccess, isCardlessTrial } from "@/services/billingService";
+import { createBillingService, hasPlanAccess, isCardlessTrial, isPilotSubscription } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import type { Plan } from "@/types/database";
 
@@ -71,8 +71,10 @@ export default async function BillingPage() {
 
   const isFakeGateway = getServerEnv().PAYMENT_GATEWAY === "fake";
   // Compra parcelada não tem o que cancelar aqui: desistência passa pelo suporte.
+  // Plano piloto: sem cobrança, sem o que cancelar e sem plano para trocar. Quem o encerra é o suporte.
+  const inPilot = isPilotSubscription(subscription ?? null);
   const hasActiveSubscription =
-    subscription != null && subscription.renews && ["trialing", "active", "past_due"].includes(subscription.status);
+    !inPilot && subscription != null && subscription.renews && ["trialing", "active", "past_due"].includes(subscription.status);
   const inTrial = isCardlessTrial(subscription) && hasPlanAccess(subscription!);
   const prepaidWithAccess = subscription != null && !inTrial && !subscription.renews && subscription.status !== "canceled" && hasPlanAccess(subscription);
   const canceledWithAccess =
@@ -86,7 +88,9 @@ export default async function BillingPage() {
   const plansToShow =
     switchMode && subscribedPlan && subscription
       ? switchablePlans(subscribedPlan, planMonthlyCents(subscribedPlan, subscription.contracted_price_cents), plansForSale(plans))
-      : plansForSale(plans);
+      : inPilot
+        ? []
+        : plansForSale(plans).filter((plan) => !isNoChargePlan(plan));
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,6 +104,12 @@ export default async function BillingPage() {
           {subscription ? ` · assinatura ${SUBSCRIPTION_STATUS_LABEL[subscription.status]}` : " · sem assinatura"}
         </p>
         {nextChargeNotice(subscription) ? <p className="mt-1 text-sm text-muted-foreground">{nextChargeNotice(subscription)}</p> : null}
+        {inPilot ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sua empresa está no plano piloto, sem cobrança e sem data para acabar. Quando o piloto terminar, você escolhe o plano na tela de
+            assinar, e todos os seus dados continuam guardados.
+          </p>
+        ) : null}
         {inTrial ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Teste grátis até {new Date(subscription!.current_period_end!).toLocaleDateString("pt-BR")}, sem cobrança.{" "}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { termRenewalLabel } from "@/config/planFeatures";
 import { formatCents } from "@/lib/money";
-import { activateFakePlanAction, checkoutAction, startTrialAction } from "@/server/actions/billing";
+import { activateFakePlanAction, activatePilotPlanAction, checkoutAction, startTrialAction } from "@/server/actions/billing";
 import type { ActionState } from "@/server/actions/action-state";
 
 export interface SubscribePlan {
@@ -27,6 +27,8 @@ export interface SubscribePlan {
   included: string[];
   /** Plano privado, liberado só para este e-mail. */
   exclusive: boolean;
+  /** Plano piloto: sem cobrança e sem gateway, ativado direto. */
+  noCharge: boolean;
 }
 
 /** Data da 1ª cobrança (DD/MM/AAAA) para um teste de `trialDays` dias a partir de hoje. */
@@ -71,10 +73,11 @@ export function SubscribePanel({
   const plan = plans.find((candidate) => candidate.id === selected) ?? plans[0];
   // Teste só quando o plano oferece dias de teste (em qualquer cobrança). Os dias são por plano.
   const trialDays = plan?.trialDays ?? 0;
-  const withTrial = trialAvailable && cardTrial && trialDays > 0;
+  const noCharge = plan?.noCharge ?? false;
+  const withTrial = !noCharge && trialAvailable && cardTrial && trialDays > 0;
 
   const [state, dispatch, pending] = useActionState(async (prev: ActionState | undefined, data: FormData) => {
-    const result = await (isFakeGateway ? activateFakePlanAction : checkoutAction)(prev, data);
+    const result = await (noCharge ? activatePilotPlanAction : isFakeGateway ? activateFakePlanAction : checkoutAction)(prev, data);
     // No gateway fake a ativação é na hora; no real, o checkout redireciona para o pagamento.
     if (result?.success) router.push(afterActivationHref);
     return result;
@@ -106,11 +109,19 @@ export function SubscribePanel({
                 ) : null}
               </span>
               <span className="font-heading text-2xl font-extrabold tabular-nums">
-                {formatCents(option.monthlyCents)}
-                <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                {option.noCharge ? (
+                  "Grátis"
+                ) : (
+                  <>
+                    {formatCents(option.monthlyCents)}
+                    <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                  </>
+                )}
               </span>
               <span className="text-xs text-muted-foreground">
-                {option.interval === "year"
+                {option.noCharge
+                  ? "Sem cobrança enquanto durar o piloto."
+                  : option.interval === "year"
                   ? `${option.termPayments}x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho${option.termPayments === 12 ? "" : ` ${termRenewalLabel(option.termPayments)}`}.`
                   : "Cobrança todo mês. Cancele quando quiser."}
               </span>
@@ -146,19 +157,31 @@ export function SubscribePanel({
           </Alert>
         ) : null}
         <Button type="submit" size="lg" disabled={pending} className="h-14 w-full text-base font-semibold md:h-14">
-          {pending ? "Abrindo o pagamento..." : withTrial ? `Começar agora: ${trialDays} dias grátis` : `Assinar o plano ${plan.name}`}
+          {pending
+            ? noCharge
+              ? "Ativando..."
+              : "Abrindo o pagamento..."
+            : noCharge
+              ? `Ativar o plano ${plan.name}`
+              : withTrial
+                ? `Começar agora: ${trialDays} dias grátis`
+                : `Assinar o plano ${plan.name}`}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          {withTrial
+          {noCharge
+            ? "Nada é cobrado. Quando o piloto terminar, você escolhe o plano para continuar, e os seus dados ficam guardados."
+            : withTrial
             ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.monthlyCents)}${plan.interval === "year" ? ` (1ª de ${plan.termPayments} ${plan.termPayments === 1 ? "parcela" : "parcelas"})` : ""} será em ${firstChargeDate(trialDays)}. Cancele antes e não pague nada.`
             : plan.interval === "year"
               ? `${formatCents(plan.monthlyCents)} por mês no cartão, durante ${plan.termPayments} ${plan.termPayments === 1 ? "mês" : "meses"}, renovando automaticamente ${termRenewalLabel(plan.termPayments)}. A primeira é agora.`
               : `Cobrança agora de ${formatCents(plan.priceCents)}, e depois todo mês. Cancele quando quiser.`}
         </p>
-        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-          <ShieldCheck className="size-3.5" />
-          {isFakeGateway ? "Ambiente de teste: o pagamento é simulado." : `Pagamento seguro, processado pelo ${gatewayName}.`}
-        </p>
+        {noCharge ? null : (
+          <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5" />
+            {isFakeGateway ? "Ambiente de teste: o pagamento é simulado." : `Pagamento seguro, processado pelo ${gatewayName}.`}
+          </p>
+        )}
       </form>
 
       {trialAvailable && cardlessTrial ? (

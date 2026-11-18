@@ -7,6 +7,7 @@ import {
   hasPlanAccess,
   type BillingRepository,
   isCardlessTrial,
+  isPilotSubscription,
 } from "./billingService";
 
 function makePlan(overrides: Partial<Plan>): Plan {
@@ -104,6 +105,26 @@ function makeRepo(state: {
       if (!row) throw new Error("not found");
       Object.assign(row, data);
       return row;
+    },
+    async activatePilot({ companyId, planId }) {
+      const row = makeSubscription({
+        id: `sub-${state.subscriptions.length + 1}`,
+        company_id: companyId,
+        plan_id: planId,
+        external_subscription_id: null,
+        external_customer_id: null,
+        gateway_provider: null,
+        contracted_price_cents: 0,
+        current_period_end: null,
+      });
+      state.subscriptions.push(row);
+      return row;
+    },
+    async endPilot({ companyId }) {
+      const row = state.subscriptions.find((s) => s.company_id === companyId && !s.deleted_at);
+      if (!row) throw new Error("pilot_not_found");
+      Object.assign(row, { status: "canceled", current_period_end: new Date().toISOString(), renews: false, deleted_at: new Date().toISOString() });
+      return { subscriptionId: row.id, planId: row.plan_id, removedEmails: [] };
     },
     async ownerHasSubscriptionHistory(companyId) {
       // No teste há uma empresa só, então por-dono e por-empresa coincidem; a
@@ -998,5 +1019,58 @@ describe("troca de plano no fim do período", () => {
     );
     expect(calls[0]).toMatchObject({ valueCents: 20000, maxPayments: null, externalReference: `${COMPANY}:plan-max` });
     expect(state.subscriptions[0]).toMatchObject({ plan_id: "plan-max", scheduled_plan_id: null, external_subscription_id: "ext-termo-2" });
+  });
+});
+
+describe("plano piloto (preço 0, privado, sem prazo)", () => {
+  const PILOT_PLAN = makePlan({ id: "pilot", code: "piloto", name: "Piloto", price_cents: 0, is_public: false });
+  const pilotSubscription = (overrides: Partial<Subscription> = {}) =>
+    makeSubscription({ plan_id: "pilot", external_subscription_id: null, external_customer_id: null, gateway_provider: null, contracted_price_cents: 0, current_period_end: null, ...overrides });
+
+  it("assinatura ativa, sem gateway e sem fim é piloto, e dá acesso para sempre", () => {
+    const pilot = pilotSubscription();
+    expect(isPilotSubscription(pilot)).toBe(true);
+    expect(hasPlanAccess(pilot, new Date("2099-01-01T00:00:00Z"))).toBe(true);
+  });
+
+  it("assinatura paga ou com prazo não é piloto", () => {
+    expect(isPilotSubscription(null)).toBe(false);
+    expect(isPilotSubscription(makeSubscription({}))).toBe(false);
+    expect(isPilotSubscription(pilotSubscription({ current_period_end: "2026-12-01T00:00:00Z" }))).toBe(false);
+    expect(isPilotSubscription(pilotSubscription({ renews: false }))).toBe(false);
+    expect(isPilotSubscription(pilotSubscription({ status: "trialing" }))).toBe(false);
+  });
+
+  it("depois de encerrada, a empresa fica sem acesso e cai na tela de assinar", async () => {
+    const state = { plans: [PILOT_PLAN, makePlan({ id: "free", code: DEFAULT_PLAN_CODE, price_cents: 0 })], subscriptions: [pilotSubscription()] };
+    const service = createBillingService(makeRepo(state));
+    expect((await service.getAccessState("company-1")).hasAccess).toBe(true);
+
+    await service.endPilot("company-1", "admin-1");
+
+    const after = await service.getAccessState("company-1");
+    expect(after.hasAccess).toBe(false);
+    expect(await service.getEffectivePlan("company-1")).toMatchObject({ code: DEFAULT_PLAN_CODE });
+  });
+
+  it("só ativa plano privado, de preço 0, mensal, ativo e que não seja o padrão", async () => {
+    const state = { plans: [PILOT_PLAN], subscriptions: [] as Subscription[] };
+    const service = createBillingService(makeRepo(state));
+
+    const subscription = await service.activatePilot("company-1", PILOT_PLAN, "user-1");
+    expect(isPilotSubscription(subscription)).toBe(true);
+    expect(subscription.contracted_price_cents).toBe(0);
+
+    for (const plan of [
+      null,
+      makePlan({ price_cents: 9900, is_public: false }),
+      makePlan({ price_cents: 0, is_public: true, code: "gratis" }),
+      makePlan({ price_cents: 0, is_public: false, code: "free" }),
+      makePlan({ price_cents: 0, is_public: false, code: "piloto", is_active: false }),
+      makePlan({ price_cents: 0, is_public: false, code: "piloto", billing_interval: "year" }),
+    ]) {
+      await expect(service.activatePilot("company-1", plan, "user-1")).rejects.toMatchObject({ code: "not_found" });
+    }
+    expect(state.subscriptions).toHaveLength(1);
   });
 });

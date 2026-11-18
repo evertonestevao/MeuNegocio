@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CYCLE_CHOICES, cycleSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale, termCycleLabel, termRenewalLabel, switchablePlans } from "./planFeatures";
+import { CYCLE_CHOICES, isNoChargePlan, cycleSavingsCents, planCycleLabel, planMonthlyCents, planOfferLines, planTermPayments, plansForSale, termCycleLabel, termRenewalLabel, switchablePlans } from "./planFeatures";
 
 describe("oferta do plano", () => {
   it("mostra limites e omite recurso que o plano não tem", () => {
@@ -32,6 +32,17 @@ describe("preços do anual e do mensal", () => {
 
   it("vende só os pagos, com o anual primeiro", () => {
     expect(plansForSale([free, monthly, annual])).toEqual([annual, monthly]);
+  });
+
+  it("o plano piloto (preço 0, privado, que não é o padrão) entra na oferta; o de preço 0 público ou o padrão não", () => {
+    const pilot = { price_cents: 0, billing_interval: "month" as const, code: "piloto", is_public: false };
+    const openFree = { price_cents: 0, billing_interval: "month" as const, code: "gratis", is_public: true };
+    const defaultFree = { price_cents: 0, billing_interval: "month" as const, code: "free", is_public: false };
+    expect(isNoChargePlan(pilot)).toBe(true);
+    expect(isNoChargePlan(openFree)).toBe(false);
+    expect(isNoChargePlan(defaultFree)).toBe(false);
+    expect(isNoChargePlan({ price_cents: 100, code: "piloto", is_public: false })).toBe(false);
+    expect(plansForSale([openFree, defaultFree, pilot, monthly])).toEqual([pilot, monthly]);
   });
 });
 

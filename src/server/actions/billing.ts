@@ -17,7 +17,8 @@ import { getSupabaseAdminClient } from "@/server/supabase-admin";
 import { getSupabaseServerClient } from "@/server/supabase-server";
 import { getActiveTenant, getTenantService } from "@/server/tenant";
 import { isOnboardingPending } from "@/server/signupFlow";
-import { CARDLESS_TRIAL_OFFERED, createBillingService, hasPlanAccess, isCardlessTrial, trialEndsAt } from "@/services/billingService";
+import { isNoChargePlan } from "@/config/planFeatures";
+import { CARDLESS_TRIAL_OFFERED, createBillingService, hasPlanAccess, isCardlessTrial, isPilotSubscription, trialEndsAt } from "@/services/billingService";
 import { permissionService } from "@/services/permissionService";
 import { createUserService } from "@/services/userService";
 import type { NormalizedPaymentEvent } from "@/types/billing";
@@ -63,9 +64,17 @@ export async function checkoutAction(
       throw new AppError("not_found", "Plano não encontrado");
     }
 
+    // Plano piloto não passa pelo gateway: ativa pela tela de assinar, e só para quem foi liberado.
+    if (isNoChargePlan(plan)) {
+      throw new AppError("conflict", "Este plano não tem cobrança: ative-o na tela de assinar.");
+    }
+
     // Quem já tem assinatura paga com renovação automática troca de plano pela tela de troca (vale no fim
     // do período). Uma segunda assinatura no gateway cobraria o cliente em dobro.
     const current = await repo.getActiveSubscription(companyId);
+    if (isPilotSubscription(current)) {
+      throw new AppError("conflict", "Sua empresa está no plano piloto. Quando ele terminar, você escolhe o plano aqui.");
+    }
     if (current?.renews && current.external_subscription_id && ["active", "past_due"].includes(current.status) && hasPlanAccess(current)) {
       throw new AppError("conflict", "Você já tem uma assinatura ativa. Para mudar de plano, use a troca de plano.");
     }
@@ -108,6 +117,39 @@ export async function checkoutAction(
     return toActionError(err);
   }
   redirect(checkoutUrl);
+}
+
+/**
+ * Ativa o plano piloto (preço 0, privado, sem prazo). Só o proprietário, e só quem o super admin liberou por
+ * e-mail: o plano é lido com a sessão do usuário (RLS) e o banco confere de novo o e-mail e o proprietário.
+ */
+export async function activatePilotPlanAction(
+  _prev: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const companyId = String(formData.get("companyId") ?? "");
+    const planId = String(formData.get("planId") ?? "");
+    await requireOwner(companyId);
+
+    const client = await getSupabaseServerClient();
+    const [{ data: userData }, plan] = await Promise.all([client.auth.getUser(), createSupabaseBillingRepository(client).getPlanById(planId)]);
+    if (!userData.user) throw new AppError("unauthorized", "Sessão expirada");
+
+    const service = createBillingService(createSupabaseBillingRepository(getSupabaseAdminClient()));
+    const subscription = await service.activatePilot(companyId, plan, userData.user.id);
+    await recordAudit({
+      companyId,
+      action: "subscription.pilot_started",
+      entityType: "subscription",
+      entityId: subscription.id,
+      metadata: { plan_id: planId },
+    });
+    revalidatePath("/dashboard", "layout");
+    return { success: "Plano piloto ativado" };
+  } catch (err) {
+    return toActionError(err);
+  }
 }
 
 /** Troca de plano que vale no fim do período já pago. Só o proprietário; o plano precisa ser melhor que o atual. */
@@ -246,6 +288,9 @@ export async function cancelSubscriptionAction(
       throw new AppError("not_found", "Nenhuma assinatura ativa");
     }
 
+    if (isPilotSubscription(subscription)) {
+      throw new AppError("conflict", "O plano piloto não tem cobrança nem o que cancelar. Quem o encerra é o suporte.");
+    }
     if (isCardlessTrial(subscription)) {
       throw new AppError("conflict", "O teste grátis termina sozinho, sem cobrança. Não há nada a cancelar.");
     }

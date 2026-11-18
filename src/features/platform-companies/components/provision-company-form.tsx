@@ -70,7 +70,7 @@ export function ProvisionCompanyForm({ plans, loginUrl }: { plans: Pick<Plan, "i
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground">Libera o plano sem cobrança, pelo período dele, sem renovar sozinho.</p>
+          <p className="text-xs text-muted-foreground">Libera o plano sem cobrança, pelo período dele, sem renovar sozinho. O plano piloto (preço zero) não tem prazo: vale até você encerrar na ficha da empresa.</p>
         </div>
       </div>
       <Button type="submit" disabled={pending} className="self-start">
