@@ -120,7 +120,7 @@ export function SubscribePanel({
               </span>
               <span className="text-xs text-muted-foreground">
                 {option.noCharge
-                  ? "Sem cobrança enquanto durar o piloto."
+                  ? "Acesso liberado, sem cobrança."
                   : option.interval === "year"
                   ? `${option.termPayments}x de ${formatCents(option.monthlyCents)}/mês no cartão. Renova sozinho${option.termPayments === 12 ? "" : ` ${termRenewalLabel(option.termPayments)}`}.`
                   : "Cobrança todo mês. Cancele quando quiser."}
@@ -169,7 +169,7 @@ export function SubscribePanel({
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {noCharge
-            ? "Nada é cobrado. Quando o piloto terminar, você escolhe o plano para continuar, e os seus dados ficam guardados."
+            ? "Nada é cobrado. Quando este acesso terminar, você escolhe o plano para continuar, e os seus dados ficam guardados."
             : withTrial
             ? `Nada é cobrado hoje. A primeira cobrança de ${formatCents(plan.monthlyCents)}${plan.interval === "year" ? ` (1ª de ${plan.termPayments} ${plan.termPayments === 1 ? "parcela" : "parcelas"})` : ""} será em ${firstChargeDate(trialDays)}. Cancele antes e não pague nada.`
             : plan.interval === "year"

@@ -206,8 +206,8 @@ $$;
 -- (/admin/planos): dá para editar os limites e liberar os e-mails.
 -- ---------------------------------------------------------------------------
 insert into public.plans (code, name, price_cents, extra_seat_price_cents, features, payment_methods, trial_days, billing_interval, is_public, custom_text)
-select 'piloto', 'Piloto', 0, 0, features, payment_methods, 0, 'month', false,
-       'Plano de teste sem cobrança, liberado para empresas convidadas.'
+select 'piloto', 'Cortesia', 0, 0, features, payment_methods, 0, 'month', false,
+       'Acesso liberado, sem cobrança.'
 from public.plans
 where code = 'pro' and deleted_at is null
   and not exists (select 1 from public.plans where code = 'piloto');

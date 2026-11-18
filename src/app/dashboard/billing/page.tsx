@@ -106,7 +106,7 @@ export default async function BillingPage() {
         {nextChargeNotice(subscription) ? <p className="mt-1 text-sm text-muted-foreground">{nextChargeNotice(subscription)}</p> : null}
         {inPilot ? (
           <p className="mt-1 text-sm text-muted-foreground">
-            Sua empresa está no plano piloto, sem cobrança e sem data para acabar. Quando o piloto terminar, você escolhe o plano na tela de
+            Sua empresa tem acesso liberado, sem cobrança e sem data para acabar. Quando ele terminar, você escolhe o plano na tela de
             assinar, e todos os seus dados continuam guardados.
           </p>
         ) : null}

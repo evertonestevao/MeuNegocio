@@ -73,7 +73,7 @@ export async function checkoutAction(
     // do período). Uma segunda assinatura no gateway cobraria o cliente em dobro.
     const current = await repo.getActiveSubscription(companyId);
     if (isPilotSubscription(current)) {
-      throw new AppError("conflict", "Sua empresa está no plano piloto. Quando ele terminar, você escolhe o plano aqui.");
+      throw new AppError("conflict", "Sua empresa tem acesso liberado. Quando ele terminar, você escolhe o plano aqui.");
     }
     if (current?.renews && current.external_subscription_id && ["active", "past_due"].includes(current.status) && hasPlanAccess(current)) {
       throw new AppError("conflict", "Você já tem uma assinatura ativa. Para mudar de plano, use a troca de plano.");
@@ -146,7 +146,7 @@ export async function activatePilotPlanAction(
       metadata: { plan_id: planId },
     });
     revalidatePath("/dashboard", "layout");
-    return { success: "Plano piloto ativado" };
+    return { success: "Plano ativado" };
   } catch (err) {
     return toActionError(err);
   }
@@ -289,7 +289,7 @@ export async function cancelSubscriptionAction(
     }
 
     if (isPilotSubscription(subscription)) {
-      throw new AppError("conflict", "O plano piloto não tem cobrança nem o que cancelar. Quem o encerra é o suporte.");
+      throw new AppError("conflict", "O seu acesso é liberado, sem cobrança, e não há o que cancelar. Quem o encerra é o suporte.");
     }
     if (isCardlessTrial(subscription)) {
       throw new AppError("conflict", "O teste grátis termina sozinho, sem cobrança. Não há nada a cancelar.");
