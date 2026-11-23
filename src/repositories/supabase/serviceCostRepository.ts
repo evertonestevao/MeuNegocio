@@ -3,6 +3,7 @@ import { AppError } from "@/lib/errors";
 import type { LaborEntry, LaborRate, PlannedLine, QuoteTaxRate, ServiceCostRepository, ServiceQuoteRow, ServiceVisit } from "@/services/serviceCostService";
 import type { CompanyTax } from "@/types/tax";
 import type { Expense } from "@/types/finance";
+import { INSTALLMENTS_EMBED, liveInstallments, type InstallmentRow } from "./expenseRepository";
 
 function fail(error: unknown): never {
   throw new AppError("internal_error", "Falha ao ler os custos do serviço", error);
@@ -93,16 +94,17 @@ export function createSupabaseServiceCostRepository(client: SupabaseClient): Ser
     async listExpenses(companyId, quoteIds) {
       const { data, error } = await client
         .from("expenses")
-        .select("id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), supplier_ref:suppliers(name)")
+        .select(`id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), supplier_ref:suppliers(name), ${INSTALLMENTS_EMBED}`)
         .eq("company_id", companyId)
         .in("quote_id", quoteIds)
         .is("deleted_at", null)
         .order("expense_date", { ascending: false });
       if (error) fail(error);
       type Supplier = { name: string } | { name: string }[] | null;
-      type Row = Omit<Expense, "category_name"> & { category: { name: string } | null; supplier_ref: Supplier };
-      return ((data ?? []) as unknown as Row[]).map(({ category, supplier_ref, ...row }) => ({
+      type Row = Omit<Expense, "category_name" | "installments"> & { category: { name: string } | null; supplier_ref: Supplier; installments: InstallmentRow[] | null };
+      return ((data ?? []) as unknown as Row[]).map(({ category, supplier_ref, installments, ...row }) => ({
         ...row,
+        installments: liveInstallments(installments),
         category_name: category?.name ?? "",
         supplier: (Array.isArray(supplier_ref) ? supplier_ref[0] : supplier_ref)?.name ?? null,
       }));

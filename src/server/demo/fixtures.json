@@ -2375,6 +2375,63 @@
 "quote_id": null,
 "supplier_id": null,
 "payment_method": null
+},
+{
+"id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b001",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Bomba de vácuo e detector de vazamento (3x no cartão)",
+"category_id": "8b7c001e-d205-41c5-8a8b-631d0f02a679",
+"amount_cents": 270000,
+"expense_date": "2026-10-08",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": null,
+"supplier_id": "5b8d8e1c-336a-549f-b07e-e820d139a693",
+"payment_method": "credit"
+},
+{
+"id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b002",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Tubos e conexões (boleto para 28 dias)",
+"category_id": "30c14a4c-df3f-4617-adaa-54a844dad61f",
+"amount_cents": 86000,
+"expense_date": "2026-10-27",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": null,
+"supplier_id": "750b5b51-1983-5103-b321-5af402f3343e",
+"payment_method": "boleto"
+},
+{
+"id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b003",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"description": "Conta de energia do galpão",
+"category_id": "3fc94d23-34d4-47e8-bfaf-0d898d931593",
+"amount_cents": 41000,
+"expense_date": "2026-10-03",
+"kind": "one_off",
+"employee_id": null,
+"template_id": null,
+"template_month": null,
+"notes": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00",
+"quote_id": null,
+"supplier_id": null,
+"payment_method": "boleto"
 }
 ],
 "subscriptions": [
@@ -2977,6 +3034,68 @@
 "created_at": "2026-10-31T20:46:51.25499+00:00",
 "updated_at": "2026-10-31T20:46:51.25499+00:00",
 "fee_cents": 0
+}
+],
+"expense_installments": [
+{
+"id": "e1a2b3c4-0000-4000-8000-000000000001",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"expense_id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b001",
+"number": 1,
+"due_date": "2026-10-20",
+"amount_cents": 90000,
+"paid_on": "2026-10-20",
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e1a2b3c4-0000-4000-8000-000000000002",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"expense_id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b001",
+"number": 2,
+"due_date": "2026-11-20",
+"amount_cents": 90000,
+"paid_on": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e1a2b3c4-0000-4000-8000-000000000003",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"expense_id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b001",
+"number": 3,
+"due_date": "2026-12-20",
+"amount_cents": 90000,
+"paid_on": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e1a2b3c4-0000-4000-8000-000000000004",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"expense_id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b002",
+"number": 1,
+"due_date": "2026-10-26",
+"amount_cents": 86000,
+"paid_on": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
+},
+{
+"id": "e1a2b3c4-0000-4000-8000-000000000005",
+"company_id": "cb37c235-0282-49ad-89d8-200b02325dc0",
+"expense_id": "d3a1f0c2-7b44-4c1e-9a10-5e2c11a0b003",
+"number": 1,
+"due_date": "2026-10-18",
+"amount_cents": 41000,
+"paid_on": null,
+"deleted_at": null,
+"created_at": "2026-10-31T20:46:51.25499+00:00",
+"updated_at": "2026-10-31T20:46:51.25499+00:00"
 }
 ]
 },

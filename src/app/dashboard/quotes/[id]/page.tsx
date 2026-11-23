@@ -90,6 +90,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             employees: employees.map(({ id: employeeId, name, active: isActive }) => ({ id: employeeId, name, active: isActive })),
             quotes: quoteOptions,
             suppliers: suppliers.map(({ id: supplierId, name }) => ({ id: supplierId, name })),
+            today,
           },
         };
       })()

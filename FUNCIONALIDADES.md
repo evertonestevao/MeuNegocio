@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-18 (item "Nova empresa" escondido do seletor)
+**Última atualização:** 2026-11-23 (contas a pagar: parcelas dos gastos, vencimento e baixa)
 
 ## Sumário
 
@@ -297,7 +297,8 @@ Código: `src/services/auditService.ts`, `src/server/audit.ts`.
 
 - **Início** (`/dashboard`): cartões de visitas de hoje e em negociação; visitas de hoje e amanhã; orçamentos aguardando resposta e aprovados por fechar. 
 - **Primeiros passos** (Início, só proprietário e administrador): enquanto falta algo, um cartão mostra quanto já foi feito e leva a cada passo: enviar o logo, cadastrar serviços no catálogo, trazer os clientes e montar o primeiro orçamento. Some assim que o primeiro orçamento é feito — o objetivo do cartão —, mesmo que o logo ou os clientes não tenham sido preenchidos, ou com "Não mostrar mais", que fica guardado na empresa (some em qualquer aparelho, não só no navegador). Owner e admin também veem o caixa do mês (recebido − gastos), a pagar em 7 dias, o que vence hoje e um aviso de recebimentos atrasados e dos que vencem em 7 dias, com link para Contas a receber. Member não vê saldo nem gastos, e o técnico entra direto em Minhas visitas. Gráficos: agenda dos próximos 7 dias por tipo de visita (todos do escritório) e faturado, recebido e gastos dos últimos 6 meses (owner e admin).
-- **A pagar em 7 dias:** soma os gastos lançados e, no fim do mês, as recorrências do mês seguinte que vencem no prazo, ainda antes de virarem lançamento. A previsão não entra no saldo nem em "A pagar hoje".
+- **A pagar em 7 dias:** soma as contas a pagar que vencem no prazo (parcelas dos gastos ainda não pagas), as recorrências já geradas com data no prazo e, no fim do mês, as do mês seguinte, ainda antes de virarem lançamento. O que já foi pago e o atrasado ficam de fora. "A pagar hoje" lista as que vencem hoje e leva a Gastos › A pagar. A previsão não entra no saldo nem em "A pagar hoje".
+- **Caixa do mês (Início):** recebido − pago no mês, com "Recebeu X · pagou Y".
 - **Navegação:** no computador, menu lateral que colapsa em ícones ("rail"). Abaixo de 1024 px, abas fixas embaixo (Início, Serviços, Agenda e Orçamentos, ou Minhas visitas para o técnico) e "Mais", com os demais itens, tema e sair.
 - **Início, saudação:** mostra bom dia, boa tarde ou boa noite no fuso da empresa e um resumo do mês com faturado, recebido, gastos e caixa.
   Os itens aparecem conforme o papel:
@@ -593,11 +594,14 @@ Código: `src/services/hoursService.ts`, `src/lib/hoursCalc.ts`, `src/server/act
 
 ## 23. Gastos
 
-Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calendário ou lista), Recorrentes, Categorias e Fornecedores.
+Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calendário ou lista), A pagar, Recorrentes, Categorias e Fornecedores.
 
 | Função | Regras |
 |---|---|
-| **Lançamentos** | Descrição, valor, data, categoria, fornecedor, forma de pagamento (PIX, dinheiro, débito, crédito, boleto, transferência ou outro), serviço, funcionário e observações; só os quatro primeiros são obrigatórios. Tipos: pontual, recorrente, folha e prestador. |
+| **Lançamentos** | Descrição, valor total, **data do gasto** (quando a compra aconteceu: é ela que conta no resultado do mês, no custo do serviço e nas contas por fornecedor), categoria, fornecedor, forma de pagamento (PIX, dinheiro, débito, crédito, boleto, transferência ou outro), serviço, funcionário e observações; só os quatro primeiros são obrigatórios. Tipos: pontual, recorrente, folha e prestador. Cada lançamento mostra a situação do pagamento: "Pago", "A pagar · vence em…" ou "1 de 3 parcelas pagas · próxima vence em…" (em vermelho quando venceu). "Total do mês" soma pela data do gasto, inclusive o que ainda vai ser pago. |
+| **Pagamento no lançamento** | Bloco "Pagamento" no formulário, com dicas no ícone ⓘ: **Já paguei** (com "Pago em", padrão a data do gasto, até hoje) ou **Vou pagar depois**, com **Parcelas** (1 = de uma vez, até 60) e **Vencimento da 1ª**. As outras vencem no mesmo dia dos meses seguintes (no mês mais curto, o último dia), e os centavos que sobram vão na 1ª. A tela mostra a prévia de cada parcela antes de salvar. No cartão de crédito: a data do gasto é a da compra e o vencimento é o da fatura (o formulário avisa). Gasto novo com data futura já começa em "Vou pagar depois". Com mais de uma parcela e alguma paga, valor e parcelas ficam travados (a tela mostra as parcelas e diz para desfazer o pagamento antes); o resto do gasto continua editável. O banco reconfere: parcelas somando o valor, de 1 a 60, pagamento até hoje no fuso da empresa (`save_expense`). |
+| **A pagar** (aba, com o número de contas em aberto; vermelho se há atrasada) | Totais "A pagar" (tudo em aberto), "Atrasado" e "Em 7 dias", e a lista das parcelas não pagas, da mais antiga para a mais nova: descrição, situação (atrasada há N dias, vence hoje, vence em), "Parcela 2 de 3", fornecedor, categoria e forma. **Dar baixa** registra o pagamento hoje, com "Desfazer" no aviso; **Outra data** (ícone, com a legenda no mouse e o texto no celular) registra o pagamento num dia até hoje. "Pagas" lista as pagas no mês escolhido, com o total, e **Desfazer** devolve a parcela para a pagar. Baixa e desfazer entram na auditoria ("Conta paga" / "Pagamento de conta desfeito"). |
+| **Contas que já existiam** | Viraram uma parcela cada: as com data até o dia da mudança ficaram pagas nessa data; as com data futura, a pagar nela. Nenhum valor mudou. Recorrências, folha e pagamento de prestador gerados continuam como antes: contam como pagos na data deles. |
 | **Fornecedor no lançamento** | Ao digitar, lista os fornecedores cadastrados (sem diferença de acento ou maiúscula). Nome novo vira cadastro ao salvar o gasto, sem duplicar um que já existe. |
 | **Fornecedores** (aba) | Nome, CNPJ ou CPF, telefone e observações. Mostra, em 3 meses, 12 meses ou tudo, quanto foi para cada fornecedor, número de compras, última compra e categorias principais, e "De quem mais compramos": os 3 fornecedores que mais receberam em cada categoria. Excluir mantém o nome nos gastos já lançados. |
 | **Ficha do fornecedor** | Em `/dashboard/expenses/suppliers/[id]` (toque no nome do fornecedor na aba). Mostra o cadastro, a visão geral (total comprado, ticket médio, faixa de preço entre a menor e a maior compra, última compra e desde quando) e o histórico de compras, filtrável por descrição (sem diferença de acento ou maiúscula) e por faixa de preço, com ordenação por mais recentes ou maior valor. Só leitura; editar o cadastro abre o mesmo formulário da aba. |
@@ -608,7 +612,7 @@ Tela em `/dashboard/expenses`, só para owner e admin, com Lançamentos (calend�
 | **Pagamento de prestador** | Vem do fechamento das horas e não é editado. Excluir devolve as horas para aprovado. |
 | **Categorias** | Toda empresa nasce com as categorias padrão. Categoria em uso ou usada pelo sistema não é excluída. |
 
-Código: `src/services/expenseService.ts`, `src/server/actions/expenses.ts`, `src/features/expenses/`.
+Código: `src/services/expenseService.ts`, `src/lib/payables.ts`, `src/server/actions/expenses.ts`, `src/features/expenses/`. Parcelas em `expense_installments` (com `company_id` e RLS: só owner e admin leem; escrita só pelas funções `save_expense`, `pay_expense_installment`, `undo_pay_expense_installment` e `delete_expense`). Testes: `src/lib/payables.test.ts`, `src/services/expenseService.test.ts` e `supabase/tests/payables_test.sql` (isolamento entre empresas e travas).
 
 ## 24. Financeiro
 
@@ -616,7 +620,7 @@ Tela em `/dashboard/finance`, só para owner e admin.
 
 | Função | Regras |
 |---|---|
-| **Resumo do mês** | Faturado, recebido, gastos e caixa do mês, com a variação sobre o mês anterior. **Faturado** é o que foi vendido; **recebido**, o dinheiro que entrou; **caixa**, recebido − gastos (pode ficar negativo). O resultado pelo faturado (faturado − gastos) aparece junto do caixa. |
+| **Resumo do mês** | Faturado, recebido, gastos e caixa do mês, com a variação sobre o mês anterior. **Faturado** é o que foi vendido; **recebido**, o dinheiro que entrou; **gastos**, o que foi comprado, pela data do gasto (mesmo o que ainda vai ser pago); **caixa**, recebido − **pago** no mês (as parcelas dos gastos pagas nele; pode ficar negativo). Uma compra de outubro paga em novembro conta nos gastos de outubro e no caixa de novembro. O resultado pelo faturado (faturado − gastos) aparece junto do caixa. |
 | **Faturado** | Vem só de orçamentos fechados, na data de competência. Desfazer o fechamento tira o valor. É a base do resultado do serviço, da margem e do imposto. |
 | **Como o cliente paga** (no fechamento) | À vista (forma e se já foi recebido), entrada + parcelas (valor e forma da entrada, restante em N vezes mês a mês a partir de uma data, com a forma), cartão parcelado (N parcelas no crédito, a receber a partir do primeiro repasse) ou personalizado (cada parcela com valor, vencimento, forma e se já foi recebida). Os centavos que sobram da divisão vão na primeira parcela. As parcelas precisam somar o valor fechado, conferido na tela e no banco; até 60. Parcela marcada como recebida entra no caixa no vencimento, sem passar de hoje. |
 | **Contas a receber** (cartão no Financeiro e `/dashboard/finance/recebimentos`) | No Financeiro: total a receber, atrasado e as parcelas atrasadas ou que vencem em 30 dias. Na página: a receber, atrasado e em 7 dias, a lista "A receber" (da mais antiga para a mais nova) e "Recebidos" por mês. Cada parcela mostra o orçamento, o cliente, a forma e a situação (atrasada há N dias, vence hoje, vence em, recebida em). Na página do orçamento fechado, "Recebimentos" mostra as parcelas dele e quanto já entrou. |
@@ -627,8 +631,8 @@ Tela em `/dashboard/finance`, só para owner e admin.
 | **Lembrete de cobrança** | Nas parcelas a receber, o botão do WhatsApp abre a conversa com o contato principal do cliente e uma mensagem pronta, com o valor, o orçamento e o vencimento (ou "que venceu em"). Sem provedor: é um link `wa.me`. Na demonstração, abre o número comercial. |
 | **No cliente** | A ficha do cliente mostra "A receber deste cliente": o total, o atrasado e as parcelas, com baixa e lembrete. Só owner e admin. |
 | **Serviços fechados antes** | Viraram uma parcela única, recebida na data de competência: nenhum valor mudou. |
-| **Últimos 6 meses** | Gráfico de faturado, recebido e gastos e, logo abaixo, "Mês a mês" com faturado, recebido, gastos e caixa de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
-| **Próximas 4 semanas** (fluxo de caixa) | A partir de hoje, semana a semana: entra o que vence das parcelas a receber (já sem a taxa do cartão), sai o que está lançado com data de hoje em diante e as recorrências dos meses ainda não gerados. Mostra o que entra, o que sai, o resultado da semana e o acumulado, mais o total das 4 semanas. Não conta o saldo que já está no banco, e diz isso. O atrasado fica fora das semanas, citado à parte; se o acumulado fica negativo, avisa até quando sai mais do que entra. |
+| **Últimos 6 meses** | Gráfico de faturado, recebido e gastos e, logo abaixo, "Mês a mês" com faturado, recebido, pago e caixa (recebido − pago) de cada mês (do mais recente ao mais antigo; tocar no mês abre esse mês). No computador fica sempre aberto; no celular, recolhido em "Ver mês a mês". |
+| **Próximas 4 semanas** (fluxo de caixa) | A partir de hoje, semana a semana: entra o que vence das parcelas a receber (já sem a taxa do cartão), sai o que vence das contas a pagar (parcelas ainda não pagas), as recorrências já geradas com data de amanhã em diante e as dos meses ainda não gerados. O que já foi pago não entra: esse dinheiro já saiu. Mostra o que entra, o que sai, o resultado da semana e o acumulado, mais o total das 4 semanas. Não conta o saldo que já está no banco, e diz isso. O atrasado fica fora das semanas, citado à parte; se o acumulado fica negativo, avisa até quando sai mais do que entra. |
 | **Gastos por categoria** | Só do mês escolhido, da maior para a menor. |
 | **Previsão** | Aprovados a fechar e enviados aguardando resposta. Fica separada e não entra no saldo. |
 | **Listas** | Orçamentos fechados e lançamentos de gasto do mês. |

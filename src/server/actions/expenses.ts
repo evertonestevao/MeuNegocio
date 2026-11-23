@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { categoryNameSchema, parseExpenseForm, parseExpenseTemplateForm, parseSupplierForm } from "@/features/expenses/schemas";
+import { todayInTimezone } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import { getActor } from "@/server/actor";
 import { recordAudit } from "@/server/audit";
 import { getExpenseService } from "@/server/finance";
+import { getCompanyProfileService } from "@/server/quotes";
 import { toActionError, type ActionState } from "./action-state";
 
 function handleError(err: unknown): ActionState {
@@ -20,7 +22,14 @@ function uuid(value: FormDataEntryValue | null, message: string): string {
   return parsed.data;
 }
 
+/** Hoje no fuso da empresa: um pagamento não pode ficar no futuro. */
+async function companyToday(companyId: string): Promise<string> {
+  const { timezone } = await (await getCompanyProfileService()).get(companyId);
+  return todayInTimezone(timezone);
+}
+
 function refresh(): void {
+  revalidatePath("/dashboard", "page");
   revalidatePath("/dashboard/expenses");
   revalidatePath("/dashboard/hours");
   revalidatePath("/dashboard/finance");
@@ -36,16 +45,47 @@ export async function saveExpenseAction(_prev: ActionState | undefined, formData
     const actor = await getActor();
     const input = parseExpenseForm(formData);
     const service = await getExpenseService();
+    const today = await companyToday(actor.companyId);
     if (formData.get("expenseId")) {
       const expenseId = uuid(formData.get("expenseId"), "Gasto inválido");
-      await service.update(actor, expenseId, input);
+      await service.update(actor, expenseId, input, today);
       await recordAudit({ companyId: actor.companyId, action: "expense.updated", entityType: "expense", entityId: expenseId });
     } else {
-      const expenseId = await service.create(actor, input);
+      const expenseId = await service.create(actor, input, today);
       await recordAudit({ companyId: actor.companyId, action: "expense.created", entityType: "expense", entityId: expenseId });
     }
     refresh();
     return { success: "Gasto salvo" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+/** Dar baixa numa parcela: paga hoje ou na data informada (nunca no futuro). */
+export async function payExpenseInstallmentAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const installmentId = uuid(formData.get("installmentId"), "Parcela inválida");
+    const today = await companyToday(actor.companyId);
+    const paidOn = z.iso.date({ error: "Informe a data do pagamento." }).parse(formData.get("paidOn") || today);
+    await (await getExpenseService()).pay(actor, installmentId, paidOn, today);
+    await recordAudit({ companyId: actor.companyId, action: "expense_installment.paid", entityType: "expense_installment", entityId: installmentId, metadata: { paid_on: paidOn } });
+    refresh();
+    return { success: "Pagamento registrado" };
+  } catch (err) {
+    return handleError(err);
+  }
+}
+
+/** Desfaz a baixa: a parcela volta para a pagar. */
+export async function undoPayExpenseInstallmentAction(_prev: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  try {
+    const actor = await getActor();
+    const installmentId = uuid(formData.get("installmentId"), "Parcela inválida");
+    await (await getExpenseService()).undoPay(actor, installmentId);
+    await recordAudit({ companyId: actor.companyId, action: "expense_installment.unpaid", entityType: "expense_installment", entityId: installmentId });
+    refresh();
+    return { success: "Pagamento desfeito" };
   } catch (err) {
     return handleError(err);
   }

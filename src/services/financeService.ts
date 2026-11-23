@@ -1,17 +1,19 @@
 import { addMonths } from "@/lib/calendar";
 import { addDays } from "@/lib/dates";
 import { expectedCents, summarizeOpen } from "@/lib/installments";
+import { outflowDate } from "@/lib/payables";
 import { AppError } from "@/lib/errors";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
-import type { Expense, ExpenseTemplate, Receivable, RevenueListItem } from "@/types/finance";
+import type { Expense, ExpenseTemplate, PayableItem, Receivable, RevenueListItem } from "@/types/finance";
 import { totalsByCategory } from "./expenseService";
 import { permissionService } from "./permissionService";
 
 /**
  * Financeiro e tela de início. Faturado é o que foi vendido (orçamentos fechados, na competência);
- * recebido é o dinheiro que entrou, parcela a parcela; caixa é o recebido menos os gastos. A
- * previsão fica à parte. Member e técnico nunca recebem saldo nem gastos.
+ * gastos, o que foi comprado (na data do gasto); recebido e pago, o dinheiro que entrou e saiu,
+ * parcela a parcela. Caixa é o recebido menos o pago. A previsão fica à parte. Member e técnico
+ * nunca recebem saldo nem gastos.
  */
 
 export interface FinanceReaders {
@@ -22,7 +24,13 @@ export interface FinanceReaders {
   listVisits(companyId: string, from: string, to: string): Promise<VisitListItem[]>;
   listOpenReceivables(companyId: string): Promise<Receivable[]>;
   listReceivedReceivables(companyId: string, from: string, to: string): Promise<Receivable[]>;
+  /** Contas a pagar ainda em aberto (parcelas dos gastos). */
+  listOpenPayables(companyId: string): Promise<PayableItem[]>;
+  /** Parcelas pagas no período, pela data do pagamento. */
+  listPaidPayables(companyId: string, from: string, to: string): Promise<PayableItem[]>;
 }
+
+type Outflow = Pick<PayableItem, "paid_on" | "due_date" | "amount_cents">;
 
 type Sized = { amount_cents: number };
 
@@ -56,14 +64,20 @@ export function buildFinanceOverview(input: {
   received?: Receivable[];
   /** Todas as parcelas ainda a receber. */
   open?: Receivable[];
+  /**
+   * Parcelas de gastos pagas na janela dos 6 meses. Sem elas (dados antigos, testes), o caixa usa os
+   * gastos pela data deles, como antes das contas a pagar.
+   */
+  paid?: Outflow[];
 }) {
-  const { month, today, revenues, expenses, openQuotes, received = [], open = [] } = input;
+  const { month, today, revenues, expenses, openQuotes, received = [], open = [], paid } = input;
   const inMonth = <T,>(items: T[], date: (item: T) => string, target: string) =>
     items.filter((item) => date(item).slice(0, 7) === target.slice(0, 7));
   const revenueOf = (target: string) => sum(inMonth(revenues, (item) => item.competence_date, target));
   const expenseOf = (target: string) => sum(inMonth(expenses, (item) => item.expense_date, target));
   const receivedOf = (target: string) =>
     inMonth(received, (item) => item.received_on ?? "", target).reduce((total, item) => total + (item.received_cents ?? 0), 0);
+  const paidOf = (target: string) => (paid ? sum(inMonth(paid, (item) => item.paid_on ?? "", target)) : expenseOf(target));
 
   const monthRevenues = inMonth(revenues, (item) => item.competence_date, month);
   const monthExpenses = inMonth(expenses, (item) => item.expense_date, month);
@@ -71,6 +85,7 @@ export function buildFinanceOverview(input: {
   const revenueCents = sum(monthRevenues);
   const expenseCents = sum(monthExpenses);
   const receivedCents = receivedOf(month);
+  const paidCents = paidOf(month);
 
   return {
     revenueCents,
@@ -78,14 +93,16 @@ export function buildFinanceOverview(input: {
     /** Faturado menos gastos: o resultado do mês pelo que foi vendido. */
     balanceCents: revenueCents - expenseCents,
     receivedCents,
-    /** Recebido menos gastos: o dinheiro que sobrou de fato. */
-    cashCents: receivedCents - expenseCents,
+    /** O que saiu do caixa no mês: as parcelas de gastos pagas nele. */
+    paidCents,
+    /** Recebido menos pago: o dinheiro que sobrou de fato. */
+    cashCents: receivedCents - paidCents,
     revenueChange: percentChange(revenueCents, revenueOf(previous)),
     expenseChange: percentChange(expenseCents, expenseOf(previous)),
     receivedChange: percentChange(receivedCents, receivedOf(previous)),
     series: Array.from({ length: 6 }, (_, index) => {
       const target = addMonths(month, index - 5);
-      return { month: target, revenueCents: revenueOf(target), receivedCents: receivedOf(target), expenseCents: expenseOf(target) };
+      return { month: target, revenueCents: revenueOf(target), receivedCents: receivedOf(target), expenseCents: expenseOf(target), paidCents: paidOf(target) };
     }),
     receivables: {
       ...summarizeOpen(open, today),
@@ -108,8 +125,9 @@ export interface HomeFinance {
   monthRevenueCents: number;
   monthExpenseCents: number;
   balanceCents: number;
-  /** Recebido no mês e caixa (recebido − gastos). */
+  /** Recebido e pago no mês, e o caixa (recebido − pago). */
   monthReceivedCents: number;
+  monthPaidCents: number;
   cashCents: number;
   overdueCents: number;
   overdueCount: number;
@@ -117,7 +135,8 @@ export interface HomeFinance {
   receivableSoonCount: number;
   dueSoonCents: number;
   dueSoonCount: number;
-  dueToday: Expense[];
+  /** Contas que vencem (ou saem) hoje. */
+  dueToday: { id: string; description: string; amount_cents: number }[];
 }
 
 /**
@@ -163,21 +182,22 @@ export const CASH_FLOW_WEEKS = 4;
 
 /**
  * Fluxo de caixa das próximas semanas, a partir de hoje: entra o que vence das parcelas a receber
- * (já sem a taxa do cartão); sai o que está lançado com data de hoje em diante e as recorrências que
- * ainda vão ser geradas. O atrasado fica à parte: não se sabe quando entra.
+ * (já sem a taxa do cartão); sai o que vence das contas a pagar (ou o que tem pagamento marcado
+ * para depois de hoje, como as recorrências geradas) e as recorrências que ainda vão ser geradas. O
+ * atrasado fica à parte: não se sabe quando entra ou sai.
  */
 export function buildCashFlow(input: {
   today: string;
   open: Pick<Receivable, "due_date" | "amount_cents" | "fee_cents" | "received_on">[];
-  expenses: Pick<Expense, "expense_date" | "amount_cents">[];
+  payables: Outflow[];
   templates: ExpenseTemplate[];
   weeks?: number;
 }) {
-  const { today, open, expenses, templates, weeks = CASH_FLOW_WEEKS } = input;
+  const { today, open, payables, templates, weeks = CASH_FLOW_WEEKS } = input;
   const until = addDays(today, weeks * 7 - 1);
   const pending = open.filter((item) => !item.received_on);
   const outgoing = [
-    ...expenses.filter((expense) => expense.expense_date >= today && expense.expense_date <= until).map((expense) => ({ date: expense.expense_date, amount_cents: expense.amount_cents })),
+    ...upcomingOutflows(payables, today, until).map((item) => ({ date: outflowDate(item), amount_cents: item.amount_cents })),
     ...projectRecurringDated(templates, today, until),
   ];
   let cumulative = 0;
@@ -198,6 +218,19 @@ export function buildCashFlow(input: {
 }
 
 export type CashFlow = ReturnType<typeof buildCashFlow>;
+
+/**
+ * O que ainda vai sair do caixa de hoje até `until`: as parcelas a pagar que vencem no período e as que
+ * já têm o pagamento marcado para depois de hoje (recorrências e folha geradas, que contam como pagas na
+ * data delas). O que já foi pago até hoje não entra: esse dinheiro já saiu. O atrasado fica à parte.
+ */
+export function upcomingOutflows<T extends Outflow>(payables: T[], today: string, until: string): T[] {
+  return payables.filter((item) => {
+    const date = outflowDate(item);
+    if (date > until) return false;
+    return item.paid_on ? item.paid_on > today : date >= today;
+  });
+}
 
 export interface WeekLoadDay {
   date: string;
@@ -222,15 +255,19 @@ export function buildHomeFinance(input: {
   today: string;
   revenues: Sized[];
   monthExpenses: Expense[];
-  upcoming: Expense[];
+  /** Contas que saem de hoje até o fim da janela (7 dias). */
+  upcoming: (Outflow & { id: string; description: string })[];
   projected?: Sized[];
   trend?: HomeFinance["trend"];
   monthReceivedCents?: number;
+  /** Pago no mês (parcelas de gastos). Sem ele, o caixa usa os gastos do mês. */
+  monthPaidCents?: number;
   open?: Receivable[];
 }): HomeFinance {
   const { today, revenues, monthExpenses, upcoming, projected = [], trend = [], monthReceivedCents = 0, open = [] } = input;
   const monthRevenueCents = sum(revenues);
   const monthExpenseCents = sum(monthExpenses);
+  const monthPaidCents = input.monthPaidCents ?? monthExpenseCents;
   const receivables = summarizeOpen(open, today);
   return {
     trend,
@@ -238,14 +275,15 @@ export function buildHomeFinance(input: {
     monthExpenseCents,
     balanceCents: monthRevenueCents - monthExpenseCents,
     monthReceivedCents,
-    cashCents: monthReceivedCents - monthExpenseCents,
+    monthPaidCents,
+    cashCents: monthReceivedCents - monthPaidCents,
     overdueCents: receivables.overdueCents,
     overdueCount: receivables.overdueCount,
     receivableSoonCents: receivables.dueSoonCents,
     receivableSoonCount: receivables.dueSoonCount,
     dueSoonCents: sum(upcoming) + sum(projected),
     dueSoonCount: upcoming.length + projected.length,
-    dueToday: upcoming.filter((expense) => expense.expense_date === today),
+    dueToday: upcoming.filter((item) => outflowDate(item) === today).map(({ id, description, amount_cents }) => ({ id, description, amount_cents })),
   };
 }
 
@@ -258,18 +296,21 @@ export function createFinanceService(readers: FinanceReaders) {
       const from = addMonths(month, -5);
       const to = addDays(addMonths(month, 1), -1);
       const flowUntil = addDays(today, CASH_FLOW_WEEKS * 7 - 1);
-      const [revenues, expenses, openQuotes, received, open, upcoming, templates] = await Promise.all([
+      // O pago vai até o fim da janela do fluxo: recorrências geradas já têm o pagamento marcado na data delas.
+      const paidUntil = flowUntil > to ? flowUntil : to;
+      const [revenues, expenses, openQuotes, received, open, templates, openPayables, paid] = await Promise.all([
         readers.listRevenues(actor.companyId, from, to),
         readers.listExpenses(actor.companyId, from, to),
         readers.listOpenQuotes(actor.companyId),
         readers.listReceivedReceivables(actor.companyId, from, to),
         readers.listOpenReceivables(actor.companyId),
-        readers.listExpenses(actor.companyId, today, flowUntil),
         readers.listExpenseTemplates(actor.companyId),
+        readers.listOpenPayables(actor.companyId),
+        readers.listPaidPayables(actor.companyId, from, paidUntil),
       ]);
       return {
-        ...buildFinanceOverview({ month, today, revenues, expenses, openQuotes, received, open }),
-        cashFlow: buildCashFlow({ today, open, expenses: upcoming, templates }),
+        ...buildFinanceOverview({ month, today, revenues, expenses, openQuotes, received, open, paid }),
+        cashFlow: buildCashFlow({ today, open, payables: [...openPayables, ...paid], templates }),
       };
     },
 
@@ -292,24 +333,27 @@ export function createFinanceService(readers: FinanceReaders) {
         const until = addDays(today, 7);
         // Seis meses de uma vez: o mês atual sai do mesmo resultado, para o gráfico.
         const trendStart = addMonths(monthStart, -5);
-        const [sixMonthRevenues, sixMonthExpenses, upcoming, templates, received, open] = await Promise.all([
+        const paidUntil = until > monthEnd ? until : monthEnd;
+        const [sixMonthRevenues, sixMonthExpenses, templates, received, open, openPayables, paid] = await Promise.all([
           readers.listRevenues(actor.companyId, trendStart, monthEnd),
           readers.listExpenses(actor.companyId, trendStart, monthEnd),
-          readers.listExpenses(actor.companyId, today, until),
           readers.listExpenseTemplates(actor.companyId),
           readers.listReceivedReceivables(actor.companyId, trendStart, monthEnd),
           readers.listOpenReceivables(actor.companyId),
+          readers.listOpenPayables(actor.companyId),
+          readers.listPaidPayables(actor.companyId, trendStart, paidUntil),
         ]);
         const projected = projectUngeneratedRecurring(templates, today, until);
-        const overview = buildFinanceOverview({ month: monthStart, today, revenues: sixMonthRevenues, expenses: sixMonthExpenses, openQuotes: [], received, open });
+        const overview = buildFinanceOverview({ month: monthStart, today, revenues: sixMonthRevenues, expenses: sixMonthExpenses, openQuotes: [], received, open, paid });
         finance = buildHomeFinance({
           today,
           revenues: overview.revenues,
           monthExpenses: overview.expenses,
-          upcoming,
+          upcoming: upcomingOutflows([...openPayables, ...paid], today, until),
           projected,
           trend: overview.series,
           monthReceivedCents: overview.receivedCents,
+          monthPaidCents: overview.paidCents,
           open,
         });
       }

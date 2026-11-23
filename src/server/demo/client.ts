@@ -83,6 +83,28 @@ function fixtures() {
       row.due_date = shiftToCurrentMonth(String(source.due_date), today, false);
       if (source.received_on) row.received_on = shiftToCurrentMonth(String(source.received_on), today);
     });
+    // Contas a pagar andam do mesmo jeito: o vencimento pode ficar no futuro; o pagamento, não.
+    tables.expense_installments.forEach((row, index) => {
+      const source = original.expense_installments[index];
+      row.due_date = shiftToCurrentMonth(String(source.due_date), today, false);
+      if (source.paid_on) row.paid_on = shiftToCurrentMonth(String(source.paid_on), today);
+    });
+    // Gasto sem parcela no arquivo ganha uma, como na carga do banco: gerado ou com data até hoje,
+    // pago na data dele; pontual com data futura, a pagar nela.
+    for (const expense of tables.expenses) {
+      if (tables.expense_installments.some((row) => row.expense_id === expense.id)) continue;
+      const date = String(expense.expense_date);
+      tables.expense_installments.push({
+        id: `${String(expense.id)}-parcela`,
+        company_id: expense.company_id,
+        expense_id: expense.id,
+        number: 1,
+        due_date: date,
+        amount_cents: expense.amount_cents,
+        paid_on: expense.kind !== "one_off" || date <= today ? date : null,
+        deleted_at: null,
+      });
+    }
     cache = { offset, fixtures: shifted };
   }
   return cache.fixtures;
@@ -106,7 +128,7 @@ function splitColumns(columns: string): string[] {
 }
 
 const TO_ONE_KEY: Record<string, string> = { profile: "user_id", terms: "terms_version_id", supplier_ref: "supplier_id" };
-const PARENT_KEY: Record<string, string> = { clients: "client_id", visits: "visit_id", quotes: "quote_id" };
+const PARENT_KEY: Record<string, string> = { clients: "client_id", visits: "visit_id", quotes: "quote_id", expenses: "expense_id" };
 
 function project(tables: Record<string, Row[]>, table: string, row: Row, columns: string): Row {
   const result: Row = {};

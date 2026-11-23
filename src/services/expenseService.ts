@@ -1,7 +1,8 @@
 import { supplierSearchKey, type ExpenseInput, type ExpenseTemplateInput, type SupplierInput, type SupplierPurchaseFilters } from "@/features/expenses/schemas";
 import { AppError } from "@/lib/errors";
+import { buildPayableInstallments, installmentsLocked, type PlannedInstallment } from "@/lib/payables";
 import type { ActorContext } from "@/server/actor";
-import type { Expense, ExpenseCategory, ExpenseTemplate, Supplier, SupplierSpend } from "@/types/finance";
+import type { Expense, ExpenseCategory, ExpenseTemplate, PayableItem, Supplier, SupplierSpend } from "@/types/finance";
 import { permissionService } from "./permissionService";
 
 /** Gastos, recorrências e categorias. Só o proprietário e o administrador. */
@@ -9,8 +10,17 @@ import { permissionService } from "./permissionService";
 export interface ExpenseRepository {
   list(companyId: string, from: string, to: string): Promise<Expense[]>;
   get(companyId: string, expenseId: string): Promise<Expense | null>;
-  insert(companyId: string, input: ExpenseInput): Promise<string>;
-  update(companyId: string, expenseId: string, input: ExpenseInput): Promise<void>;
+  /**
+   * Grava o gasto e as parcelas numa transação (função do banco). `installments` null mantém as
+   * parcelas como estão. Devolve o id do gasto.
+   */
+  save(companyId: string, expenseId: string | null, input: ExpenseInput, installments: PlannedInstallment[] | null): Promise<string>;
+  /** Parcelas ainda não pagas, das mais antigas para as mais novas. */
+  listOpenPayables(companyId: string): Promise<PayableItem[]>;
+  /** Parcelas pagas entre `from` e `to` (pela data do pagamento). */
+  listPaidPayables(companyId: string, from: string, to: string): Promise<PayableItem[]>;
+  payInstallment(companyId: string, installmentId: string, paidOn: string): Promise<void>;
+  undoPayInstallment(companyId: string, installmentId: string): Promise<void>;
   /** Pela função do banco, que reabre as horas de um pagamento de prestador. */
   remove(companyId: string, expenseId: string): Promise<void>;
   generateMonth(companyId: string, month: string): Promise<number>;
@@ -154,6 +164,15 @@ export function totalsByCategory(expenses: Pick<Expense, "category_id" | "catego
   return [...totals.values()].sort((a, b) => b.totalCents - a.totalCents);
 }
 
+/** Parcelas do gasto pelo plano escolhido. Pagamento não pode ser no futuro. */
+export function plannedInstallments(input: Pick<ExpenseInput, "amountCents" | "payment">, today: string): PlannedInstallment[] {
+  if (!input.payment) throw new AppError("validation_error", "Diga se o gasto já foi pago ou se vai pagar depois.");
+  if (input.payment.mode === "paid" && input.payment.paidOn > today) {
+    throw new AppError("validation_error", "A data do pagamento não pode ser depois de hoje. Se ainda vai pagar, escolha “Vou pagar depois”.");
+  }
+  return buildPayableInstallments(input.amountCents, input.payment);
+}
+
 export function createExpenseService(repo: ExpenseRepository) {
   /** Nome digitado sem escolher da lista: usa o cadastro de mesmo nome ou cria um. */
   async function withSupplier(companyId: string, input: ExpenseInput): Promise<ExpenseInput> {
@@ -184,20 +203,60 @@ export function createExpenseService(repo: ExpenseRepository) {
       return repo.list(actor.companyId, from, to);
     },
 
-    async create(actor: ActorContext, input: ExpenseInput) {
+    /** Gasto novo e as parcelas dele: já pago numa data, ou a pagar em N parcelas mensais. */
+    async create(actor: ActorContext, input: ExpenseInput, today: string) {
       requireAccess(actor);
-      return repo.insert(actor.companyId, await withSupplier(actor.companyId, input));
+      if (!input.payment) throw new AppError("validation_error", "Diga se o gasto já foi pago ou se vai pagar depois.");
+      const installments = plannedInstallments(input, today);
+      return repo.save(actor.companyId, null, await withSupplier(actor.companyId, input), installments);
     },
 
-    /** O pagamento de prestador vem do fechamento das horas: para corrigir, exclui e fecha de novo. */
-    async update(actor: ActorContext, expenseId: string, input: ExpenseInput) {
+    /**
+     * O pagamento de prestador vem do fechamento das horas: para corrigir, exclui e fecha de novo. Gasto
+     * com mais de uma parcela e alguma paga não muda de valor nem de parcelas.
+     */
+    async update(actor: ActorContext, expenseId: string, input: ExpenseInput, today: string) {
       requireAccess(actor);
       const expense = await repo.get(actor.companyId, expenseId);
       if (!expense) throw new AppError("not_found", "Gasto não encontrado");
       if (expense.kind === "contractor") {
         throw new AppError("conflict", "Este gasto veio do fechamento das horas. Para corrigir, exclua e feche de novo.");
       }
-      await repo.update(actor.companyId, expenseId, await withSupplier(actor.companyId, input));
+      const current = expense.installments ?? [];
+      const amountChanged = input.amountCents !== expense.amount_cents;
+      if (installmentsLocked(current) && (input.payment !== null || amountChanged)) {
+        throw new AppError("conflict", "Este gasto tem parcelas pagas. Para mudar o valor ou as parcelas, desfaça os pagamentos antes.");
+      }
+      if (input.payment === null && current.length > 1 && amountChanged) {
+        throw new AppError("validation_error", "Informe as parcelas com o valor novo.");
+      }
+      const installments = input.payment ? plannedInstallments(input, today) : null;
+      await repo.save(actor.companyId, expenseId, await withSupplier(actor.companyId, input), installments);
+    },
+
+    /** Contas a pagar: o que falta pagar, de todos os meses. */
+    async listPayables(actor: ActorContext) {
+      requireAccess(actor);
+      return repo.listOpenPayables(actor.companyId);
+    },
+
+    /** O que foi pago no período, pela data do pagamento. */
+    async listPaid(actor: ActorContext, from: string, to: string) {
+      requireAccess(actor);
+      return repo.listPaidPayables(actor.companyId, from, to);
+    },
+
+    /** Dar baixa: a parcela foi paga em `paidOn` (até hoje). */
+    async pay(actor: ActorContext, installmentId: string, paidOn: string, today: string) {
+      requireAccess(actor);
+      if (paidOn > today) throw new AppError("validation_error", "A data do pagamento não pode ser depois de hoje.");
+      await repo.payInstallment(actor.companyId, installmentId, paidOn);
+    },
+
+    /** Desfaz a baixa: a parcela volta para a pagar. */
+    async undoPay(actor: ActorContext, installmentId: string) {
+      requireAccess(actor);
+      await repo.undoPayInstallment(actor.companyId, installmentId);
     },
 
     async remove(actor: ActorContext, expenseId: string) {

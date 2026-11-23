@@ -44,6 +44,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
             employees: employees.map(({ id, name, active: isActive }) => ({ id, name, active: isActive })),
             quotes,
             suppliers: suppliers.map(({ id, name }) => ({ id, name })),
+            today,
           }),
         )
       : Promise.resolve(null),

@@ -70,6 +70,8 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "subscription.updated": "Assinatura alterada",
   "subscription.canceled": "Assinatura cancelada",
   "subscription.switch_scheduled": "Troca de plano agendada",
+  "expense_installment.paid": "Conta paga",
+  "expense_installment.unpaid": "Pagamento de conta desfeito",
   "subscription.pilot_started": "Acesso sem cobrança ativado",
   "subscription.pilot_ended": "Acesso sem cobrança encerrado",
   "data.exported": "Cópia dos dados baixada",
@@ -100,6 +102,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
 };
 
 export const AUDIT_ENTITY_LABEL: Record<string, string> = {
+  expense_installment: "Conta a pagar",
   receivable: "Parcela a receber",
   catalog_item: "Catálogo",
   client: "Cliente",

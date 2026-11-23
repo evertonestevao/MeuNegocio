@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExpenseInput, ExpenseTemplateInput } from "@/features/expenses/schemas";
 import { AppError } from "@/lib/errors";
 import type { ExpenseRepository } from "@/services/expenseService";
-import type { Expense, ExpenseCategory, ExpenseTemplate, Supplier, SupplierSpend } from "@/types/finance";
+import type { Expense, ExpenseCategory, ExpenseInstallment, ExpenseKind, ExpenseTemplate, PayableItem, PaymentMethod, Supplier, SupplierSpend } from "@/types/finance";
 
 function fail(error: { code?: string; message?: string } | null): never {
   if (error?.code === "P0001") throw new AppError("conflict", error.message ?? "Operação recusada", error);
@@ -11,17 +11,58 @@ function fail(error: { code?: string; message?: string } | null): never {
   throw new AppError("internal_error", "Falha ao acessar os gastos", error);
 }
 
-function expenseColumns(input: ExpenseInput) {
+/** Campos do gasto como a função save_expense recebe. */
+function expenseFields(input: ExpenseInput) {
   return {
     description: input.description,
     category_id: input.categoryId,
     amount_cents: input.amountCents,
     expense_date: input.expenseDate,
-    employee_id: input.employeeId,
-    notes: input.notes,
-    quote_id: input.quoteId,
-    supplier_id: input.supplierId,
-    payment_method: input.paymentMethod,
+    employee_id: input.employeeId ?? "",
+    notes: input.notes ?? "",
+    quote_id: input.quoteId ?? "",
+    supplier_id: input.supplierId ?? "",
+    payment_method: input.paymentMethod ?? "",
+  };
+}
+
+export type InstallmentRow = ExpenseInstallment & { deleted_at?: string | null };
+
+/** Embutido das parcelas na leitura de um gasto. */
+export const INSTALLMENTS_EMBED = "installments:expense_installments(id, expense_id, number, due_date, amount_cents, paid_on, deleted_at)";
+
+/** Parcelas que valem (sem as substituídas), na ordem. */
+export function liveInstallments(rows: InstallmentRow[] | null | undefined): ExpenseInstallment[] {
+  return (rows ?? [])
+    .filter((row) => !row.deleted_at)
+    .map(({ id, expense_id, number, due_date, amount_cents, paid_on }) => ({ id, expense_id, number, due_date, amount_cents, paid_on }))
+    .toSorted((a, b) => a.number - b.number);
+}
+
+const PAYABLE_SELECT =
+  "id, expense_id, number, due_date, amount_cents, paid_on, expense:expenses!inner(description, kind, payment_method, deleted_at, category:expense_categories(name), supplier_ref:suppliers(name), installments:expense_installments(id, deleted_at))";
+
+type PayableRow = ExpenseInstallment & {
+  expense: {
+    description: string;
+    kind: ExpenseKind;
+    payment_method: PaymentMethod | null;
+    category: { name: string } | null;
+    supplier_ref: { name: string } | { name: string }[] | null;
+    installments: { id: string; deleted_at: string | null }[] | null;
+  } | null;
+};
+
+function toPayable({ expense, ...row }: PayableRow): PayableItem {
+  const supplier = Array.isArray(expense?.supplier_ref) ? expense?.supplier_ref[0] : expense?.supplier_ref;
+  return {
+    ...row,
+    description: expense?.description ?? "",
+    kind: expense?.kind ?? "one_off",
+    category_name: expense?.category?.name ?? "",
+    supplier: supplier?.name ?? null,
+    payment_method: expense?.payment_method ?? null,
+    installments_count: (expense?.installments ?? []).filter((item) => !item.deleted_at).length || 1,
   };
 }
 
@@ -43,9 +84,10 @@ type WithCategory<T> = T & { category: { name: string } | null; quote?: Related<
 
 const one = <T,>(value: Related<T> | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
 
-function flatten<T extends object>({ category, quote, supplier_ref, ...row }: WithCategory<T>) {
+function flatten<T extends object>({ category, quote, supplier_ref, installments, ...row }: WithCategory<T> & { installments?: InstallmentRow[] | null }) {
   return {
     ...row,
+    ...(installments === undefined ? {} : { installments: liveInstallments(installments) }),
     category_name: category?.name ?? "",
     ...(quote === undefined ? {} : { quote_number: one(quote)?.number ?? null }),
     ...(supplier_ref === undefined ? {} : { supplier: one(supplier_ref)?.name ?? null }),
@@ -64,7 +106,7 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
   }
 
   const EXPENSE_SELECT =
-    "id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), quote:quotes(number), supplier_ref:suppliers(name)";
+    `id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), quote:quotes(number), supplier_ref:suppliers(name), ${INSTALLMENTS_EMBED}`;
 
   return {
     async list(companyId, from, to) {
@@ -92,23 +134,52 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
       return data ? (flatten(data as unknown as WithCategory<Omit<Expense, "category_name">>) as Expense) : null;
     },
 
-    async insert(companyId, input) {
-      const { data, error } = await client
-        .from("expenses")
-        .insert({ company_id: companyId, kind: "one_off", ...expenseColumns(input) })
-        .select("id")
-        .single<{ id: string }>();
+    async save(companyId, expenseId, input, installments) {
+      const { data, error } = await client.rpc("save_expense", {
+        p_company_id: companyId,
+        p_expense_id: expenseId,
+        p_expense: expenseFields(input),
+        p_installments: installments,
+      });
       if (error) fail(error);
-      return data.id;
+      return data as string;
     },
 
-    async update(companyId, expenseId, input) {
-      const { error } = await client
-        .from("expenses")
-        .update(expenseColumns(input))
+    async listOpenPayables(companyId) {
+      const { data, error } = await client
+        .from("expense_installments")
+        .select(PAYABLE_SELECT)
         .eq("company_id", companyId)
-        .eq("id", expenseId)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .is("paid_on", null)
+        .is("expense.deleted_at", null)
+        .order("due_date", { ascending: true })
+        .order("number", { ascending: true });
+      if (error) fail(error);
+      return ((data ?? []) as unknown as PayableRow[]).map(toPayable);
+    },
+
+    async listPaidPayables(companyId, from, to) {
+      const { data, error } = await client
+        .from("expense_installments")
+        .select(PAYABLE_SELECT)
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .gte("paid_on", from)
+        .lte("paid_on", to)
+        .is("expense.deleted_at", null)
+        .order("paid_on", { ascending: false });
+      if (error) fail(error);
+      return ((data ?? []) as unknown as PayableRow[]).map(toPayable);
+    },
+
+    async payInstallment(companyId, installmentId, paidOn) {
+      const { error } = await client.rpc("pay_expense_installment", { p_company_id: companyId, p_installment_id: installmentId, p_paid_on: paidOn });
+      if (error) fail(error);
+    },
+
+    async undoPayInstallment(companyId, installmentId) {
+      const { error } = await client.rpc("undo_pay_expense_installment", { p_company_id: companyId, p_installment_id: installmentId });
       if (error) fail(error);
     },
 

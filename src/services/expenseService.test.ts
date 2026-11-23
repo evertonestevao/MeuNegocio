@@ -13,14 +13,18 @@ import {
 } from "./expenseService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
-const INPUT = {} as ExpenseInput;
+const TODAY = "2026-11-23";
+const INPUT = { amountCents: 300000, payment: { mode: "paid", paidOn: TODAY, count: 1, firstDueDate: TODAY } } as ExpenseInput;
 
 function makeRepo() {
   return {
     list: vi.fn(async () => []),
     get: vi.fn(async (): Promise<Expense | null> => ({ id: "x", kind: "one_off" }) as Expense),
-    insert: vi.fn(async () => "x"),
-    update: vi.fn(async () => undefined),
+    save: vi.fn(async () => "x"),
+    listOpenPayables: vi.fn(async () => []),
+    listPaidPayables: vi.fn(async () => []),
+    payInstallment: vi.fn(async () => undefined),
+    undoPayInstallment: vi.fn(async () => undefined),
     remove: vi.fn(async () => undefined),
     generateMonth: vi.fn(async () => 2),
     listTemplates: vi.fn(async () => []),
@@ -51,7 +55,7 @@ describe("gastos", () => {
     for (const role of ["member", "technician"]) {
       const actor = { companyId: "co", role };
       await expect(service.list(actor, "a", "b")).rejects.toMatchObject({ code: "forbidden" });
-      await expect(service.create(actor, INPUT)).rejects.toMatchObject({ code: "forbidden" });
+      await expect(service.create(actor, INPUT, TODAY)).rejects.toMatchObject({ code: "forbidden" });
       await expect(service.generateMonth(actor, "2026-10-01")).rejects.toMatchObject({ code: "forbidden" });
       await expect(service.removeCategory(actor, "c1")).rejects.toMatchObject({ code: "forbidden" });
     }
@@ -60,14 +64,14 @@ describe("gastos", () => {
   it("pagamento de prestador não é editado", async () => {
     const repo = makeRepo();
     repo.get.mockResolvedValue({ id: "x", kind: "contractor" } as Expense);
-    await expect(createExpenseService(repo).update(OWNER, "x", INPUT)).rejects.toThrow("fechamento");
-    expect(repo.update).not.toHaveBeenCalled();
+    await expect(createExpenseService(repo).update(OWNER, "x", INPUT, TODAY)).rejects.toThrow("fechamento");
+    expect(repo.save).not.toHaveBeenCalled();
   });
 
   it("gasto de outra empresa não é encontrado", async () => {
     const repo = makeRepo();
     repo.get.mockResolvedValue(null);
-    await expect(createExpenseService(repo).update(OWNER, "x", INPUT)).rejects.toMatchObject({ code: "not_found" });
+    await expect(createExpenseService(repo).update(OWNER, "x", INPUT, TODAY)).rejects.toMatchObject({ code: "not_found" });
   });
 
   it("categoria em uso ou do sistema não é excluída", async () => {
@@ -120,18 +124,18 @@ describe("fornecedores", () => {
 
   it("nome digitado usa o cadastro de mesmo nome, sem diferença de acento ou maiúscula", async () => {
     const repo = makeRepo();
-    await createExpenseService(repo).create(OWNER, supplierInput("  casa do ELETRICISTA "));
+    await createExpenseService(repo).create(OWNER, supplierInput("  casa do ELETRICISTA "), TODAY);
     expect(repo.insertSupplier).not.toHaveBeenCalled();
-    expect(repo.insert).toHaveBeenCalledWith("co", expect.objectContaining({ supplierId: "s1" }));
+    expect(repo.save).toHaveBeenCalledWith("co", null, expect.objectContaining({ supplierId: "s1" }), expect.any(Array));
   });
 
   it("nome novo vira fornecedor cadastrado; escolhido da lista não cria nada", async () => {
     const repo = makeRepo();
     const service = createExpenseService(repo);
-    await service.create(OWNER, supplierInput("Ferragens Bauru"));
+    await service.create(OWNER, supplierInput("Ferragens Bauru"), TODAY);
     expect(repo.insertSupplier).toHaveBeenCalledWith("co", expect.objectContaining({ name: "Ferragens Bauru" }));
-    expect(repo.insert).toHaveBeenLastCalledWith("co", expect.objectContaining({ supplierId: "s-new" }));
-    await service.create(OWNER, supplierInput("qualquer", "s1"));
+    expect(repo.save).toHaveBeenLastCalledWith("co", null, expect.objectContaining({ supplierId: "s-new" }), expect.any(Array));
+    await service.create(OWNER, supplierInput("qualquer", "s1"), TODAY);
     expect(repo.insertSupplier).toHaveBeenCalledTimes(1);
   });
 
@@ -212,5 +216,60 @@ describe("ficha do fornecedor", () => {
 
   it("member não acessa a ficha", async () => {
     await expect(createExpenseService(makeRepo()).supplierDetail({ companyId: "co", role: "member" }, "s1", filters())).rejects.toMatchObject({ code: "forbidden" });
+  });
+});
+
+describe("contas a pagar (parcelas do gasto)", () => {
+  const installment = (number: number, due: string, paid: string | null, amount = 100000) => ({ id: `i${number}`, expense_id: "x", number, due_date: due, amount_cents: amount, paid_on: paid });
+  const pending = (count: number, firstDueDate = "2026-12-10") => ({ ...INPUT, payment: { mode: "pending", paidOn: "", count, firstDueDate } }) as ExpenseInput;
+
+  it("compra de R$ 3.000 em 3 vezes vira três parcelas mensais a pagar, a partir de 10/12", async () => {
+    const repo = makeRepo();
+    await createExpenseService(repo).create(OWNER, pending(3), TODAY);
+    expect(repo.save).toHaveBeenCalledWith("co", null, expect.anything(), [
+      { due_date: "2026-12-10", amount_cents: 100000, paid_on: null },
+      { due_date: "2027-01-10", amount_cents: 100000, paid_on: null },
+      { due_date: "2027-02-10", amount_cents: 100000, paid_on: null },
+    ]);
+  });
+
+  it("já pago vira uma parcela paga na data; pagamento no futuro é recusado", async () => {
+    const repo = makeRepo();
+    const service = createExpenseService(repo);
+    await service.create(OWNER, { ...INPUT, payment: { mode: "paid", paidOn: "2026-11-20", count: 1, firstDueDate: "2026-11-20" } } as ExpenseInput, TODAY);
+    expect(repo.save).toHaveBeenLastCalledWith("co", null, expect.anything(), [{ due_date: "2026-11-20", amount_cents: 300000, paid_on: "2026-11-20" }]);
+    await expect(
+      service.create(OWNER, { ...INPUT, payment: { mode: "paid", paidOn: "2026-11-30", count: 1, firstDueDate: "2026-11-30" } } as ExpenseInput, TODAY),
+    ).rejects.toMatchObject({ code: "validation_error" });
+    await expect(service.pay(OWNER, "i1", "2026-11-24", TODAY)).rejects.toMatchObject({ code: "validation_error" });
+    expect(repo.payInstallment).not.toHaveBeenCalled();
+  });
+
+  it("com parcela paga, valor e parcelas ficam travados; o resto do gasto ainda muda", async () => {
+    const repo = makeRepo();
+    repo.get.mockResolvedValue({ id: "x", kind: "one_off", amount_cents: 300000, installments: [installment(1, "2026-12-10", "2026-12-10"), installment(2, "2027-01-10", null), installment(3, "2027-02-10", null)] } as Expense);
+    const service = createExpenseService(repo);
+    await expect(service.update(OWNER, "x", pending(2), TODAY)).rejects.toMatchObject({ code: "conflict" });
+    await expect(service.update(OWNER, "x", { ...INPUT, amountCents: 200000, payment: null } as ExpenseInput, TODAY)).rejects.toMatchObject({ code: "conflict" });
+    expect(repo.save).not.toHaveBeenCalled();
+    await service.update(OWNER, "x", { ...INPUT, payment: null } as ExpenseInput, TODAY);
+    expect(repo.save).toHaveBeenCalledWith("co", "x", expect.anything(), null);
+  });
+
+  it("sem nada pago, dá para trocar as parcelas", async () => {
+    const repo = makeRepo();
+    repo.get.mockResolvedValue({ id: "x", kind: "one_off", amount_cents: 300000, installments: [installment(1, "2026-12-10", null), installment(2, "2027-01-10", null)] } as Expense);
+    await createExpenseService(repo).update(OWNER, "x", pending(3), TODAY);
+    expect(repo.save).toHaveBeenCalledWith("co", "x", expect.anything(), expect.arrayContaining([expect.objectContaining({ due_date: "2027-02-10" })]));
+  });
+
+  it("member e técnico não veem nem pagam contas", async () => {
+    const service = createExpenseService(makeRepo());
+    for (const role of ["member", "technician"]) {
+      const actor = { companyId: "co", role };
+      await expect(service.listPayables(actor)).rejects.toMatchObject({ code: "forbidden" });
+      await expect(service.pay(actor, "i1", TODAY, TODAY)).rejects.toMatchObject({ code: "forbidden" });
+      await expect(service.undoPay(actor, "i1")).rejects.toMatchObject({ code: "forbidden" });
+    }
   });
 });

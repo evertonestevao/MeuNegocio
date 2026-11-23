@@ -25,22 +25,22 @@ import { getDemoProfile } from "@/server/demo/mode";
 export const metadata: Metadata = { title: "Financeiro" };
 
 function MonthlyRows({ series, selected, monthHref }: {
-  series: { month: string; revenueCents: number; receivedCents: number; expenseCents: number }[];
+  series: { month: string; revenueCents: number; receivedCents: number; expenseCents: number; paidCents: number }[];
   selected: string;
   monthHref: (month: string) => string;
 }) {
   return (
     <ul className="flex flex-col divide-y text-sm">
       {series.toReversed().map((item) => {
-        // Caixa: o que entrou menos o que saiu. O faturado aparece ao lado, para comparar.
-        const balance = item.receivedCents - item.expenseCents;
+        // Caixa: o que entrou menos o que saiu (pago). O faturado aparece ao lado, para comparar.
+        const balance = item.receivedCents - item.paidCents;
         return (
           <li key={item.month}>
             <Link scroll={false} href={monthHref(item.month)} className="flex items-center justify-between gap-3 py-2 hover:underline">
               <span className="flex min-w-0 flex-col">
                 <span className={item.month === selected ? "font-semibold" : undefined}>{formatMonth(item.month)}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  Faturado {formatCents(item.revenueCents)} · recebido {formatCents(item.receivedCents)} · gastos {formatCents(item.expenseCents)}
+                  Faturado {formatCents(item.revenueCents)} · recebido {formatCents(item.receivedCents)} · pago {formatCents(item.paidCents)}
                 </span>
               </span>
               <span className="flex shrink-0 flex-col items-end">
@@ -117,7 +117,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           toneValue
           label="Caixa do mês"
           value={formatCents(overview.cashCents)}
-          hint={`Recebido − gastos. Pelo faturado: ${formatCents(overview.balanceCents)}`}
+          hint={`Recebido − pago. Pelo faturado: ${formatCents(overview.balanceCents)}`}
         />
       </div>
 

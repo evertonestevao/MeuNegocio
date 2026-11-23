@@ -24,6 +24,8 @@ export async function getFinanceService(): Promise<FinanceService> {
     listVisits: (companyId, from, to) => visits.list(companyId, { from, to }),
     listOpenReceivables: receivables.listOpen,
     listReceivedReceivables: receivables.listReceived,
+    listOpenPayables: expenses.listOpenPayables,
+    listPaidPayables: expenses.listPaidPayables,
   });
 }
 

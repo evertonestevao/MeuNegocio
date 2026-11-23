@@ -88,6 +88,29 @@ export interface Expense {
   /** Nome do fornecedor cadastrado, para exibir. */
   supplier?: string | null;
   payment_method?: PaymentMethod | null;
+  /** Parcelas a pagar ou pagas (contas a pagar), em ordem. */
+  installments?: ExpenseInstallment[];
+}
+
+/** Parcela de um gasto: quando vence e, se já saiu, quando foi paga. */
+export interface ExpenseInstallment {
+  id: string;
+  expense_id: string;
+  number: number;
+  due_date: string;
+  amount_cents: number;
+  paid_on: string | null;
+}
+
+/** Parcela com o que a lista de contas a pagar mostra do gasto. */
+export interface PayableItem extends ExpenseInstallment {
+  description: string;
+  kind: ExpenseKind;
+  category_name: string;
+  supplier: string | null;
+  payment_method: PaymentMethod | null;
+  /** Quantas parcelas o gasto tem: "parcela 2 de 3". */
+  installments_count: number;
 }
 
 export type PaymentMethod = "pix" | "cash" | "debit" | "credit" | "boleto" | "transfer" | "other";

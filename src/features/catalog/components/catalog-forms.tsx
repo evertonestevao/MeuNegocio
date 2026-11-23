@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogForm } from "@/components/dialog-form";
 import { Button } from "@/components/ui/button";
 import { MaskedInput } from "@/components/masked-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoHint } from "@/components/info-hint";
 import { CATALOG_UNITS, parseCatalogForm } from "@/features/catalog/schemas";
 import { centsToMoneyInput, parseMoneyToCents } from "@/lib/money";
 import { marginPercent } from "@/lib/quoteCalc";
@@ -16,26 +16,6 @@ import type { CatalogItem, CatalogKind, PricingMode } from "@/types/database";
 
 const SELECT_CLASS =
   "border-input h-11 md:h-9 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
-
-/** Ícone "i" com dica ao passar o mouse ou focar (acessível pelo teclado e no toque). */
-function InfoHint({ text }: { text: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            type="button"
-            aria-label={text}
-            className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
-            <Info className="size-3.5" aria-hidden />
-          </button>
-        }
-      />
-      <TooltipContent>{text}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 function Field({ id, label, hint, info, children }: { id: string; label: string; hint?: string; info?: string; children: React.ReactNode }) {
   return (

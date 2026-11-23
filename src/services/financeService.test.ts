@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActorContext } from "@/server/actor";
 import type { QuoteListItem, VisitListItem } from "@/types/database";
-import type { Expense, ExpenseTemplate, Receivable, RevenueListItem } from "@/types/finance";
+import type { Expense, ExpenseTemplate, PayableItem, Receivable, RevenueListItem } from "@/types/finance";
 import { buildCashFlow, buildFinanceOverview, buildForecast, buildWeekLoad, createFinanceService, percentChange, projectUngeneratedRecurring, type FinanceReaders } from "./financeService";
 
 const OWNER: ActorContext = { companyId: "co", role: "owner" };
@@ -11,6 +11,8 @@ const TECHNICIAN: ActorContext = { companyId: "co", role: "technician" };
 const revenue = (competence_date: string, amount_cents: number) => ({ competence_date, amount_cents }) as RevenueListItem;
 const expense = (expense_date: string, amount_cents: number, category = "a") =>
   ({ expense_date, amount_cents, category_id: category, category_name: category.toUpperCase() }) as Expense;
+const payable = (due_date: string, paid_on: string | null, amount_cents: number, id = `${due_date}-${amount_cents}`) =>
+  ({ id, due_date, paid_on, amount_cents, description: "Conta" }) as PayableItem;
 
 function makeReaders() {
   return {
@@ -21,6 +23,8 @@ function makeReaders() {
     listVisits: vi.fn(async (): Promise<VisitListItem[]> => []),
     listOpenReceivables: vi.fn(async (): Promise<Receivable[]> => []),
     listReceivedReceivables: vi.fn(async (): Promise<Receivable[]> => []),
+    listOpenPayables: vi.fn<FinanceReaders["listOpenPayables"]>(async () => []),
+    listPaidPayables: vi.fn<FinanceReaders["listPaidPayables"]>(async () => []),
   } satisfies FinanceReaders;
 }
 
@@ -140,16 +144,21 @@ describe("início", () => {
     const readers = makeReaders();
     readers.listRevenues.mockResolvedValue([revenue("2026-10-05", 1000)]);
     readers.listExpenses.mockImplementation(async (_company, from) =>
-      from === "2026-05-01"
-        ? [expense("2026-10-02", 300), expense("2026-07-02", 900)]
-        : [expense("2026-10-31", 40), expense("2026-11-03", 60)],
+      from === "2026-05-01" ? [expense("2026-10-02", 300), expense("2026-07-02", 900)] : [],
     );
+    // A pagar nos próximos 7 dias: o que vence (aberto) e o que tem pagamento marcado para depois de hoje
+    // (recorrência gerada). O atrasado, o de depois do prazo e o que já foi pago ficam de fora.
+    readers.listOpenPayables.mockResolvedValue([payable("2026-10-31", null, 40), payable("2026-10-20", null, 5), payable("2026-11-20", null, 7)]);
+    readers.listPaidPayables.mockResolvedValue([payable("2026-11-03", "2026-11-03", 60), payable("2026-10-31", "2026-10-31", 9), payable("2026-10-02", "2026-10-02", 300)]);
     const { finance } = await createFinanceService(readers).getHome(OWNER, "2026-10-31");
     expect(finance?.balanceCents).toBe(700);
     expect(finance?.dueSoonCents).toBe(100);
     expect(finance?.dueSoonCount).toBe(2);
-    expect(finance?.dueToday).toHaveLength(1);
-    expect(readers.listExpenses).toHaveBeenCalledWith("co", "2026-10-31", "2026-11-07");
+    expect(finance?.dueToday).toEqual([{ id: "2026-10-31-40", description: "Conta", amount_cents: 40 }]);
+    expect(readers.listPaidPayables).toHaveBeenCalledWith("co", "2026-05-01", "2026-11-07");
+    // Caixa = recebido − pago no mês (as parcelas pagas em outubro).
+    expect(finance?.monthPaidCents).toBe(309);
+    expect(finance?.cashCents).toBe(-309);
   });
 
   it("mostra seis meses de faturamento e gastos, terminando no mês atual", async () => {
@@ -237,7 +246,8 @@ describe("fluxo de caixa das próximas semanas", () => {
     const flow = buildCashFlow({
       today: "2026-11-24",
       open: [parcel("2026-11-20", 999), parcel("2026-11-25", 10_000, 349), parcel("2026-12-03", 5_000), { ...parcel("2026-11-26", 7_000), received_on: "2026-11-24" }],
-      expenses: [{ expense_date: "2026-11-23", amount_cents: 1 }, { expense_date: "2026-11-28", amount_cents: 3_000 }],
+      // Atrasada (23/11) fica fora; a de 28/11 sai na semana dela.
+      payables: [{ due_date: "2026-11-23", paid_on: null, amount_cents: 1 }, { due_date: "2026-11-28", paid_on: null, amount_cents: 3_000 }],
       templates: [template(5, 12_000)],
     });
     expect(flow.weeks.map((week) => [week.start, week.end, week.inCents, week.outCents, week.netCents, week.cumulativeCents])).toEqual([
@@ -246,7 +256,40 @@ describe("fluxo de caixa das próximas semanas", () => {
       ["2026-12-08", "2026-12-14", 0, 0, 0, -349],
       ["2026-12-15", "2026-12-21", 0, 0, 0, -349],
     ]);
-    // O atrasado fica fora das semanas; o gasto de ontem já saiu.
+    // O atrasado fica fora das semanas; a conta vencida ontem não entra.
     expect(flow).toMatchObject({ overdueCents: 999, inCents: 14_651, outCents: 15_000 });
+  });
+
+  it("o que já foi pago não entra; recorrência gerada com pagamento marcado no futuro conta na data dela", () => {
+    const flow = buildCashFlow({
+      today: "2026-11-24",
+      open: [],
+      payables: [
+        { due_date: "2026-11-10", paid_on: "2026-11-20", amount_cents: 500 },
+        // Paga hoje: o dinheiro já saiu, não entra na previsão.
+        { due_date: "2026-11-24", paid_on: "2026-11-24", amount_cents: 700 },
+        { due_date: "2026-11-30", paid_on: "2026-11-30", amount_cents: 2_000 },
+        { due_date: "2026-12-10", paid_on: null, amount_cents: 1_000 },
+      ],
+      templates: [],
+    });
+    expect(flow.weeks.map((week) => week.outCents)).toEqual([2_000, 0, 1_000, 0]);
+  });
+});
+
+describe("caixa do mês: recebido − pago", () => {
+  it("compra de outubro paga em novembro conta no gasto de outubro e no caixa de novembro", () => {
+    const base = { today: "2026-11-23", revenues: [], openQuotes: [], received: [] };
+    const expenses = [expense("2026-10-01", 3_000)];
+    const paid = [payable("2026-11-10", "2026-11-10", 3_000)];
+    const october = buildFinanceOverview({ ...base, month: "2026-10-01", expenses, paid });
+    const november = buildFinanceOverview({ ...base, month: "2026-11-01", expenses, paid });
+    expect([october.expenseCents, october.paidCents, october.cashCents]).toEqual([3_000, 0, 0]);
+    expect([november.expenseCents, november.paidCents, november.cashCents]).toEqual([0, 3_000, -3_000]);
+  });
+
+  it("sem as parcelas (dados antigos), o caixa usa os gastos como antes", () => {
+    const overview = buildFinanceOverview({ month: "2026-10-01", today: "2026-10-31", revenues: [], expenses: [expense("2026-10-05", 800)], openQuotes: [] });
+    expect(overview.cashCents).toBe(-800);
   });
 });

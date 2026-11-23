@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { formatDocument, formatPhone, isValidPhone } from "@/lib/masks";
 import { parseMoneyToCents } from "@/lib/money";
+import { MAX_INSTALLMENTS, type PayablePlan } from "@/lib/payables";
 import type { PaymentMethod } from "@/types/finance";
 
 /** Validação de gastos: roda no navegador e de novo no servidor. */
@@ -37,9 +38,51 @@ export const expenseSchema = z.object({
     .transform((value) => (value || null) as PaymentMethod | null),
 });
 
-export type ExpenseInput = z.output<typeof expenseSchema>;
+/**
+ * Como o gasto vai ser pago. "keep" mantém as parcelas como estão (gasto com parcelas já pagas, em que
+ * valor e parcelas ficam travados).
+ */
+export const expensePaymentSchema = z
+  .object({
+    mode: z.enum(["paid", "pending", "keep"], { error: "Diga se o gasto já foi pago ou se vai pagar depois." }),
+    paidOn: z.string().default(""),
+    count: z.string().default("1"),
+    firstDueDate: z.string().default(""),
+  })
+  .transform((value, context): PayablePlan | null => {
+    if (value.mode === "keep") return null;
+    if (value.mode === "paid") {
+      if (!z.iso.date().safeParse(value.paidOn).success) {
+        context.addIssue({ code: "custom", path: ["paidOn"], message: "Informe a data em que pagou." });
+        return z.NEVER;
+      }
+      return { mode: "paid", paidOn: value.paidOn, count: 1, firstDueDate: value.paidOn };
+    }
+    const count = Number(value.count.trim());
+    if (!Number.isInteger(count) || count < 1 || count > MAX_INSTALLMENTS) {
+      context.addIssue({ code: "custom", path: ["count"], message: `Use de 1 a ${MAX_INSTALLMENTS} parcelas.` });
+      return z.NEVER;
+    }
+    if (!z.iso.date().safeParse(value.firstDueDate).success) {
+      context.addIssue({ code: "custom", path: ["firstDueDate"], message: "Informe o vencimento da 1ª parcela." });
+      return z.NEVER;
+    }
+    return { mode: "pending", paidOn: "", count, firstDueDate: value.firstDueDate };
+  });
+
+export type ExpenseInput = z.output<typeof expenseSchema> & { payment: PayablePlan | null };
 
 export function parseExpenseForm(formData: FormData): ExpenseInput {
+  const payment = expensePaymentSchema.parse({
+    mode: text(formData, "paymentMode") || "paid",
+    paidOn: text(formData, "paidOn") || text(formData, "expenseDate"),
+    count: text(formData, "installmentsCount") || "1",
+    firstDueDate: text(formData, "firstDueDate"),
+  });
+  return { ...parseExpenseFields(formData), payment };
+}
+
+function parseExpenseFields(formData: FormData): z.output<typeof expenseSchema> {
   return expenseSchema.parse({
     description: text(formData, "description"),
     categoryId: text(formData, "categoryId"),

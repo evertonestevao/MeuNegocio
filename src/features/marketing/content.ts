@@ -29,7 +29,7 @@ export const hero = {
  * Pasta das telas da página inicial. Suba a versão a cada nova captura (ver CLAUDE.md): o caminho
  * novo impede que o navegador mostre a imagem antiga do cache.
  */
-export const LANDING_SCREENS = "/landing/v16";
+export const LANDING_SCREENS = "/landing/v17";
 
 /** Telas em destaque. As imagens são capturas reais do sistema, com dados fictícios. */
 export const showcases: {
@@ -82,7 +82,7 @@ export const showcases: {
     eyebrow: "Financeiro",
     title: "O que vendeu, o que entrou e o que falta receber",
     description: "Serviço fechado não é dinheiro no bolso. Registre à vista, entrada + parcelas ou cartão, dê baixa quando o dinheiro entrar e veja o caixa de verdade do mês, ao lado do faturado.",
-    points: ["Contas a receber com aviso de atraso", "Faturado, recebido e gastos em 6 meses", "Gastos por categoria"],
+    points: ["Contas a receber com aviso de atraso", "Contas a pagar, com compra parcelada e vencimento", "Faturado, recebido e gastos em 6 meses"],
     image: `${LANDING_SCREENS}/financeiro.jpg`,
     alt: "Tela do financeiro com faturado, recebido, gastos, caixa do mês, contas a receber e gráfico de 6 meses.",
     device: "browser",
@@ -207,7 +207,7 @@ export const benefits: { icon: LucideIcon; title: string; description: string }[
     icon: Wallet,
     title: "Gastos e financeiro",
     description:
-      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e por fornecedor, contas a receber parcela a parcela e o caixa de verdade do mês. Saiba de quem você mais compra cada coisa.",
+      "Aluguel e salários lançados sozinhos todo mês, gastos por categoria e por fornecedor, contas a receber e a pagar parcela a parcela e o caixa de verdade do mês. Saiba de quem você mais compra cada coisa.",
   },
   {
     icon: ShieldCheck,
@@ -249,6 +249,10 @@ export const faq = [
   {
     question: "Dá para controlar quem pagou parcelado?",
     answer: "Sim. Ao fechar o serviço, você registra se foi à vista, entrada + parcelas ou cartão, e o sistema separa o que já entrou do que falta receber. Ele avisa das parcelas atrasadas, desconta a taxa da maquininha do resultado, abre um lembrete pronto no WhatsApp e gera o recibo de cada pagamento.",
+  },
+  {
+    question: "Consigo lançar uma compra parcelada no cartão?",
+    answer: "Sim. Você lança a compra na data em que ela aconteceu e informa as parcelas e o vencimento da primeira fatura. O gasto conta no mês da compra, e cada parcela fica a pagar no vencimento dela, até você dar baixa. O caixa do mês mostra o que saiu de verdade.",
   },
   {
     question: "O registro de horas substitui o ponto eletrônico?",

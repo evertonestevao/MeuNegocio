@@ -158,7 +158,7 @@ export default async function DashboardPage() {
               toneValue
               label={`Caixa de ${monthName}`}
               value={formatCents(finance.cashCents)}
-              hint={`Recebeu ${formatCents(finance.monthReceivedCents)} · gastou ${formatCents(finance.monthExpenseCents)}`}
+              hint={`Recebeu ${formatCents(finance.monthReceivedCents)} · pagou ${formatCents(finance.monthPaidCents)}`}
             />
             <MetricCard
               icon={Wallet}
@@ -298,8 +298,8 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-2"><Wallet className="size-4 text-destructive" /> A pagar hoje</CardTitle>
-                <Link href="/dashboard/expenses" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
-                  Ver gastos
+                <Link href="/dashboard/expenses?tab=payables" className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline">
+                  Contas a pagar
                 </Link>
               </CardHeader>
               <CardContent>

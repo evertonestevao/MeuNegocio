@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight, Repeat, Tag, Wallet } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
+import { InfoHint } from "@/components/info-hint";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,11 @@ import {
 } from "@/features/expenses/components/expense-forms";
 import { EXPENSE_KIND_LABEL, PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import { SupplierPanel } from "@/features/expenses/components/supplier-panel";
+import { PayableList } from "@/features/expenses/components/payable-list";
 import { addMonths, formatLongDay, formatMonth, isValidDate, monthGrid } from "@/lib/calendar";
 import { addDays, formatDate, todayInTimezone } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
+import { paymentSummary, summarizePayables } from "@/lib/payables";
 import { cn } from "@/lib/utils";
 import { generateMonthExpensesAction } from "@/server/actions/expenses";
 import { getExpenseService } from "@/server/finance";
@@ -39,6 +42,20 @@ export const metadata: Metadata = { title: "Gastos" };
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+/** Situação do pagamento do gasto, em uma linha: pago, a pagar ou quantas parcelas já foram pagas. */
+function PaymentLine({ expense, today }: { expense: Expense; today: string }) {
+  const summary = paymentSummary(expense.installments ?? []);
+  if (summary.settled) return <span className="text-xs font-medium text-success">{summary.label}</span>;
+  const overdue = summary.nextDue !== null && summary.nextDue < today;
+  const next = summary.nextDue ? (overdue ? `venceu em ${formatDate(summary.nextDue)}` : summary.nextDue === today ? "vence hoje" : `vence em ${formatDate(summary.nextDue)}`) : null;
+  return (
+    <span className={`text-xs font-medium ${overdue ? "text-destructive" : "text-warning"}`}>
+      {summary.label}
+      {next ? ` · ${summary.label === "A pagar" ? "" : "próxima "}${next}` : ""}
+    </span>
+  );
+}
+
 function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFormOptions }) {
   return (
     <ul className="flex flex-col divide-y">
@@ -46,6 +63,7 @@ function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFor
         <li key={expense.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm first:pt-0 last:pb-0">
           <div className="flex min-w-0 flex-1 basis-52 flex-col gap-0.5">
             <span className="font-medium break-words">{expense.description}</span>
+            <PaymentLine expense={expense} today={options.today} />
             <span className="text-xs text-muted-foreground">
               {[
                 formatDate(expense.expense_date),
@@ -76,7 +94,7 @@ function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFor
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; view?: string; m?: string; d?: string; p?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; m?: string; d?: string; p?: string; s?: string }>;
 }) {
   const params = await searchParams;
   const { active } = await getActiveTenant();
@@ -88,14 +106,17 @@ export default async function ExpensesPage({
   const today = todayInTimezone(profile.timezone);
   const month = isValidDate(`${params.m}-01`) ? `${params.m}-01` : `${today.slice(0, 7)}-01`;
   const lastDay = addDays(addMonths(month, 1), -1);
-  const tab = params.tab === "recurring" || params.tab === "categories" || params.tab === "suppliers" ? params.tab : "entries";
+  const tab =
+    params.tab === "payables" || params.tab === "recurring" || params.tab === "categories" || params.tab === "suppliers" ? params.tab : "entries";
+  // Contas a pagar: as que faltam pagar ou as pagas no mês.
+  const paidView = tab === "payables" && params.s === "paid";
   // Período das contas por fornecedor: últimos 3 meses, 12 meses ou tudo.
   const period = params.p === "3m" || params.p === "all" ? params.p : "12m";
   const periodStart = period === "all" ? null : addDays(today, period === "3m" ? -90 : -365);
   const view = params.view === "list" ? "list" : "calendar";
 
   const service = await getExpenseService();
-  const [expenses, templates, categories, employees, quoteOptions, suppliers, supplierStats] = await Promise.all([
+  const [expenses, templates, categories, employees, quoteOptions, suppliers, supplierStats, payables, paidPayables] = await Promise.all([
     service.list(actor, month, lastDay),
     service.listTemplates(actor),
     service.listCategories(actor),
@@ -103,12 +124,17 @@ export default async function ExpensesPage({
     (await getServiceCostService()).listQuoteOptions(actor),
     service.listSuppliers(actor),
     tab === "suppliers" ? service.supplierStats(actor, periodStart) : Promise.resolve(null),
+    service.listPayables(actor),
+    paidView ? service.listPaid(actor, month, lastDay) : Promise.resolve([]),
   ]);
+  const payableTotals = summarizePayables(payables, today);
+  const paidTotal = paidPayables.reduce((sum, item) => sum + item.amount_cents, 0);
   const options = {
     categories,
     employees: employees.map(({ id, name, active: isActive }) => ({ id, name, active: isActive })),
     quotes: quoteOptions,
     suppliers: suppliers.map(({ id, name }) => ({ id, name })),
+    today,
   };
   const total = expenses.reduce((sum, expense) => sum + expense.amount_cents, 0);
   const defaultDate = today.slice(0, 7) === month.slice(0, 7) ? today : month;
@@ -136,9 +162,10 @@ export default async function ExpensesPage({
       <div className="flex flex-wrap items-center justify-between gap-3 max-sm:[&>*]:w-full">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Gastos</h1>
-          <p className="text-sm text-muted-foreground">Despesas fixas, pontuais e de funcionários.</p>
+          <p className="text-sm text-muted-foreground">Despesas fixas, pontuais e de funcionários, e o que falta pagar.</p>
         </div>
         {tab === "entries" ? <NewExpenseButton options={options} defaultDate={selected ?? defaultDate} /> : null}
+        {tab === "payables" ? <NewExpenseButton options={options} defaultDate={today} /> : null}
         {tab === "recurring" ? <NewTemplateButton options={options} defaultStart={`${today.slice(0, 7)}-01`} /> : null}
         {tab === "categories" ? <CategoryFormButton /> : null}
         {tab === "suppliers" ? <SupplierFormButton /> : null}
@@ -147,6 +174,14 @@ export default async function ExpensesPage({
       <nav className="flex flex-wrap gap-2" aria-label="Seção de gastos">
         <Link scroll={false} href={href({ tab: "entries" })} className={toggle(tab === "entries")}>
           Lançamentos
+        </Link>
+        <Link scroll={false} href={href({ tab: "payables", s: undefined })} className={toggle(tab === "payables")}>
+          A pagar
+          {payableTotals.openCount > 0 ? (
+            <span className={cn("ml-1.5 rounded-full px-1.5 text-xs tabular-nums", payableTotals.overdueCount > 0 ? "bg-destructive text-white" : "opacity-70")}>
+              {payableTotals.openCount}
+            </span>
+          ) : null}
         </Link>
         <Link scroll={false} href={href({ tab: "recurring" })} className={toggle(tab === "recurring")}>
           Recorrentes
@@ -172,7 +207,10 @@ export default async function ExpensesPage({
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-destructive/8 px-4 py-3">
-            <span className="text-sm font-medium">Total do mês</span>
+            <span className="flex items-center gap-1 text-sm font-medium">
+              Total do mês
+              <InfoHint text="Soma dos gastos pela data do gasto (quando a compra aconteceu), inclusive os que ainda vão ser pagos. O que falta pagar fica na aba “A pagar”." />
+            </span>
             <strong className="text-xl font-semibold tabular-nums">{formatCents(total)}</strong>
           </div>
 
@@ -256,6 +294,68 @@ export default async function ExpensesPage({
               )}
             </>
           )}
+        </>
+      ) : null}
+
+      {tab === "payables" ? (
+        <>
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            <Card size="sm">
+              <CardContent className="flex flex-col">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  A pagar
+                  <InfoHint text="Tudo o que ainda falta pagar, de todos os meses, somando as parcelas em aberto." />
+                </span>
+                <strong className="font-heading text-sm tabular-nums sm:text-lg">{formatCents(payableTotals.openCents)}</strong>
+              </CardContent>
+            </Card>
+            <Card size="sm">
+              <CardContent className="flex flex-col">
+                <span className="text-muted-foreground">Atrasado</span>
+                <strong className={cn("font-heading text-sm tabular-nums sm:text-lg", payableTotals.overdueCents > 0 && "text-destructive")}>{formatCents(payableTotals.overdueCents)}</strong>
+              </CardContent>
+            </Card>
+            <Card size="sm">
+              <CardContent className="flex flex-col">
+                <span className="text-muted-foreground">Em 7 dias</span>
+                <strong className="font-heading text-sm tabular-nums sm:text-lg">{formatCents(payableTotals.dueSoonCents)}</strong>
+              </CardContent>
+            </Card>
+          </div>
+
+          <nav className="flex flex-wrap gap-2" aria-label="Situação das contas">
+            <Link scroll={false} href={href({ tab: "payables", s: undefined })} className={toggle(!paidView)}>
+              A pagar <span className="ml-1 text-xs opacity-70">{payableTotals.openCount}</span>
+            </Link>
+            <Link scroll={false} href={href({ tab: "payables", s: "paid" })} className={toggle(paidView)}>
+              Pagas
+            </Link>
+          </nav>
+
+          {paidView ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ tab: "payables", s: "paid", m: addMonths(month, -1).slice(0, 7) })} aria-label="Mês anterior" />} nativeButton={false}>
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="min-w-36 text-center text-sm font-medium">{formatMonth(month)}</span>
+              <Button variant="outline" size="icon-sm" render={<Link scroll={false} href={href({ tab: "payables", s: "paid", m: addMonths(month, 1).slice(0, 7) })} aria-label="Próximo mês" />} nativeButton={false}>
+                <ChevronRight className="size-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Pago no mês: <strong className="text-foreground tabular-nums">{formatCents(paidTotal)}</strong>
+              </span>
+            </div>
+          ) : null}
+
+          <Card>
+            <CardContent>
+              {paidView ? (
+                <PayableList items={paidPayables} today={today} empty="Nada pago neste mês." />
+              ) : (
+                <PayableList items={payables} today={today} empty="Nenhuma conta a pagar. Tudo em dia." />
+              )}
+            </CardContent>
+          </Card>
         </>
       ) : null}
 

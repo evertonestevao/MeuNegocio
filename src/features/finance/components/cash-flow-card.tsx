@@ -15,7 +15,7 @@ export function CashFlowCard({ flow }: { flow: CashFlow }) {
       <CardHeader>
         <CardTitle>Próximas {flow.weeks.length} semanas</CardTitle>
         <CardDescription>
-          Entra o que vence das parcelas a receber, já sem a taxa do cartão; sai o que está lançado e as contas recorrentes. Não conta o dinheiro que você já tem no banco.
+          Entra o que vence das parcelas a receber, já sem a taxa do cartão; sai o que vence das contas a pagar e as recorrentes. Não conta o dinheiro que você já tem no banco.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
