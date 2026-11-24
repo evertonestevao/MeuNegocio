@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env.prod)",
+      "Edit(./.env.prod)",
+      "Bash(cat .env.prod*)",
+      "Bash(head .env.prod*)",
+      "Bash(tail .env.prod*)",
+      "Bash(less .env.prod*)",
+      "Bash(source .env.prod*)",
+      "Bash(git add -f*)"
+    ]
+  }
+}

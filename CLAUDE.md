@@ -136,3 +136,21 @@ Fluxo de toda mudança:
 - Não criar tabela sem `company_id` e sem policy de RLS na mesma migration
 - Não implementar integração de pagamento fora da interface `PaymentGateway`
 - Não remover ou enfraquecer uma policy de RLS existente para "resolver" um bug de acesso — investigar a causa raiz primeiro
+## Banco de produção a partir do terminal
+
+Credencial em `.env.prod` (fora do git, `chmod 600`): `DB` (Session pooler) e `DB_SSL_CA`. Nunca abrir, imprimir ou logar o arquivo nem a connection string; para conferir, rodar um comando que use a credencial.
+
+```bash
+npm run prod:query -- "select ..."                    # leitura (transação read only)
+npm run prod:check -- supabase/migrations/*.sql       # aplicada x PENDENTE, sem escrever
+npm run prod:apply -- supabase/migrations/<arquivo>.sql
+```
+
+Regras:
+
+- Leitura em produção pode ser feita direto. Migration, push/merge na `master` ou escrita de dados: mostrar antes o que vai ser feito e esperar o "ok" explícito do dono, que vale só para aquela alteração.
+- Mudança de estrutura só por arquivo novo em `supabase/migrations`, versionado no repo. Nunca SQL solto, nunca pelo painel. Correção de dados também por arquivo versionado.
+- Tabela nova nasce com RLS, policies e `REVOKE ALL` antes dos `GRANT`s no mesmo arquivo (no Supabase, tabela e função nascem acessíveis a anon/authenticated).
+- Antes de aplicar: `prod:check` mostrando que só a migration esperada está pendente, e a migration já testada no banco local.
+- Migration que ADICIONA vai antes do código que depende dela. A que REMOVE ou RENOMEIA vai depois do código que deixou de usar.
+- Antes de subir código: lint, typecheck e testes passando.
