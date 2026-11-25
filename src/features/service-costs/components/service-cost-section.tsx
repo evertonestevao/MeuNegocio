@@ -2,18 +2,13 @@ import { Clock, PiggyBank, Receipt, Wallet } from "lucide-react";
 import { TAX_UI_ENABLED } from "@/config/features";
 import { MetricCard, type MetricTone } from "@/components/metric-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DeleteExpenseButton,
-  EditExpenseButton,
-  NewExpenseButton,
-  type ExpenseFormOptions,
-} from "@/features/expenses/components/expense-forms";
-import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
-import { formatDate } from "@/lib/dates";
+import { NewExpenseButton, type ExpenseFormOptions } from "@/features/expenses/components/expense-forms";
 import { formatCents } from "@/lib/money";
+import { groupExpensesByCategory } from "@/services/expenseService";
 import type { MarginStatus, ServiceCost } from "@/services/serviceCostService";
 import { formatHours, type ServiceCostPdfInput } from "../pdf";
 import { ServiceCostPdfButton } from "./service-cost-pdf-button";
+import { ServiceExpenseList } from "./service-expense-list";
 import { ServiceTaxForm } from "./service-tax-form";
 import { allCostsCents, costsLabel, marginHint } from "../labels";
 
@@ -171,30 +166,7 @@ export function ServiceCostSection({
           {cost.expenses.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum gasto ligado a este serviço.</p>
           ) : (
-            <ul className="flex flex-col divide-y text-sm">
-              {cost.expenses.map((expense) => (
-                <li key={expense.id} className="flex items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="font-medium break-words">{expense.description}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {[
-                        formatDate(expense.expense_date),
-                        expense.category_name,
-                        expense.supplier,
-                        expense.payment_method ? PAYMENT_METHOD_LABEL[expense.payment_method] : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <span className="font-semibold tabular-nums">{formatCents(expense.amount_cents)}</span>
-                    <EditExpenseButton expense={expense} options={expenseOptions} />
-                    <DeleteExpenseButton expense={expense} />
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <ServiceExpenseList expenses={cost.expenses} groups={groupExpensesByCategory(cost.expenses)} options={expenseOptions} />
           )}
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import {
   filterSupplierPurchases,
   summarizeSupplierPurchases,
   totalsByCategory,
+  groupExpensesByCategory,
   type ExpenseRepository,
 } from "./expenseService";
 
@@ -271,5 +272,32 @@ describe("contas a pagar (parcelas do gasto)", () => {
       await expect(service.pay(actor, "i1", TODAY, TODAY)).rejects.toMatchObject({ code: "forbidden" });
       await expect(service.undoPay(actor, "i1")).rejects.toMatchObject({ code: "forbidden" });
     }
+  });
+});
+
+describe("groupExpensesByCategory", () => {
+  const row = (id: string, category: string, amount: number, date: string) => ({
+    id,
+    category_id: category,
+    category_name: category === "mat" ? "Material" : "Prestadores",
+    amount_cents: amount,
+    expense_date: date,
+  });
+
+  it("agrupa na ordem do resumo e ordena cada grupo pela data, mais recente primeiro", () => {
+    const groups = groupExpensesByCategory([
+      row("a", "mat", 100, "2026-09-21"),
+      row("b", "pre", 5000, "2026-09-30"),
+      row("c", "mat", 300, "2026-10-01"),
+      row("d", "mat", 200, "2026-09-17"),
+    ]);
+    expect(groups.map((g) => [g.name, g.totalCents, g.expenses.map((e) => e.id)])).toEqual([
+      ["Prestadores", 5000, ["b"]],
+      ["Material", 600, ["c", "a", "d"]],
+    ]);
+  });
+
+  it("sem gastos, sem grupos", () => {
+    expect(groupExpensesByCategory([])).toEqual([]);
   });
 });

@@ -164,6 +164,25 @@ export function totalsByCategory(expenses: Pick<Expense, "category_id" | "catego
   return [...totals.values()].sort((a, b) => b.totalCents - a.totalCents);
 }
 
+export interface ExpenseGroup<T> extends CategoryTotal {
+  expenses: T[];
+}
+
+/**
+ * Gastos agrupados por categoria, na mesma ordem do resumo (maior total primeiro). Dentro do grupo,
+ * do mais recente para o mais antigo pela data do gasto.
+ */
+export function groupExpensesByCategory<T extends Pick<Expense, "category_id" | "category_name" | "amount_cents" | "expense_date">>(
+  expenses: T[],
+): ExpenseGroup<T>[] {
+  return totalsByCategory(expenses).map((total) => ({
+    ...total,
+    expenses: expenses
+      .filter((expense) => expense.category_id === total.categoryId)
+      .sort((a, b) => b.expense_date.localeCompare(a.expense_date)),
+  }));
+}
+
 /** Parcelas do gasto pelo plano escolhido. Pagamento não pode ser no futuro. */
 export function plannedInstallments(input: Pick<ExpenseInput, "amountCents" | "payment">, today: string): PlannedInstallment[] {
   if (!input.payment) throw new AppError("validation_error", "Diga se o gasto já foi pago ou se vai pagar depois.");
