@@ -80,7 +80,7 @@ function templateColumns(input: ExpenseTemplateInput) {
 }
 
 type Related<T> = T | T[] | null;
-type WithCategory<T> = T & { category: { name: string } | null; quote?: Related<{ number: number }>; supplier_ref?: Related<{ name: string }> };
+type WithCategory<T> = T & { category: { name: string } | null; quote?: Related<{ number: number; title: string | null; client: Related<{ name: string }> }>; supplier_ref?: Related<{ name: string }> };
 
 const one = <T,>(value: Related<T> | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
 
@@ -89,7 +89,13 @@ function flatten<T extends object>({ category, quote, supplier_ref, installments
     ...row,
     ...(installments === undefined ? {} : { installments: liveInstallments(installments) }),
     category_name: category?.name ?? "",
-    ...(quote === undefined ? {} : { quote_number: one(quote)?.number ?? null }),
+    ...(quote === undefined
+      ? {}
+      : {
+          quote_number: one(quote)?.number ?? null,
+          quote_title: one(quote)?.title ?? null,
+          quote_client: one(one(quote)?.client)?.name ?? null,
+        }),
     ...(supplier_ref === undefined ? {} : { supplier: one(supplier_ref)?.name ?? null }),
   };
 }
@@ -106,7 +112,7 @@ export function createSupabaseExpenseRepository(client: SupabaseClient): Expense
   }
 
   const EXPENSE_SELECT =
-    `id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), quote:quotes(number), supplier_ref:suppliers(name), ${INSTALLMENTS_EMBED}`;
+    `id, description, category_id, amount_cents, expense_date, kind, employee_id, template_id, notes, quote_id, supplier_id, payment_method, category:expense_categories(name), quote:quotes(number, title, client:clients(name)), supplier_ref:suppliers(name), ${INSTALLMENTS_EMBED}`;
 
   return {
     async list(companyId, from, to) {

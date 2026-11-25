@@ -33,7 +33,7 @@ import { getExpenseService } from "@/server/finance";
 import { getCompanyProfileService } from "@/server/quotes";
 import { getEmployeeService } from "@/server/schedule";
 import { getServiceCostService } from "@/server/serviceCosts";
-import { formatQuoteNumber } from "@/features/quotes/status";
+import { formatServiceLabel } from "@/features/quotes/status";
 import { getActiveTenant } from "@/server/tenant";
 import { permissionService } from "@/services/permissionService";
 import type { Expense } from "@/types/finance";
@@ -71,11 +71,15 @@ function ExpenseList({ items, options }: { items: Expense[]; options: ExpenseFor
                 EXPENSE_KIND_LABEL[expense.kind],
                 expense.supplier,
                 expense.payment_method ? PAYMENT_METHOD_LABEL[expense.payment_method] : null,
-                expense.quote_number ? `Serviço #${formatQuoteNumber(expense.quote_number)}` : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
+            {expense.quote_number ? (
+              <span className="text-xs break-words text-muted-foreground">
+                Serviço {formatServiceLabel(expense.quote_number, expense.quote_title, expense.quote_client)}
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium tabular-nums">{formatCents(expense.amount_cents)}</span>

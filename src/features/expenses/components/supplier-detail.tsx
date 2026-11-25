@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/dates";
 import { centsToMoneyInput, formatCents } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import { formatQuoteNumber } from "@/features/quotes/status";
+import { formatServiceLabel } from "@/features/quotes/status";
 import type { SupplierPurchaseFilters } from "@/features/expenses/schemas";
 import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import type { SupplierPurchaseSummary } from "@/services/expenseService";
@@ -165,11 +165,15 @@ export function SupplierDetail({
                             formatDate(expense.expense_date),
                             expense.category_name,
                             expense.payment_method ? PAYMENT_METHOD_LABEL[expense.payment_method] : null,
-                            expense.quote_number ? `Serviço #${formatQuoteNumber(expense.quote_number)}` : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
+                        {expense.quote_number ? (
+                          <span className="text-xs break-words text-muted-foreground">
+                            Serviço {formatServiceLabel(expense.quote_number, expense.quote_title, expense.quote_client)}
+                          </span>
+                        ) : null}
                       </div>
                       <span className="font-medium tabular-nums">{formatCents(expense.amount_cents)}</span>
                     </li>

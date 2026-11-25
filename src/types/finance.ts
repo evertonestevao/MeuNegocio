@@ -84,6 +84,9 @@ export interface Expense {
   /** Orçamento aprovado ou fechado a que o gasto pertence. */
   quote_id?: string | null;
   quote_number?: number | null;
+  /** Título do serviço e nome do cliente, para identificar a obra ao lado do número. */
+  quote_title?: string | null;
+  quote_client?: string | null;
   supplier_id?: string | null;
   /** Nome do fornecedor cadastrado, para exibir. */
   supplier?: string | null;

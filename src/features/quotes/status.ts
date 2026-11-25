@@ -16,6 +16,13 @@ export function formatQuoteNumber(number: number): string {
   return String(number).padStart(4, "0");
 }
 
+/** Identifica o serviço por extenso: "#0064 · Climatização da recepção - Auto Center Dois Irmãos". */
+export function formatServiceLabel(number: number, title?: string | null, client?: string | null): string {
+  const name = title?.trim();
+  const clientName = client?.trim();
+  return `#${formatQuoteNumber(number)}${name ? ` · ${name}` : ""}${clientName ? ` - ${clientName}` : ""}`;
+}
+
 /** Cor de cada situação: azul em curso, verde deu certo, âmbar pede atenção, vermelho perdeu. */
 export const QUOTE_STATUS_VARIANT: Record<QuoteStatus, "secondary" | "info" | "success" | "destructive" | "warning"> = {
   draft: "secondary",
