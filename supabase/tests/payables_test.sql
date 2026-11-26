@@ -7,6 +7,10 @@
 
 begin;
 
+-- "Hoje" do teste = hoje da empresa (Brasília), como o banco confere o pagamento. Sem isso, entre 21h e
+-- meia-noite o current_date em UTC já é amanhã e o pagamento "de hoje" vira data futura.
+set local timezone = 'America/Sao_Paulo';
+
 insert into auth.users (id, email, aud, role, instance_id, email_confirmed_at, raw_user_meta_data) values
   ('ca700000-0000-4000-8000-000000000001', 'pay-owner-a@test.local',  'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', now(), '{}'),
   ('ca700000-0000-4000-8000-000000000002', 'pay-member-a@test.local', 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', now(), '{}'),
