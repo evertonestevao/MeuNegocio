@@ -6,7 +6,7 @@ arquitetura e deploy, veja [DOCUMENTACAO.md](DOCUMENTACAO.md).
 > **Mantenha este arquivo atualizado.** Toda mudança que cria, altera ou remove uma
 > funcionalidade atualiza a seção correspondente no mesmo commit.
 
-**Última atualização:** 2026-11-26 (cartões de atenção da visão geral abrem as empresas já filtradas)
+**Última atualização:** 2026-11-26 (cadastros: os sem concluir ficam em destaque no topo)
 
 ## Sumário
 
@@ -93,7 +93,7 @@ mas não outros admins nem o owner.
 
 Rotas do painel exigem login. Usuário logado que abre `/login`, `/signup` ou `/comecar` é redirecionado.
 
-**Cadastros iniciados** (`/admin/cadastros`, só super admin): lista os 100 mais recentes com nome, e-mail, até onde chegou (antes da senha; conta criada sem terminar; concluído) e data. A tabela só é lida pelo super admin (RLS) e só o servidor grava. Os registros são apagados automaticamente 90 dias depois da última atualização (`pg_cron`, diário).
+**Cadastros iniciados** (`/admin/cadastros`, só super admin): lista os 100 mais recentes em dois blocos: **sem concluir** no topo (quem parou antes da senha ou criou a conta sem terminar, que pode receber um contato) e **concluídos** logo abaixo; cada um com nome, e-mail, até onde chegou (antes da senha; conta criada sem terminar; concluído) e data. A tabela só é lida pelo super admin (RLS) e só o servidor grava. Os registros são apagados automaticamente 90 dias depois da última atualização (`pg_cron`, diário).
 
 Código: `src/services/authService.ts`, `src/services/signupFlowService.ts`, `src/server/actions/auth.ts`, `src/server/actions/signup.ts`, `src/proxy.ts`.
 
