@@ -124,11 +124,11 @@ export function buildOverview(raw: AdminOverviewRaw): AdminOverview {
   ];
 
   const candidates: AttentionItem[] = [
-    { key: "past-due", label: "Cobranças em atraso", count: raw.past_due, href: "/admin/empresas", tone: "critical" },
-    { key: "suspended", label: "Empresas suspensas", count: raw.suspended_companies, href: "/admin/empresas", tone: "warning" },
+    { key: "past-due", label: "Cobranças em atraso", count: raw.past_due, href: "/admin/empresas?filtro=em-atraso", tone: "critical" },
+    { key: "suspended", label: "Empresas suspensas", count: raw.suspended_companies, href: "/admin/empresas?filtro=suspensas", tone: "warning" },
     { key: "abuse", label: "Denúncias nos últimos 7 dias", count: raw.abuse_reports_7d, href: "/admin/denuncias", tone: "warning" },
     { key: "reseller-failures", label: "Falhas de comissão sem resolver", count: raw.reseller_failures ?? 0, href: "/admin/revendedores/falhas", tone: "warning" },
-    { key: "trials-ending", label: "Testes que terminam em até 7 dias", count: raw.trials_ending_7d, href: "/admin/empresas", tone: "info" },
+    { key: "trials-ending", label: "Testes que terminam em até 7 dias", count: raw.trials_ending_7d, href: "/admin/empresas?filtro=testes-terminando", tone: "info" },
     { key: "stuck-signups", label: "Cadastros parados há mais de 2 dias", count: raw.stuck_signups, href: "/admin/cadastros", tone: "info" },
   ];
   const order: Record<AttentionTone, number> = { critical: 0, warning: 1, info: 2 };

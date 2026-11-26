@@ -15,19 +15,51 @@ import { getSupabaseAdminClient } from "@/server/supabase-admin";
 export const metadata: Metadata = { title: "Empresas" };
 
 const RECENT = 20;
+const FILTERED_LIMIT = 100;
 
-export default async function CompaniesAdminPage() {
+/** Filtros vindos dos cartões de "Precisa da sua atenção" (mesmas regras de `admin_overview`). */
+const COMPANY_FILTERS = {
+  "testes-terminando": "Testes que terminam em até 7 dias",
+  "em-atraso": "Cobranças em atraso",
+  suspensas: "Empresas suspensas",
+} as const;
+type CompanyFilter = keyof typeof COMPANY_FILTERS;
+
+function parseFilter(value: string | undefined): CompanyFilter | null {
+  return value && value in COMPANY_FILTERS ? (value as CompanyFilter) : null;
+}
+
+/** Ids das empresas do filtro; null = sem filtro. */
+async function companyIdsForFilter(filter: CompanyFilter | null): Promise<string[] | null> {
+  if (!filter || filter === "suspensas") return null;
+  const admin = getSupabaseAdminClient();
+  const query = admin.from("subscriptions").select("company_id").is("deleted_at", null);
+  const { data } =
+    filter === "em-atraso"
+      ? await query.eq("status", "past_due")
+      : await query
+          .eq("status", "trialing")
+          .gte("current_period_end", new Date().toISOString())
+          .lte("current_period_end", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString());
+  return [...new Set((data ?? []).map((row) => row.company_id))];
+}
+
+export default async function CompaniesAdminPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
   if (!(await getPlatformAdminId())) redirect("/dashboard");
 
-  const [plans, { data: companies }] = await Promise.all([
-    getPlanAdminService().listActive(),
-    getSupabaseAdminClient()
-      .from("companies")
-      .select("id, name, created_at, suspended_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(RECENT),
-  ]);
+  const filter = parseFilter((await searchParams).filtro);
+  const filteredIds = await companyIdsForFilter(filter);
+
+  let companiesQuery = getSupabaseAdminClient()
+    .from("companies")
+    .select("id, name, created_at, suspended_at")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(filter ? FILTERED_LIMIT : RECENT);
+  if (filter === "suspensas") companiesQuery = companiesQuery.not("suspended_at", "is", null);
+  if (filteredIds) companiesQuery = companiesQuery.in("id", filteredIds);
+
+  const [plans, { data: companies }] = await Promise.all([getPlanAdminService().listActive(), companiesQuery]);
   const flags = await (await getCompanyEvidenceReader()).getFlags((companies ?? []).map((company) => company.id));
 
   return (
@@ -47,9 +79,17 @@ export default async function CompaniesAdminPage() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Últimas empresas</CardTitle>
+          <CardTitle>{filter ? COMPANY_FILTERS[filter] : "Últimas empresas"}</CardTitle>
+          {filter ? (
+            <CardDescription>
+              <Link href="/admin/empresas" className="underline underline-offset-4">
+                Ver todas as empresas
+              </Link>
+            </CardDescription>
+          ) : null}
         </CardHeader>
         <CardContent>
+          {filter && (companies ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma empresa nesse filtro.</p> : null}
           <ul className="flex flex-col divide-y text-sm">
             {(companies ?? []).map((company) => (
               <li key={company.id} className="flex flex-col gap-1.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">

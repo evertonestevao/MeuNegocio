@@ -84,7 +84,7 @@ describe("precisa da sua atenção", () => {
   });
   it("cada item leva à tela certa", () => {
     const byKey = Object.fromEntries(buildOverview(RAW).attention.map((item) => [item.key, item.href]));
-    expect(byKey).toMatchObject({ "past-due": "/admin/empresas", abuse: "/admin/denuncias", "stuck-signups": "/admin/cadastros" });
+    expect(byKey).toMatchObject({ "past-due": "/admin/empresas?filtro=em-atraso", abuse: "/admin/denuncias", "stuck-signups": "/admin/cadastros" });
   });
   it("tudo zerado: lista vazia", () => {
     const zero = { ...RAW, past_due: 0, suspended_companies: 0, abuse_reports_7d: 0, trials_ending_7d: 0, stuck_signups: 0 };
