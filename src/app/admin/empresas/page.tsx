@@ -29,11 +29,11 @@ function parseFilter(value: string | undefined): CompanyFilter | null {
   return value && value in COMPANY_FILTERS ? (value as CompanyFilter) : null;
 }
 
-/** Ids das empresas do filtro; null = sem filtro. */
-async function companyIdsForFilter(filter: CompanyFilter | null): Promise<string[] | null> {
+/** Empresas do filtro, com o fim do período da assinatura; null = sem filtro. */
+async function companiesForFilter(filter: CompanyFilter | null): Promise<Map<string, string | null> | null> {
   if (!filter || filter === "suspensas") return null;
   const admin = getSupabaseAdminClient();
-  const query = admin.from("subscriptions").select("company_id").is("deleted_at", null);
+  const query = admin.from("subscriptions").select("company_id, current_period_end").is("deleted_at", null);
   const { data } =
     filter === "em-atraso"
       ? await query.eq("status", "past_due")
@@ -41,14 +41,14 @@ async function companyIdsForFilter(filter: CompanyFilter | null): Promise<string
           .eq("status", "trialing")
           .gte("current_period_end", new Date().toISOString())
           .lte("current_period_end", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString());
-  return [...new Set((data ?? []).map((row) => row.company_id))];
+  return new Map((data ?? []).map((row) => [row.company_id, row.current_period_end]));
 }
 
 export default async function CompaniesAdminPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
   if (!(await getPlatformAdminId())) redirect("/dashboard");
 
   const filter = parseFilter((await searchParams).filtro);
-  const filteredIds = await companyIdsForFilter(filter);
+  const filtered = await companiesForFilter(filter);
 
   let companiesQuery = getSupabaseAdminClient()
     .from("companies")
@@ -57,7 +57,7 @@ export default async function CompaniesAdminPage({ searchParams }: { searchParam
     .order("created_at", { ascending: false })
     .limit(filter ? FILTERED_LIMIT : RECENT);
   if (filter === "suspensas") companiesQuery = companiesQuery.not("suspended_at", "is", null);
-  if (filteredIds) companiesQuery = companiesQuery.in("id", filteredIds);
+  if (filtered) companiesQuery = companiesQuery.in("id", [...filtered.keys()]);
 
   const [plans, { data: companies }] = await Promise.all([getPlanAdminService().listActive(), companiesQuery]);
   const flags = await (await getCompanyEvidenceReader()).getFlags((companies ?? []).map((company) => company.id));
@@ -97,6 +97,9 @@ export default async function CompaniesAdminPage({ searchParams }: { searchParam
                   {company.name}
                 </Link>
                 <span className="flex flex-wrap items-center gap-1.5">
+                  {filter === "testes-terminando" && filtered?.get(company.id) ? (
+                    <Badge variant="secondary">Teste acaba em {formatDate(filtered.get(company.id)!)}</Badge>
+                  ) : null}
                   {company.suspended_at ? <Badge variant="destructive">Suspensa</Badge> : null}
                   {flags[company.id]?.lastCheck && flags[company.id].lastCheck!.result !== "match" ? (
                     <Badge variant={CNPJ_RESULT_LABEL[flags[company.id].lastCheck!.result].tone}>{CNPJ_RESULT_LABEL[flags[company.id].lastCheck!.result].label}</Badge>
