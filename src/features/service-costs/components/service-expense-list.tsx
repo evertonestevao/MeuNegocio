@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { DeleteExpenseButton, EditExpenseButton, type ExpenseFormOptions } from "@/features/expenses/components/expense-forms";
 import { PAYMENT_METHOD_LABEL } from "@/features/expenses/schemas";
 import { formatDate } from "@/lib/dates";
@@ -50,22 +52,47 @@ export function ServiceExpenseList({
       ) : (
         <div className="flex flex-col gap-6">
           {groups.map((group) => (
-            <section key={group.categoryId} className="flex flex-col gap-3" aria-label={group.name}>
-              <div className="flex items-center justify-between gap-3 rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
-                <h4 className="flex min-w-0 flex-col">
-                  <span className="text-xs font-semibold tracking-wide text-primary uppercase">{group.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {group.expenses.length} {group.expenses.length === 1 ? "gasto" : "gastos"}
-                  </span>
-                </h4>
-                <span className="shrink-0 font-bold text-primary tabular-nums">{formatCents(group.totalCents)}</span>
-              </div>
-              <ExpenseRows expenses={group.expenses} options={options} showCategory={false} />
-            </section>
+            <ExpenseGroupSection key={group.categoryId} group={group} options={options} />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+/** Um grupo da lista: a faixa com nome, quantidade e subtotal abre e fecha os gastos de baixo. */
+function ExpenseGroupSection({ group, options }: { group: ExpenseGroup<Expense>; options: ExpenseFormOptions }) {
+  const [open, setOpen] = useState(true);
+  const listId = `gastos-${group.categoryId}`;
+
+  return (
+    <section className="flex flex-col gap-3" aria-label={group.name}>
+      {/* -mx-3 com pl-2 (+ borda de 4px): o texto da faixa começa alinhado com o texto dos gastos. */}
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={listId}
+        className="-mx-3 flex items-center justify-between gap-3 rounded-lg border-l-4 border-primary bg-primary/10 py-2 pr-3 pl-2 text-left hover:bg-primary/15"
+      >
+        <span className="flex min-w-0 flex-col">
+          <span className="text-xs font-semibold tracking-wide text-primary uppercase">{group.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {group.expenses.length} {group.expenses.length === 1 ? "gasto" : "gastos"}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="font-bold text-primary tabular-nums">{formatCents(group.totalCents)}</span>
+          <ChevronDown className={cn("size-4 text-primary transition-transform", open ? "rotate-180" : "")} aria-hidden />
+          <span className="sr-only">{open ? "Recolher" : "Mostrar"} gastos de {group.name}</span>
+        </span>
+      </button>
+      {open ? (
+        <div id={listId}>
+          <ExpenseRows expenses={group.expenses} options={options} showCategory={false} />
+        </div>
+      ) : null}
+    </section>
   );
 }
 
