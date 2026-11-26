@@ -48,17 +48,17 @@ export function ServiceExpenseList({
       {mode === "date" ? (
         <ExpenseRows expenses={expenses} options={options} showCategory />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           {groups.map((group) => (
-            <section key={group.categoryId} className="flex flex-col gap-2" aria-label={group.name}>
-              <div className="flex items-baseline justify-between gap-3 border-b pb-1.5">
-                <h4 className="font-semibold">
-                  {group.name}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    · {group.expenses.length} {group.expenses.length === 1 ? "gasto" : "gastos"}
+            <section key={group.categoryId} className="flex flex-col gap-3" aria-label={group.name}>
+              <div className="flex items-center justify-between gap-3 rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
+                <h4 className="flex min-w-0 flex-col">
+                  <span className="text-xs font-semibold tracking-wide text-primary uppercase">{group.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {group.expenses.length} {group.expenses.length === 1 ? "gasto" : "gastos"}
                   </span>
                 </h4>
-                <span className="font-semibold tabular-nums">{formatCents(group.totalCents)}</span>
+                <span className="shrink-0 font-bold text-primary tabular-nums">{formatCents(group.totalCents)}</span>
               </div>
               <ExpenseRows expenses={group.expenses} options={options} showCategory={false} />
             </section>
