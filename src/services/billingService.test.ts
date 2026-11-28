@@ -797,6 +797,37 @@ describe("ciclo do plano anual em parcelas (simulação)", () => {
     expect(renewals[0]).toMatchObject({ paymentMethodToken: "tok-cartao", maxPayments: 3, nextDueDate: "2027-01-10", externalReference: `${COMPANY}:${annualPlan.id}` });
   });
 
+  it("pagamento grava o cartão na assinatura; evento sem cartão não apaga o guardado", async () => {
+    const { service, state } = setup();
+    expect(state.subscriptions[0].payment_method_token).toBeNull();
+    await service.applyPaymentEvent(parcel("ext-termo-1", 1, 3, { paymentMethodToken: "tok-novo" }));
+    expect(state.subscriptions[0].payment_method_token).toBe("tok-novo");
+    await service.applyPaymentEvent(parcel("ext-termo-1", 2, 3, { paymentMethodToken: null }));
+    expect(state.subscriptions[0].payment_method_token).toBe("tok-novo");
+  });
+
+  it("aviso atrasado de uma cobrança antiga não encurta o período já estendido", async () => {
+    const { service, state } = setup();
+    await service.applyPaymentEvent(parcel("ext-termo-1", 2, 3, { currentPeriodStart: "2026-12-28T00:00:00.000Z", currentPeriodEnd: "2027-01-28T00:00:00.000Z" }));
+    // PAYMENT_RECEIVED da cobrança de novembro, que no cartão chega ~30 dias depois.
+    await service.applyPaymentEvent(parcel("ext-termo-1", 1, 3, { currentPeriodStart: "2026-11-28T00:00:00.000Z", currentPeriodEnd: "2026-12-28T00:00:00.000Z" }));
+    expect(state.subscriptions[0].current_period_end).toBe("2027-01-28T00:00:00.000Z");
+    expect(state.subscriptions[0].current_period_start).toBe("2026-12-28T00:00:00.000Z");
+  });
+
+  it("sem cartão no gateway, a renovação usa o guardado na assinatura; sem nenhum, não renova", async () => {
+    const withSaved = setup();
+    const noGatewayToken = (n: number) =>
+      parcel("ext-termo-1", n, 3, n === 3 ? { termRenewal: { externalCustomerId: "cus-1", paymentMethodToken: null, valueCents: 500, maxPayments: 3, nextDueDate: "2027-01-10" } } : {});
+    await withSaved.service.applyPaymentEvent(parcel("ext-termo-1", 1, 3, { paymentMethodToken: "tok-guardado" }));
+    expect(await run(withSaved.service, withSaved.gateway, noGatewayToken(3))).toBe(true);
+    expect(withSaved.renewals[0]).toMatchObject({ paymentMethodToken: "tok-guardado" });
+
+    const without = setup();
+    expect(await run(without.service, without.gateway, noGatewayToken(3))).toBe(false);
+    expect(without.renewals).toHaveLength(0);
+  });
+
   it("a assinatura passa a apontar para o termo novo, continua ativa e renovável, e o período se estende", async () => {
     const { service, gateway, state } = setup();
     await run(service, gateway, parcel("ext-termo-1", 3, 3));

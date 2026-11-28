@@ -233,6 +233,8 @@ describe("handleWebhook", () => {
       currentPeriodStart: "2026-10-26T00:00:00.000Z",
       currentPeriodEnd: "2026-11-26T00:00:00.000Z",
       cancelAtPeriodEnd: false,
+      // Assinatura sem cartão no Asaas: nada a guardar.
+      paymentMethodToken: null,
     });
   });
 
@@ -414,7 +416,7 @@ describe("handleWebhook", () => {
     expect(event.termRenewal).toBeUndefined();
   });
 
-  it("sem o cartão guardado (sem token) não há renovação: o termo acaba em vez de cobrar às cegas", async () => {
+  it("sem token no gateway, a renovação é pedida sem cartão (o service usa o guardado ou não renova)", async () => {
     const { gateway } = makeGateway({
       "GET /subscriptions/sub_a": () => ({ id: "sub_a", customer: "cus_a", maxPayments: 1, value: 5 }),
       "GET /payments?subscription=sub_a&limit=100": () => ({ data: [{ status: "CONFIRMED" }] }),
@@ -422,7 +424,41 @@ describe("handleWebhook", () => {
     const event = await gateway.handleWebhook(
       webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", subscription: "sub_a", value: 5, dueDate: "2026-12-15" } }),
     );
-    expect(event.termRenewal).toBeUndefined();
+    expect(event.termRenewal).toMatchObject({ paymentMethodToken: null, nextDueDate: "2027-01-15" });
+  });
+
+  it("cobrança paga libera um mês a partir do vencimento, mesmo com a próxima cobrança já gerada", async () => {
+    // Depois do pagamento o Asaas já cria a cobrança seguinte: nextDueDate aponta dois meses à frente.
+    const { gateway } = makeGateway({
+      "GET /subscriptions/sub_1": () => ({ id: "sub_1", customer: "cus_1", nextDueDate: "2027-01-28", creditCard: { creditCardToken: "tok_9" } }),
+    });
+    const event = await gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", subscription: "sub_1", value: 10, dueDate: "2026-11-28" } }),
+    );
+    expect(event.currentPeriodStart).toBe("2026-11-28T00:00:00.000Z");
+    expect(event.currentPeriodEnd).toBe("2026-12-28T00:00:00.000Z");
+  });
+
+  it("vencimento no fim do mês não pula um mês (31/01 vai a 28/02; 31/03 a 30/04)", async () => {
+    for (const [due, end] of [["2027-01-31", "2027-02-28"], ["2028-01-31", "2028-02-29"], ["2027-03-31", "2027-04-30"], ["2027-12-15", "2028-01-15"]]) {
+      const { gateway } = makeGateway({ "GET /subscriptions/sub_1": () => ({ id: "sub_1", customer: "cus_1" }) });
+      const event = await gateway.handleWebhook(
+        webhook({ event: "PAYMENT_RECEIVED", payment: { id: "pay_1", subscription: "sub_1", value: 10, dueDate: due } }),
+      );
+      expect(event.currentPeriodEnd, due).toBe(`${end}T00:00:00.000Z`);
+    }
+  });
+
+  it("pagamento confirmado traz o cartão da assinatura; atraso não traz", async () => {
+    const subs = { "GET /subscriptions/sub_1": () => ({ id: "sub_1", customer: "cus_1", creditCard: { creditCardToken: "tok_9" } }) };
+    const paid = await makeGateway(subs).gateway.handleWebhook(
+      webhook({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", subscription: "sub_1", value: 10, dueDate: "2026-11-28" } }),
+    );
+    expect(paid.paymentMethodToken).toBe("tok_9");
+    const overdue = await makeGateway(subs).gateway.handleWebhook(
+      webhook({ event: "PAYMENT_OVERDUE", payment: { id: "pay_1", subscription: "sub_1", value: 10, dueDate: "2026-11-28" } }),
+    );
+    expect(overdue.paymentMethodToken).toBeNull();
   });
 
   it("a renovação descreve o termo pelo número de parcelas", async () => {

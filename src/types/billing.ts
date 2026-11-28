@@ -99,7 +99,8 @@ export interface NormalizedPaymentEvent {
    */
   termRenewal?: {
     externalCustomerId: string;
-    paymentMethodToken: string;
+    /** Cartão da assinatura no gateway; null = usar o guardado na assinatura. */
+    paymentMethodToken: string | null;
     valueCents: number;
     maxPayments: number;
     /** Início do próximo termo (YYYY-MM-DD): o mês seguinte à última cobrança. */

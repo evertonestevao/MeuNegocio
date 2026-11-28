@@ -237,17 +237,30 @@ export function createBillingService(repo: BillingRepository) {
 
     switch (event.type) {
       case "subscription.activated":
-      case "subscription.updated":
+      case "subscription.updated": {
+        // O período nunca anda para trás: no cartão, o PAYMENT_RECEIVED de uma cobrança chega ~30 dias
+        // depois do CONFIRMED, quando a cobrança seguinte já pode ter estendido o acesso.
+        const olderPeriod =
+          event.currentPeriodEnd !== null &&
+          existing.current_period_end !== null &&
+          new Date(event.currentPeriodEnd) < new Date(existing.current_period_end);
         await repo.updateSubscription(existing.id, {
           // Teste em andamento (trialEndsAt) segue "em teste"; evento duplicado de
           // cobrança criada não antecipa a ativação. Sem teste, fica ativa.
           status: event.trialEndsAt ? "trialing" : "active",
           plan_id: event.planId ?? existing.plan_id,
-          current_period_start: event.currentPeriodStart ?? existing.current_period_start,
-          current_period_end: event.currentPeriodEnd ?? existing.current_period_end,
+          ...(olderPeriod
+            ? {}
+            : {
+                current_period_start: event.currentPeriodStart ?? existing.current_period_start,
+                current_period_end: event.currentPeriodEnd ?? existing.current_period_end,
+              }),
           cancel_at_period_end: event.cancelAtPeriodEnd,
+          // Cartão vem com o pagamento; evento sem ele não apaga o que já está guardado.
+          ...(event.paymentMethodToken ? { payment_method_token: event.paymentMethodToken } : {}),
         });
         break;
+      }
       case "subscription.canceled":
         // Troca agendada: o cancelamento é o da assinatura antiga, que foi encerrada de propósito.
         // A assinatura nova já existe no gateway e assume na data; o cliente segue com acesso.
@@ -447,12 +460,17 @@ export function createBillingService(repo: BillingRepository) {
     const oldTermId = event.externalSubscriptionId;
     const row = await repo.findSubscriptionByExternalId(oldTermId);
     if (!row) return false;
+    // Cartão do gateway ou, na falta dele, o guardado na assinatura. Sem nenhum, o termo acaba
+    // em vez de cobrar às cegas.
+    const paymentMethodToken = event.termRenewal.paymentMethodToken ?? row.payment_method_token;
+    if (!paymentMethodToken) return false;
     // Troca agendada: o próximo termo já nasce no plano novo (valor e parcelas dele).
     const target = row.scheduled_plan_id ? await repo.getPlanById(row.scheduled_plan_id) : null;
     const nextPlan = target && !target.deleted_at && target.is_active ? target : null;
     const termPayments = nextPlan ? planTermPayments(nextPlan) : null;
     const renewed = await gateway.renewSubscription({
       ...event.termRenewal,
+      paymentMethodToken,
       ...(nextPlan ? { valueCents: planMonthlyCents(nextPlan), maxPayments: termPayments! > 1 ? termPayments : null } : {}),
       externalReference: `${row.company_id}:${nextPlan?.id ?? row.plan_id}`,
     });

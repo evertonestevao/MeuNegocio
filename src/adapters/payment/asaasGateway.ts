@@ -74,7 +74,13 @@ function dueDateString(days: number, now: Date = new Date()): string {
 /** Data (YYYY-MM-DD) `months` meses depois de uma data "YYYY-MM-DD" ou timestamp. */
 function dueDateMonthsAfter(date: string, months: number): string {
   const base = new Date(date.includes("T") ? date : `${date}T00:00:00Z`);
+  const day = base.getUTCDate();
+  // Vai para o dia 1 antes de somar os meses e limita ao último dia do mês de destino:
+  // 31/01 + 1 mês = 28/02 (ou 29/02), e não 03/03.
+  base.setUTCDate(1);
   base.setUTCMonth(base.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)).getUTCDate();
+  base.setUTCDate(Math.min(day, lastDay));
   return base.toISOString().slice(0, 10);
 }
 
@@ -389,7 +395,13 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
       companyId: reference?.companyId ?? null,
       planId: reference?.planId ?? null,
       currentPeriodStart: dateToIso(payment.dueDate),
-      currentPeriodEnd: dateToIso(subscription.nextDueDate),
+      // Um mês depois do vencimento da cobrança paga (toda assinatura nossa é MONTHLY, inclusive o
+      // anual em parcelas). Não usar subscription.nextDueDate: o Asaas gera a cobrança seguinte logo
+      // após o pagamento e esse campo já aponta para a outra, o que daria dois meses de acesso.
+      currentPeriodEnd: payment.dueDate ? dateToIso(dueDateMonthsAfter(payment.dueDate, 1)) : null,
+      // O cartão só ganha token depois da 1ª cobrança (no teste ainda não existe no CHECKOUT_PAID).
+      // Guardado a cada pagamento: troca de plano e renovação do termo usam o cartão salvo.
+      paymentMethodToken: paid ? (subscription.creditCard?.creditCardToken ?? null) : null,
       // Só pagamento confirmado gera comissão. CONFIRMED e RECEIVED da mesma cobrança
       // têm o mesmo id, e o par único no banco evita o lançamento duplicado.
       payment: paid && payment.id && payment.value ? { externalId: payment.id, grossAmountCents: toCents(payment.value) } : undefined,
@@ -400,7 +412,7 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
   /**
    * Última parcela de um termo (anual em 12x) paga? Conta as cobranças pagas no
    * Asaas; quando chega a maxPayments, devolve os dados para criar o próximo termo
-   * com o cartão tokenizado. Sem termo (maxPayments nulo) ou sem token, não renova.
+   * com o cartão tokenizado. Sem termo (maxPayments nulo), não renova.
    */
   async function detectTermRenewal(
     subscriptionId: string,
@@ -408,8 +420,9 @@ export function createAsaasGateway(config: AsaasGatewayConfig): PaymentGateway {
     lastDueDate: string | undefined,
   ): Promise<NormalizedPaymentEvent["termRenewal"]> {
     const maxPayments = subscription.maxPayments ?? null;
+    // Sem token aqui, o service usa o cartão guardado na assinatura (ou não renova).
     const token = subscription.creditCard?.creditCardToken ?? null;
-    if (!maxPayments || !token || !subscription.customer || !lastDueDate) return undefined;
+    if (!maxPayments || !subscription.customer || !lastDueDate) return undefined;
     const payments = await asaasRequest<{ data?: Array<{ status?: string }> }>(
       `/payments?subscription=${subscriptionId}&limit=100`,
       "GET",
